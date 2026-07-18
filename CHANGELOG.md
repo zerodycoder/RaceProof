@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added deterministic worker lifecycle management with injectable process/clock contracts, mandatory wait/reap behavior, bounded worker output, and distinct failure diagnostics.
+
 - Added professional contribution, security, support, issue, and review workflows.
 - Added an enforced 90% coverage gate and expanded CI quality checks.
 

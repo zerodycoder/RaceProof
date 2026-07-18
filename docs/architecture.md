@@ -27,9 +27,18 @@ The file coordinator assumes every worker can access the same local filesystem. 
 
 Workers record `hrtime(true)` immediately before invoking the HTTP kernel. On the same host this monotonic clock allows the parent to calculate start spread and run duration without wall-clock changes. These timestamps must not be compared across distributed machines.
 
+## Worker lifecycle
+
+The orchestrator creates workers through a process-factory contract and observes time through an injectable monotonic clock. Production uses Symfony Process and `hrtime`; deterministic tests use in-memory processes and a controlled clock.
+
+- A worker is not settled merely because `isRunning()` becomes false; the parent always calls `wait()` to drain output and reap it.
+- Spawn failures stop and wait for every worker that already started.
+- Run timeouts stop every running worker and then wait for all participants before collecting results.
+- Worker stdout/stderr evidence is byte-bounded by `raceproof.capture.worker_output_bytes`.
+
 ## Failure semantics
 
-An application response, including a rendered HTTP 500, is a participant result. An uncaught executor exception is captured with its class and message. A process that terminates without publishing a result becomes a synthetic worker failure containing its output. The parent terminates workers after timeout and never reports a timed-out run as clean.
+An application response, including a rendered HTTP 500, is a participant result. An uncaught executor exception is captured with its class and message. Early exit, spawn timeout, run timeout, and exit-without-result use distinct messages. Synthetic worker failures include the exit code and bounded process output when available. Every non-clean run retains its artifact directory.
 
 ## Determinism boundary
 

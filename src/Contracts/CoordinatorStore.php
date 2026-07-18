@@ -35,4 +35,6 @@ interface CoordinatorStore
     public function results(string $runId): array;
 
     public function cleanup(string $runId): void;
+
+    public function basePath(): string;
 }

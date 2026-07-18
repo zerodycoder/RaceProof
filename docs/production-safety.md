@@ -21,4 +21,4 @@ The project may later extract a tiny runtime bridge, but the MVP does not preten
 
 ## Secrets
 
-Only configured response headers are captured. Authorization, cookies, and set-cookie headers are redacted if explicitly allowlisted. Response bodies are capped, but applications should still avoid returning secrets in testing. Retained run directories should be treated as CI artifacts with restricted access and short retention.
+Only configured response headers are captured. Authorization, cookies, and set-cookie headers are redacted if explicitly allowlisted. Response bodies are capped. Worker stdout/stderr is also capped by `raceproof.capture.worker_output_bytes`, but arbitrary console output cannot be reliably redacted yet; workers must not print credentials or tokens. Retained run directories should be treated as CI artifacts with restricted access and short retention.

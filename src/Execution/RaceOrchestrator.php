@@ -5,27 +5,28 @@ declare(strict_types=1);
 namespace RaceProof\Laravel\Execution;
 
 use Illuminate\Contracts\Config\Repository as Config;
-use Illuminate\Contracts\Foundation\Application;
-use RaceProof\Laravel\Coordination\FileCoordinatorStore;
+use RaceProof\Laravel\Contracts\CoordinatorStore;
+use RaceProof\Laravel\Contracts\RaceClock;
+use RaceProof\Laravel\Contracts\WorkerProcess;
+use RaceProof\Laravel\Contracts\WorkerProcessFactory;
 use RaceProof\Laravel\Data\ParticipantResult;
 use RaceProof\Laravel\Data\RacePlan;
 use RaceProof\Laravel\Exceptions\RaceProofException;
 use RaceProof\Laravel\Results\RaceResult;
-use RaceProof\Laravel\Support\Clock;
 use RaceProof\Laravel\Support\ConfigValue;
 use RaceProof\Laravel\Support\DatabaseSafety;
 use RaceProof\Laravel\Support\EnvironmentGuard;
-use Symfony\Component\Process\Process;
 use Throwable;
 
 final readonly class RaceOrchestrator
 {
     public function __construct(
-        private Application $app,
         private Config $config,
-        private FileCoordinatorStore $store,
+        private CoordinatorStore $store,
         private EnvironmentGuard $environment,
         private DatabaseSafety $databaseSafety,
+        private WorkerProcessFactory $processFactory,
+        private RaceClock $clock,
     ) {}
 
     public function run(RacePlan $plan): RaceResult
@@ -34,14 +35,14 @@ final readonly class RaceOrchestrator
         $this->databaseSafety->validate();
         $this->store->createRun($plan);
 
-        /** @var array<string, Process> $processes */
+        /** @var array<string, WorkerProcess> $processes */
         $processes = [];
         $timedOut = false;
 
         try {
             for ($number = 1; $number <= $plan->participants; $number++) {
                 $participantId = 'p'.$number;
-                $process = $this->workerProcess($plan->runId, $participantId);
+                $process = $this->processFactory->create($plan->runId, $participantId);
                 $process->start();
                 $processes[$participantId] = $process;
             }
@@ -49,7 +50,7 @@ final readonly class RaceOrchestrator
             $this->waitUntilReady($plan, $processes);
             $this->store->releaseStart($plan->runId);
 
-            $deadline = Clock::nowNs() + ($plan->runTimeoutMs * 1_000_000);
+            $deadline = $this->clock->nowNs() + ($plan->runTimeoutMs * 1_000_000);
             $released = [];
 
             while (true) {
@@ -64,15 +65,15 @@ final readonly class RaceOrchestrator
                     break;
                 }
 
-                if (Clock::nowNs() >= $deadline) {
+                if ($this->clock->nowNs() >= $deadline) {
                     $timedOut = true;
-                    $this->stopAll($processes);
                     break;
                 }
 
-                usleep($plan->pollIntervalMs * 1_000);
+                $this->clock->sleepMilliseconds($plan->pollIntervalMs);
             }
 
+            $this->settleAll($processes, $timedOut);
             $results = $this->collectResults($plan, $processes, $timedOut);
             $clean = ! $timedOut
                 && count($results) === $plan->participants
@@ -92,56 +93,47 @@ final readonly class RaceOrchestrator
                 artifactPath: $artifactPath,
             );
         } catch (Throwable $exception) {
-            $this->stopAll($processes);
+            try {
+                $this->settleAll($processes, true);
+            } catch (Throwable $cleanupException) {
+                throw new RaceProofException(
+                    $exception->getMessage().' Worker cleanup also failed: '.$cleanupException->getMessage(),
+                    0,
+                    $exception,
+                );
+            }
+
             throw $exception;
         }
     }
 
-    /** @param array<string, Process> $processes */
+    /** @param array<string, WorkerProcess> $processes */
     private function waitUntilReady(RacePlan $plan, array $processes): void
     {
-        $deadline = Clock::nowNs() + ($plan->spawnTimeoutMs * 1_000_000);
+        $deadline = $this->clock->nowNs() + ($plan->spawnTimeoutMs * 1_000_000);
 
         while ($this->store->readyCount($plan->runId) < $plan->participants) {
             foreach ($processes as $participantId => $process) {
                 if (! $process->isRunning()) {
-                    $error = trim($process->getErrorOutput().' '.$process->getOutput());
+                    $output = $this->workerOutput($process);
+                    $status = $this->exitStatus($process);
                     throw new RaceProofException(
-                        "Worker [{$participantId}] exited before the start barrier".($error === '' ? '.' : ": {$error}"),
+                        "Worker [{$participantId}] exited before the start barrier{$status}".($output === '' ? '.' : ": {$output}"),
                     );
                 }
             }
 
-            if (Clock::nowNs() >= $deadline) {
+            if ($this->clock->nowNs() >= $deadline) {
                 throw new RaceProofException(
-                    "Only {$this->store->readyCount($plan->runId)}/{$plan->participants} workers became ready before timeout.",
+                    "Only {$this->store->readyCount($plan->runId)}/{$plan->participants} workers became ready before the spawn timeout.",
                 );
             }
 
-            usleep($plan->pollIntervalMs * 1_000);
+            $this->clock->sleepMilliseconds($plan->pollIntervalMs);
         }
     }
 
-    private function workerProcess(string $runId, string $participantId): Process
-    {
-        $artisan = $this->app->basePath('artisan');
-
-        if (! is_file($artisan)) {
-            throw new RaceProofException("Laravel artisan file was not found at [{$artisan}].");
-        }
-
-        return new Process([
-            PHP_BINARY,
-            $artisan,
-            'raceproof:worker',
-            '--run='.$runId,
-            '--participant='.$participantId,
-            '--coordinator='.$this->store->basePath(),
-            '--no-interaction',
-        ], $this->app->basePath(), timeout: null);
-    }
-
-    /** @param array<string, Process> $processes */
+    /** @param array<string, WorkerProcess> $processes */
     private function allStopped(array $processes): bool
     {
         foreach ($processes as $process) {
@@ -153,18 +145,38 @@ final readonly class RaceOrchestrator
         return true;
     }
 
-    /** @param array<string, Process> $processes */
-    private function stopAll(array $processes): void
+    /** @param array<string, WorkerProcess> $processes */
+    private function settleAll(array $processes, bool $stopRunning): void
     {
-        foreach ($processes as $process) {
-            if ($process->isRunning()) {
-                $process->stop(0.5);
+        $failure = null;
+
+        if ($stopRunning) {
+            foreach ($processes as $process) {
+                try {
+                    if ($process->isRunning()) {
+                        $process->stop(0.5);
+                    }
+                } catch (Throwable $exception) {
+                    $failure ??= $exception;
+                }
             }
+        }
+
+        foreach ($processes as $process) {
+            try {
+                $process->wait();
+            } catch (Throwable $exception) {
+                $failure ??= $exception;
+            }
+        }
+
+        if ($failure !== null) {
+            throw $failure;
         }
     }
 
     /**
-     * @param  array<string, Process>  $processes
+     * @param  array<string, WorkerProcess>  $processes
      * @return list<ParticipantResult>
      */
     private function collectResults(RacePlan $plan, array $processes, bool $timedOut): array
@@ -181,8 +193,11 @@ final readonly class RaceOrchestrator
                 continue;
             }
 
-            $output = trim($process->getErrorOutput().' '.$process->getOutput());
-            $message = $timedOut ? 'Worker was terminated after the run timeout.' : 'Worker exited without a result.';
+            $output = $this->workerOutput($process);
+            $message = $timedOut
+                ? 'Worker was terminated after the run timeout'
+                : 'Worker exited without a result';
+            $message .= $this->exitStatus($process).'.';
 
             if ($output !== '') {
                 $message .= ' '.$output;
@@ -194,5 +209,30 @@ final readonly class RaceOrchestrator
         ksort($byParticipant, SORT_NATURAL);
 
         return array_values($byParticipant);
+    }
+
+    private function exitStatus(WorkerProcess $process): string
+    {
+        $exitCode = $process->exitCode();
+
+        return $exitCode === null ? '' : " with exit code {$exitCode}";
+    }
+
+    private function workerOutput(WorkerProcess $process): string
+    {
+        $output = trim($process->errorOutput().' '.$process->output());
+        $limit = max(0, ConfigValue::integer($this->config, 'raceproof.capture.worker_output_bytes', 4_096));
+
+        if ($output === '' || $limit === 0 || strlen($output) <= $limit) {
+            return $limit === 0 ? '' : $output;
+        }
+
+        $marker = ' [truncated]';
+
+        if ($limit <= strlen($marker)) {
+            return substr($output, 0, $limit);
+        }
+
+        return substr($output, 0, $limit - strlen($marker)).$marker;
     }
 }

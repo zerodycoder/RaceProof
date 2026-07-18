@@ -29,6 +29,7 @@ return [
 
     'capture' => [
         'response_body_bytes' => 16_384,
+        'worker_output_bytes' => 4_096,
         'headers' => ['content-type', 'location', 'x-request-id'],
         'redact_headers' => ['authorization', 'cookie', 'set-cookie'],
     ],
