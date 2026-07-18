@@ -1,0 +1,32 @@
+name: raceproof
+
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: raceproof_test
+      MYSQL_ROOT_PASSWORD: raceproof
+    ports:
+      - "33060:3306"
+    tmpfs:
+      - /var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-praceproof"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: raceproof_test
+      POSTGRES_PASSWORD: raceproof
+    ports:
+      - "54320:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d raceproof_test"]
+      interval: 2s
+      timeout: 2s
+      retries: 30

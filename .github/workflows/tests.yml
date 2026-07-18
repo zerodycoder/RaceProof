@@ -68,3 +68,75 @@ jobs:
           path: build/coverage/clover.xml
           if-no-files-found: warn
           retention-days: 14
+
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - engine: mysql
+            image: mysql:8.4
+            port: 3306
+            username: root
+            options: >-
+              --health-cmd "mysqladmin ping -h 127.0.0.1 -praceproof"
+              --health-interval 2s
+              --health-timeout 2s
+              --health-retries 30
+          - engine: pgsql
+            image: postgres:17
+            port: 5432
+            username: postgres
+            options: >-
+              --health-cmd "pg_isready -U postgres -d raceproof_test"
+              --health-interval 2s
+              --health-timeout 2s
+              --health-retries 30
+
+    services:
+      database:
+        image: ${{ matrix.image }}
+        env:
+          MYSQL_DATABASE: raceproof_test
+          MYSQL_ROOT_PASSWORD: raceproof
+          POSTGRES_DB: raceproof_test
+          POSTGRES_PASSWORD: raceproof
+        ports:
+          - "${{ matrix.port }}:${{ matrix.port }}"
+        options: ${{ matrix.options }}
+
+    env:
+      DB_CONNECTION: ${{ matrix.engine }}
+      DB_HOST: 127.0.0.1
+      DB_PORT: ${{ matrix.port }}
+      DB_DATABASE: raceproof_test
+      DB_USERNAME: ${{ matrix.username }}
+      DB_PASSWORD: raceproof
+      RACEPROOF_REQUIRE_DATABASE_ALLOWLIST: 'true'
+      RACEPROOF_ALLOWED_DATABASES: raceproof_test
+      RACEPROOF_EVIDENCE_ITERATIONS: 100
+      RACEPROOF_EVIDENCE_OUTPUT: build/database-evidence/${{ matrix.engine }}.json
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          coverage: none
+          extensions: pdo_mysql, pdo_pgsql
+          tools: composer:v2
+
+      - run: composer install --prefer-dist --no-interaction --no-progress
+      - run: composer test:database
+
+      - name: Upload database evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: database-evidence-${{ matrix.engine }}
+          path: build/database-evidence/${{ matrix.engine }}.json
+          if-no-files-found: warn
+          retention-days: 30

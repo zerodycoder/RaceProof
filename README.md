@@ -70,7 +70,7 @@ See [runtime checkpoint deployment](docs/runtime-checkpoints.md) for migration f
 - Linux and WSL are the primary targets
 - macOS should work through Symfony Process
 - Native Windows is currently validated as an experimental target
-- MySQL/MariaDB and PostgreSQL are the intended databases
+- MySQL 8.4 and PostgreSQL 17 are continuously verified; compatible MySQL/PostgreSQL releases are expected to work
 - SQLite in-memory is rejected; SQLite files are useful only for package smoke tests and do not model production lock behavior
 
 Implemented builder methods:
@@ -155,17 +155,22 @@ composer install
 composer test
 vendor/bin/pint --test
 vendor/bin/phpstan analyse
+
+# Real engine evidence (after starting compose services)
+composer test:database
 ```
 
 The integration suite includes a real three-process Laravel checkpoint test and a broken/fixed overselling scenario. The latter forces three workers to read stock `1`; the broken implementation produces three orders and stock `-2`, while the atomic fix produces one order, stock `0`, one `201`, and two `409` responses.
+
+The database suite runs isolated migrations with an exact database-name allowlist and proves broken/fixed behavior for overselling, coupons, wallets, quotes, uniqueness, lock misuse, deadlocks, and lock timeouts. CI also produces 100/100 machine-readable critical evidence for both MySQL and PostgreSQL.
 
 See [architecture](docs/architecture.md), [participant bootstrap](docs/participant-bootstrap.md), [runtime deployment](docs/runtime-checkpoints.md), [timeline evidence](docs/timeline.md), [database testing](docs/database-testing.md), and [production safety](docs/production-safety.md) for the operational details.
 
 ## Near-term roadmap
 
-1. Harden the technical MVP on Linux CI with MySQL and PostgreSQL.
-2. Validate authentication adapters for session, Sanctum, and token guards.
-3. Publish four complete broken/fixed demonstrations before stabilizing the API.
+1. Validate authentication adapters for session, Sanctum, and token guards.
+2. Add Pest ergonomics and pluggable evidence reporters.
+3. Stabilize the public API and publish the beta release.
 
 Redis coordination, network mode, queues, schedule fuzzing, exact interleaving control, and dashboards are deliberately outside the first release.
 
