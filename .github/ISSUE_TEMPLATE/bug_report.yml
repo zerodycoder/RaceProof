@@ -1,0 +1,48 @@
+name: Bug report
+description: Report reproducible incorrect RaceProof behavior
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for helping make concurrency testing trustworthy. Do not report security vulnerabilities here.
+  - type: input
+    id: version
+    attributes:
+      label: RaceProof version or commit
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: PHP, Laravel, operating system, and database versions
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Include the race plan, checkpoint placement, schema, and relevant output.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior and artifacts
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety confirmation
+      options:
+        - label: This reproduction uses a dedicated non-production database and contains no secrets.
+          required: true

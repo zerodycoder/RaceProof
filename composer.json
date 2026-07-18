@@ -36,9 +36,19 @@
         "test": "phpunit",
         "test:unit": "phpunit --testsuite Unit",
         "test:integration": "phpunit --testsuite Integration",
+        "test:coverage": [
+            "@php -r \"is_dir('build/coverage') || mkdir('build/coverage', 0777, true);\"",
+            "phpunit --coverage-clover build/coverage/clover.xml",
+            "@php tools/check-coverage.php build/coverage/clover.xml 90"
+        ],
         "analyse": "phpstan analyse --configuration phpstan.neon.dist --memory-limit=1G",
         "format": "pint",
-        "format:test": "pint --test"
+        "format:test": "pint --test",
+        "check": [
+            "@test",
+            "@format:test",
+            "@analyse"
+        ]
     },
     "extra": {
         "laravel": {
@@ -52,6 +62,9 @@
     },
     "config": {
         "sort-packages": true,
+        "audit": {
+            "abandoned": "fail"
+        },
         "allow-plugins": {
             "pestphp/pest-plugin": true
         }

@@ -2,11 +2,21 @@ name: tests
 
 on:
   push:
+    branches:
+      - main
   pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -19,7 +29,7 @@ jobs:
             testbench: '^11.0'
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: shivammathur/setup-php@v2
         with:
@@ -27,8 +37,34 @@ jobs:
           coverage: none
           tools: composer:v2
 
+      - run: composer validate --strict
       - run: composer require --no-update "illuminate/support:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}"
       - run: composer update --prefer-dist --no-interaction --no-progress
-      - run: composer test
-      - run: vendor/bin/pint --test
-      - run: vendor/bin/phpstan analyse --no-progress
+      - run: composer audit --locked --no-interaction
+      - run: composer check
+
+  coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          coverage: xdebug
+          tools: composer:v2
+
+      - run: composer require --no-update "illuminate/support:^13.0" "orchestra/testbench:^11.0"
+      - run: composer update --prefer-dist --no-interaction --no-progress
+      - run: composer test:coverage
+
+      - name: Upload coverage evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-clover
+          path: build/coverage/clover.xml
+          if-no-files-found: warn
+          retention-days: 14

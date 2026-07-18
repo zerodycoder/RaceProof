@@ -169,6 +169,17 @@ See [architecture](docs/architecture.md), [database testing](docs/database-testi
 
 Redis coordination, network mode, queues, schedule fuzzing, exact interleaving control, and dashboards are deliberately outside the first release.
 
+## Project standards
+
+Changes are developed as focused pull requests and merged only after review and green CI. The enforced checks include the supported PHP/Laravel matrix, PHPUnit, Pint, PHPStan level max, Composer validation/audit, and a 90% line-coverage floor.
+
+- [Roadmap](ROADMAP.md)
+- [Quality policy](docs/quality.md)
+- [Release checklist](docs/releasing.md)
+- [Contributing](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
+- [Support](SUPPORT.md)
+
 ## License
 
 MIT
