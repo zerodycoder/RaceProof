@@ -29,8 +29,10 @@ return [
 
     'capture' => [
         'response_body_bytes' => 16_384,
+        'diagnostic_text_bytes' => 4_096,
         'worker_output_bytes' => 4_096,
         'headers' => ['content-type', 'location', 'x-request-id'],
         'redact_headers' => ['authorization', 'cookie', 'set-cookie'],
+        'redact_keys' => ['password', 'passwd', 'secret', 'token', 'access_token', 'refresh_token', 'client_secret', 'api_key', 'api-key'],
     ],
 ];

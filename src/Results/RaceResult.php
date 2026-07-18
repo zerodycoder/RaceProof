@@ -17,6 +17,7 @@ final readonly class RaceResult implements JsonSerializable
         public array $participants,
         public bool $timedOut = false,
         public ?string $artifactPath = null,
+        public ?RaceTimeline $timeline = null,
     ) {}
 
     /** @return list<ParticipantResult> */
@@ -79,6 +80,56 @@ final readonly class RaceResult implements JsonSerializable
         $finishes = array_map(fn (ParticipantResult $result): int => $result->finishedAtNs, $this->participants);
 
         return (max($finishes) - min($starts)) / 1_000_000;
+    }
+
+    public function failureReport(): string
+    {
+        $failed = $this->failed();
+        $lines = [
+            "RaceProof run {$this->runId}",
+            sprintf(
+                'Participants: %d/%d finished; %d failed; timed out: %s.',
+                count($this->participants),
+                $this->expectedParticipants,
+                count($failed),
+                $this->timedOut ? 'yes' : 'no',
+            ),
+            sprintf('Timing: %.2f ms total; %.2f ms start spread.', $this->durationMs(), $this->startSpreadMs()),
+        ];
+
+        $statuses = [];
+
+        foreach ($this->statuses() as $status => $count) {
+            $statuses[] = "{$status} x {$count}";
+        }
+
+        if ($statuses !== []) {
+            $lines[] = 'Statuses: '.implode(', ', $statuses).'.';
+        }
+
+        $coordination = $this->coordinationSummary();
+
+        if ($coordination !== null) {
+            $lines[] = $coordination;
+        }
+
+        foreach ($failed as $participant) {
+            $reason = match (true) {
+                $participant->workerError !== null => $participant->workerError,
+                $participant->exceptionClass !== null => 'application exception '.$participant->exceptionClass,
+                $participant->status !== null => 'HTTP '.$participant->status,
+                default => 'no response evidence',
+            };
+            $lines[] = "Failure {$participant->participantId}: ".$this->compactDiagnostic($reason);
+        }
+
+        if ($this->timeline !== null) {
+            $lines[] = 'Timeline: '.count($this->timeline->events).' event(s); '.count($this->timeline->warnings).' warning(s).';
+        }
+
+        $lines[] = 'Artifacts: '.($this->artifactPath ?? 'none (successful run was cleaned)').'.';
+
+        return implode("\n", $lines);
     }
 
     public function assertAllFinished(): self
@@ -168,13 +219,65 @@ final readonly class RaceResult implements JsonSerializable
             'duration_ms' => $this->durationMs(),
             'timed_out' => $this->timedOut,
             'artifact_path' => $this->artifactPath,
+            'timeline' => $this->timeline,
         ];
+    }
+
+    private function coordinationSummary(): ?string
+    {
+        if ($this->timeline === null) {
+            return null;
+        }
+
+        $ready = [];
+        $checkpoints = [];
+
+        foreach ($this->timeline->events as $event) {
+            if ($event->type === 'participant.ready' && $event->participantId !== null) {
+                $ready[$event->participantId] = true;
+            }
+
+            if ($event->checkpoint === null) {
+                continue;
+            }
+
+            $checkpoints[$event->checkpoint] ??= ['participants' => [], 'released' => false];
+
+            if ($event->type === 'checkpoint.reached' && $event->participantId !== null) {
+                $checkpoints[$event->checkpoint]['participants'][$event->participantId] = true;
+            }
+
+            if ($event->type === 'checkpoint.released') {
+                $checkpoints[$event->checkpoint]['released'] = true;
+            }
+        }
+
+        $summary = ['ready '.count($ready).'/'.$this->expectedParticipants];
+
+        foreach ($checkpoints as $checkpoint => $state) {
+            $summary[] = sprintf(
+                '%s %d/%d %s',
+                $checkpoint,
+                count($state['participants']),
+                $this->expectedParticipants,
+                $state['released'] ? 'released' : 'blocked',
+            );
+        }
+
+        return 'Coordination: '.implode('; ', $summary).'.';
+    }
+
+    private function compactDiagnostic(string $value): string
+    {
+        $compact = trim((string) preg_replace('/\s+/', ' ', $value));
+
+        return strlen($compact) <= 240 ? $compact : substr($compact, 0, 228).' [truncated]';
     }
 
     private function assert(bool $condition, string $message): void
     {
         if (! $condition) {
-            throw new RaceAssertionFailed($message);
+            throw new RaceAssertionFailed($message."\n\n".$this->failureReport());
         }
     }
 }

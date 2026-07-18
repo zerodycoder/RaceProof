@@ -4,7 +4,7 @@
 
 RaceProof starts independent Laravel processes against the same database, holds them at explicit barriers, and returns one result that can assert response distributions and database invariants. It is a test tool—not a load tester, a lock library, an automatic race detector, or a formal proof that no race exists.
 
-> Current status: technical MVP. The local kernel runner, file coordinator, start barrier, `RacePoint`, crash/timeout collection, JSON results, database safety checks, and a deterministic overselling demonstration are implemented.
+> Current status: technical MVP. The local kernel runner, file coordinator, start barrier, `RacePoint`, versioned event timelines, actionable failure reports, crash/timeout collection, JSON results, database safety checks, and a deterministic overselling demonstration are implemented.
 
 ## The five-minute example
 
@@ -107,6 +107,7 @@ $result->statuses();
 $result->participant('p2');
 $result->startSpreadMs();
 $result->durationMs();
+$result->failureReport();
 json_encode($result);
 ```
 
@@ -124,6 +125,7 @@ RaceProof:
 - uses JSON only—no closure serialization or untrusted `unserialize()`;
 - uses path-safe run, participant, and checkpoint identifiers;
 - retains artifacts when a worker crashes or the run times out.
+- records a versioned JSONL timeline and redacts bounded diagnostic text before persistence.
 
 For payment, inventory, or booking suites, use a dedicated disposable database and enable the database allowlist in CI.
 
@@ -157,15 +159,14 @@ vendor/bin/phpstan analyse
 
 The integration suite includes a real three-process Laravel checkpoint test and a broken/fixed overselling scenario. The latter forces three workers to read stock `1`; the broken implementation produces three orders and stock `-2`, while the atomic fix produces one order, stock `0`, one `201`, and two `409` responses.
 
-See [architecture](docs/architecture.md), [database testing](docs/database-testing.md), and [production safety](docs/production-safety.md) for the operational details.
+See [architecture](docs/architecture.md), [timeline evidence](docs/timeline.md), [database testing](docs/database-testing.md), and [production safety](docs/production-safety.md) for the operational details.
 
 ## Near-term roadmap
 
 1. Harden the technical MVP on Linux CI with MySQL and PostgreSQL.
 2. Add participant bootstrap classes for process-local setup without closure serialization.
-3. Improve retained timelines and console failure reports.
-4. Validate authentication adapters for session, Sanctum, and token guards.
-5. Publish four complete broken/fixed demonstrations before stabilizing the API.
+3. Validate authentication adapters for session, Sanctum, and token guards.
+4. Publish four complete broken/fixed demonstrations before stabilizing the API.
 
 Redis coordination, network mode, queues, schedule fuzzing, exact interleaving control, and dashboards are deliberately outside the first release.
 

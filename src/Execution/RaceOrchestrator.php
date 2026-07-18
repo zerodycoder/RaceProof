@@ -11,11 +11,14 @@ use RaceProof\Laravel\Contracts\WorkerProcess;
 use RaceProof\Laravel\Contracts\WorkerProcessFactory;
 use RaceProof\Laravel\Data\ParticipantResult;
 use RaceProof\Laravel\Data\RacePlan;
+use RaceProof\Laravel\Data\TimelineEvent;
+use RaceProof\Laravel\Exceptions\RaceExecutionFailed;
 use RaceProof\Laravel\Exceptions\RaceProofException;
 use RaceProof\Laravel\Results\RaceResult;
 use RaceProof\Laravel\Support\ConfigValue;
 use RaceProof\Laravel\Support\DatabaseSafety;
 use RaceProof\Laravel\Support\EnvironmentGuard;
+use RaceProof\Laravel\Support\SensitiveDataRedactor;
 use Throwable;
 
 final readonly class RaceOrchestrator
@@ -27,6 +30,7 @@ final readonly class RaceOrchestrator
         private DatabaseSafety $databaseSafety,
         private WorkerProcessFactory $processFactory,
         private RaceClock $clock,
+        private SensitiveDataRedactor $redactor,
     ) {}
 
     public function run(RacePlan $plan): RaceResult
@@ -45,6 +49,11 @@ final readonly class RaceOrchestrator
                 $process = $this->processFactory->create($plan->runId, $participantId);
                 $process->start();
                 $processes[$participantId] = $process;
+                $this->store->recordEvent(TimelineEvent::make(
+                    $plan->runId,
+                    'participant.spawned',
+                    $participantId,
+                ));
             }
 
             $this->waitUntilReady($plan, $processes);
@@ -67,6 +76,9 @@ final readonly class RaceOrchestrator
 
                 if ($this->clock->nowNs() >= $deadline) {
                     $timedOut = true;
+                    $this->store->recordEvent(TimelineEvent::make($plan->runId, 'run.timed_out', data: [
+                        'timeout_ms' => $plan->runTimeoutMs,
+                    ]));
                     break;
                 }
 
@@ -74,16 +86,32 @@ final readonly class RaceOrchestrator
             }
 
             $this->settleAll($processes, $timedOut);
+            $this->recordProcessExits($plan, $processes, $timedOut ? 'run_timeout' : 'completed');
             $results = $this->collectResults($plan, $processes, $timedOut);
             $clean = ! $timedOut
                 && count($results) === $plan->participants
                 && array_filter($results, fn (ParticipantResult $result): bool => $result->workerError !== null) === [];
-            $cleanup = $clean && ConfigValue::boolean($this->config, 'raceproof.runner.cleanup_successful_runs', true);
-            $artifactPath = $cleanup ? null : rtrim($this->store->basePath(), '/\\').'/'.$plan->runId;
+            $cleanupRequested = $clean && ConfigValue::boolean($this->config, 'raceproof.runner.cleanup_successful_runs', true);
+            $this->store->recordEvent(TimelineEvent::make($plan->runId, 'run.completed', data: [
+                'timed_out' => $timedOut,
+                'result_count' => count($results),
+                'failure_count' => count(array_filter($results, fn (ParticipantResult $result): bool => ! $result->successful())),
+            ]));
+
+            $timeline = $this->store->timeline($plan->runId);
+            $cleanup = $cleanupRequested && $timeline->warnings === [];
+
+            if ($cleanup) {
+                $this->store->recordEvent(TimelineEvent::make($plan->runId, 'run.cleanup_started', data: [
+                    'reason' => 'successful_run',
+                ]));
+                $timeline = $this->store->timeline($plan->runId);
+            }
 
             if ($cleanup) {
                 $this->store->cleanup($plan->runId);
             }
+            $artifactPath = $cleanup ? null : $this->artifactPath($plan);
 
             return new RaceResult(
                 runId: $plan->runId,
@@ -91,20 +119,74 @@ final readonly class RaceOrchestrator
                 participants: $results,
                 timedOut: $timedOut,
                 artifactPath: $artifactPath,
+                timeline: $timeline,
             );
         } catch (Throwable $exception) {
-            try {
-                $this->settleAll($processes, true);
-            } catch (Throwable $cleanupException) {
-                throw new RaceProofException(
-                    $exception->getMessage().' Worker cleanup also failed: '.$cleanupException->getMessage(),
-                    0,
-                    $exception,
-                );
-            }
-
-            throw $exception;
+            return $this->failedRun($plan, $processes, $timedOut, $exception);
         }
+    }
+
+    /**
+     * @param  array<string, WorkerProcess>  $processes
+     */
+    private function failedRun(RacePlan $plan, array $processes, bool $timedOut, Throwable $exception): never
+    {
+        $secondaryFailures = [];
+
+        try {
+            $this->settleAll($processes, true);
+        } catch (Throwable $settlementException) {
+            $secondaryFailures[] = 'worker settlement: '.$settlementException->getMessage();
+        }
+
+        try {
+            $this->recordProcessExits($plan, $processes, $timedOut ? 'run_timeout' : 'parent_failure');
+        } catch (Throwable $timelineException) {
+            $secondaryFailures[] = 'process-exit evidence: '.$timelineException->getMessage();
+        }
+
+        $results = [];
+
+        try {
+            $results = $this->collectResults($plan, $processes, $timedOut);
+        } catch (Throwable $resultException) {
+            $secondaryFailures[] = 'result collection: '.$resultException->getMessage();
+        }
+
+        try {
+            $this->store->recordEvent(TimelineEvent::make($plan->runId, 'run.failed', data: [
+                'exception_class' => $exception::class,
+                'message' => $this->redactor->diagnostic($exception->getMessage()),
+                'secondary_failure_count' => count($secondaryFailures),
+            ]));
+        } catch (Throwable $timelineException) {
+            $secondaryFailures[] = 'failure evidence: '.$timelineException->getMessage();
+        }
+
+        $timeline = null;
+
+        try {
+            $timeline = $this->store->timeline($plan->runId);
+        } catch (Throwable $timelineException) {
+            $secondaryFailures[] = 'timeline read: '.$timelineException->getMessage();
+        }
+
+        $message = $this->redactor->diagnostic($exception->getMessage());
+
+        if ($secondaryFailures !== []) {
+            $message .= ' Secondary evidence failures: '.$this->redactor->diagnostic(implode('; ', $secondaryFailures)).'.';
+        }
+
+        $result = new RaceResult(
+            runId: $plan->runId,
+            expectedParticipants: $plan->participants,
+            participants: $results,
+            timedOut: $timedOut,
+            artifactPath: $this->artifactPath($plan),
+            timeline: $timeline,
+        );
+
+        throw new RaceExecutionFailed($message, $result, $exception);
     }
 
     /** @param array<string, WorkerProcess> $processes */
@@ -117,6 +199,15 @@ final readonly class RaceOrchestrator
                 if (! $process->isRunning()) {
                     $output = $this->workerOutput($process);
                     $status = $this->exitStatus($process);
+                    $this->store->recordEvent(TimelineEvent::make(
+                        $plan->runId,
+                        'participant.early_exit',
+                        $participantId,
+                        data: [
+                            'exit_code' => $process->exitCode(),
+                            'output' => $output,
+                        ],
+                    ));
                     throw new RaceProofException(
                         "Worker [{$participantId}] exited before the start barrier{$status}".($output === '' ? '.' : ": {$output}"),
                     );
@@ -124,8 +215,14 @@ final readonly class RaceOrchestrator
             }
 
             if ($this->clock->nowNs() >= $deadline) {
+                $ready = $this->store->readyCount($plan->runId);
+                $this->store->recordEvent(TimelineEvent::make($plan->runId, 'run.spawn_timed_out', data: [
+                    'ready_count' => $ready,
+                    'expected_count' => $plan->participants,
+                    'timeout_ms' => $plan->spawnTimeoutMs,
+                ]));
                 throw new RaceProofException(
-                    "Only {$this->store->readyCount($plan->runId)}/{$plan->participants} workers became ready before the spawn timeout.",
+                    "Only {$ready}/{$plan->participants} workers became ready before the spawn timeout.",
                 );
             }
 
@@ -175,6 +272,23 @@ final readonly class RaceOrchestrator
         }
     }
 
+    /** @param array<string, WorkerProcess> $processes */
+    private function recordProcessExits(RacePlan $plan, array $processes, string $reason): void
+    {
+        foreach ($processes as $participantId => $process) {
+            $this->store->recordEvent(TimelineEvent::make(
+                $plan->runId,
+                'participant.exited',
+                $participantId,
+                data: [
+                    'exit_code' => $process->exitCode(),
+                    'reason' => $reason,
+                    'output' => $this->workerOutput($process),
+                ],
+            ));
+        }
+    }
+
     /**
      * @param  array<string, WorkerProcess>  $processes
      * @return list<ParticipantResult>
@@ -220,19 +334,11 @@ final readonly class RaceOrchestrator
 
     private function workerOutput(WorkerProcess $process): string
     {
-        $output = trim($process->errorOutput().' '.$process->output());
-        $limit = max(0, ConfigValue::integer($this->config, 'raceproof.capture.worker_output_bytes', 4_096));
+        return $this->redactor->workerOutput($process->errorOutput(), $process->output());
+    }
 
-        if ($output === '' || $limit === 0 || strlen($output) <= $limit) {
-            return $limit === 0 ? '' : $output;
-        }
-
-        $marker = ' [truncated]';
-
-        if ($limit <= strlen($marker)) {
-            return substr($output, 0, $limit);
-        }
-
-        return substr($output, 0, $limit - strlen($marker)).$marker;
+    private function artifactPath(RacePlan $plan): string
+    {
+        return rtrim($this->store->basePath(), '/\\').'/'.$plan->runId;
     }
 }

@@ -10,6 +10,7 @@ Test -> RaceBuilder -> RaceOrchestrator
                          +-> worker p2 -> HTTP Kernel -> result.json
                          +-> worker pN -> HTTP Kernel -> result.json
                          +-> checkpoint releases
+                         +-> timeline.jsonl
 ```
 
 ## Coordinator invariants
@@ -19,6 +20,8 @@ Test -> RaceBuilder -> RaceOrchestrator
 - Checkpoint names use a restricted path-safe character set.
 - Data is written to a random temporary file, permissioned to `0600` where supported, and renamed into place.
 - Workers only read JSON; closures and PHP serialization never cross the process boundary.
+- Timeline events use a versioned scalar-only envelope and are appended as complete JSONL records under an exclusive lock.
+- A malformed or partial timeline line is reported as a warning without discarding other valid evidence.
 - A failed or timed-out run is retained. A clean run is removed by default.
 
 The file coordinator assumes every worker can access the same local filesystem. Redis and network/distributed coordination are separate future drivers.
@@ -38,7 +41,11 @@ The orchestrator creates workers through a process-factory contract and observes
 
 ## Failure semantics
 
-An application response, including a rendered HTTP 500, is a participant result. An uncaught executor exception is captured with its class and message. Early exit, spawn timeout, run timeout, and exit-without-result use distinct messages. Synthetic worker failures include the exit code and bounded process output when available. Every non-clean run retains its artifact directory.
+An application response, including a rendered HTTP 500, is a participant result. An uncaught executor exception is captured with its class and redacted message. Early exit, spawn timeout, run timeout, and exit-without-result use distinct messages. Synthetic worker failures include the exit code and bounded, redacted process output when available. Every non-clean run retains its artifact directory.
+
+`RaceResult::failureReport()` summarizes participant state, status distribution, timing, checkpoints, timeline warnings, and artifact location. Assertions include this report. Parent-side failures throw `RaceExecutionFailed` with a partial `RaceResult`, so callers can inspect JSON evidence even when orchestration cannot return normally.
+
+See [timeline and failure evidence](timeline.md) for the schema and compatibility contract.
 
 ## Determinism boundary
 

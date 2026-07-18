@@ -103,7 +103,7 @@ final class ConsoleCommandsTest extends TestCase
         {
             public function execute(RacePlan $plan, ParticipantContext $context): ParticipantResult
             {
-                throw new RuntimeException('executor exploded');
+                throw new RuntimeException('executor exploded password=hunter2');
             }
         });
 
@@ -117,6 +117,8 @@ final class ConsoleCommandsTest extends TestCase
 
         self::assertCount(1, $results);
         self::assertStringContainsString('RuntimeException: executor exploded', (string) $results[0]->workerError);
+        self::assertStringContainsString('password=[REDACTED]', (string) $results[0]->workerError);
+        self::assertStringNotContainsString('hunter2', (string) $results[0]->workerError);
     }
 
     private function plan(string $runId): RacePlan

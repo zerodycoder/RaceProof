@@ -21,4 +21,6 @@ The project may later extract a tiny runtime bridge, but the MVP does not preten
 
 ## Secrets
 
-Only configured response headers are captured. Authorization, cookies, and set-cookie headers are redacted if explicitly allowlisted. Response bodies are capped. Worker stdout/stderr is also capped by `raceproof.capture.worker_output_bytes`, but arbitrary console output cannot be reliably redacted yet; workers must not print credentials or tokens. Retained run directories should be treated as CI artifacts with restricted access and short retention.
+Only configured response headers are captured. Authorization, cookies, and set-cookie headers are redacted if explicitly allowlisted. Response bodies are capped.
+
+Exception diagnostics and worker stdout/stderr are redacted before their byte limits are applied. RaceProof removes authorization/cookie header values, bearer tokens, and values whose keys match `raceproof.capture.redact_keys`. Pattern-based redaction is defense in depth and cannot classify every application-specific secret or sensitive response body. Workers must not print credentials or tokens. Retained run directories should be treated as CI artifacts with restricted access and short retention.

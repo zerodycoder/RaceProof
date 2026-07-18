@@ -6,6 +6,8 @@ namespace RaceProof\Laravel\Contracts;
 
 use RaceProof\Laravel\Data\ParticipantResult;
 use RaceProof\Laravel\Data\RacePlan;
+use RaceProof\Laravel\Data\TimelineEvent;
+use RaceProof\Laravel\Results\RaceTimeline;
 
 interface CoordinatorStore
 {
@@ -33,6 +35,10 @@ interface CoordinatorStore
 
     /** @return list<ParticipantResult> */
     public function results(string $runId): array;
+
+    public function recordEvent(TimelineEvent $event): void;
+
+    public function timeline(string $runId): RaceTimeline;
 
     public function cleanup(string $runId): void;
 

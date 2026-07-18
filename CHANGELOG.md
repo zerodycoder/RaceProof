@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Added deterministic worker lifecycle management with injectable process/clock contracts, mandatory wait/reap behavior, bounded worker output, and distinct failure diagnostics.
+- Added a versioned append-only event timeline, concurrent/malformed-write recovery, credential redaction, actionable failure reports, and partial evidence on parent-side failures.
 
 - Added professional contribution, security, support, issue, and review workflows.
 - Added an enforced 90% coverage gate and expanded CI quality checks.

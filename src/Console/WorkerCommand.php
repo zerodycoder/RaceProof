@@ -11,6 +11,7 @@ use RaceProof\Laravel\Data\ParticipantContext;
 use RaceProof\Laravel\Data\ParticipantResult;
 use RaceProof\Laravel\Execution\RaceContext;
 use RaceProof\Laravel\Support\EnvironmentGuard;
+use RaceProof\Laravel\Support\SensitiveDataRedactor;
 use Throwable;
 
 final class WorkerCommand extends Command
@@ -26,6 +27,7 @@ final class WorkerCommand extends Command
         private readonly RequestExecutor $executor,
         private readonly RaceContext $context,
         private readonly EnvironmentGuard $environment,
+        private readonly SensitiveDataRedactor $redactor,
     ) {
         parent::__construct();
         $this->setHidden(true);
@@ -61,19 +63,21 @@ final class WorkerCommand extends Command
 
             return self::SUCCESS;
         } catch (Throwable $exception) {
+            $message = $this->redactor->diagnostic($exception->getMessage());
+
             if ($plan !== null) {
                 try {
                     $store->storeResult(ParticipantResult::workerFailure(
                         $runId,
                         $participantId,
-                        $exception::class.': '.$exception->getMessage(),
+                        $exception::class.': '.$message,
                     ));
                 } catch (Throwable) {
                     // The parent process also captures STDERR and the exit code.
                 }
             }
 
-            $this->components->error($exception->getMessage());
+            $this->components->error($message);
 
             return self::FAILURE;
         } finally {

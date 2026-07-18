@@ -12,6 +12,7 @@ use RaceProof\Laravel\Data\ParticipantContext;
 use RaceProof\Laravel\Data\RacePlan;
 use RaceProof\Laravel\Data\RequestSpec;
 use RaceProof\Laravel\Execution\KernelRequestExecutor;
+use RaceProof\Laravel\Support\SensitiveDataRedactor;
 use RuntimeException;
 
 final class KernelRequestExecutorEdgesTest extends TestCase
@@ -20,8 +21,13 @@ final class KernelRequestExecutorEdgesTest extends TestCase
     {
         $plan = $this->plan(new RequestSpec('POST', '/raceproof/explode'));
         $kernel = Mockery::mock(Kernel::class);
-        $kernel->shouldReceive('handle')->once()->andThrow(new RuntimeException('route exploded'));
-        $executor = new KernelRequestExecutor($kernel, $this->app['auth'], $this->app['config']);
+        $kernel->shouldReceive('handle')->once()->andThrow(new RuntimeException('route exploded token=private'));
+        $executor = new KernelRequestExecutor(
+            $kernel,
+            $this->app['auth'],
+            $this->app['config'],
+            $this->app->make(SensitiveDataRedactor::class),
+        );
 
         $result = $executor->execute(
             $plan,
@@ -30,7 +36,8 @@ final class KernelRequestExecutorEdgesTest extends TestCase
 
         self::assertNull($result->status);
         self::assertSame(RuntimeException::class, $result->exceptionClass);
-        self::assertSame('route exploded', $result->exceptionMessage);
+        self::assertSame('route exploded token=[REDACTED]', $result->exceptionMessage);
+        self::assertStringNotContainsString('private', (string) $result->exceptionMessage);
     }
 
     public function test_it_supports_form_payloads_limits_bodies_and_redacts_headers(): void

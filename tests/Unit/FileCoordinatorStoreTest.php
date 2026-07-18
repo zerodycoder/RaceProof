@@ -9,6 +9,7 @@ use RaceProof\Laravel\Coordination\FileCoordinatorStore;
 use RaceProof\Laravel\Data\ParticipantResult;
 use RaceProof\Laravel\Data\RacePlan;
 use RaceProof\Laravel\Data\RequestSpec;
+use RaceProof\Laravel\Data\TimelineEvent;
 use RaceProof\Laravel\Support\RunId;
 
 final class FileCoordinatorStoreTest extends TestCase
@@ -50,6 +51,20 @@ final class FileCoordinatorStoreTest extends TestCase
         $result = new ParticipantResult($plan->runId, 'p1', 201, 100, 200, '{"ok":true}');
         $store->storeResult($result);
         self::assertEquals([$result], $store->results($plan->runId));
+
+        self::assertSame([
+            'run.created',
+            'participant.ready',
+            'participant.ready',
+            'barrier.start_released',
+            'checkpoint.reached',
+            'checkpoint.reached',
+            'checkpoint.released',
+            'participant.finished',
+        ], array_map(
+            static fn (TimelineEvent $event): string => $event->type,
+            $store->timeline($plan->runId)->events,
+        ));
 
         $store->cleanup($plan->runId);
         self::assertDirectoryDoesNotExist($this->basePath.'/'.$plan->runId);

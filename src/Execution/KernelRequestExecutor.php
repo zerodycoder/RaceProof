@@ -17,6 +17,7 @@ use RaceProof\Laravel\Data\RacePlan;
 use RaceProof\Laravel\Exceptions\RaceProofException;
 use RaceProof\Laravel\Support\Clock;
 use RaceProof\Laravel\Support\ConfigValue;
+use RaceProof\Laravel\Support\SensitiveDataRedactor;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
@@ -26,6 +27,7 @@ final readonly class KernelRequestExecutor implements RequestExecutor
         private Kernel $kernel,
         private AuthFactory $auth,
         private Config $config,
+        private SensitiveDataRedactor $redactor,
     ) {}
 
     public function execute(RacePlan $plan, ParticipantContext $context): ParticipantResult
@@ -55,7 +57,7 @@ final readonly class KernelRequestExecutor implements RequestExecutor
                 startedAtNs: $startedAt,
                 finishedAtNs: Clock::nowNs(),
                 exceptionClass: $exception::class,
-                exceptionMessage: $exception->getMessage(),
+                exceptionMessage: $this->redactor->diagnostic($exception->getMessage()),
             );
         } finally {
             if ($response instanceof Response) {

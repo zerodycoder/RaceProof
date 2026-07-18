@@ -10,14 +10,18 @@ use JsonSerializable;
 use RaceProof\Laravel\Contracts\CoordinatorStore;
 use RaceProof\Laravel\Data\ParticipantResult;
 use RaceProof\Laravel\Data\RacePlan;
+use RaceProof\Laravel\Data\TimelineEvent;
 use RaceProof\Laravel\Exceptions\CoordinationTimeout;
 use RaceProof\Laravel\Exceptions\RaceProofException;
+use RaceProof\Laravel\Results\RaceTimeline;
 use RaceProof\Laravel\Support\Clock;
 use RaceProof\Laravel\Support\Input;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use RuntimeException;
 use SplFileInfo;
+use SplFileObject;
+use Throwable;
 
 final class FileCoordinatorStore implements CoordinatorStore
 {
@@ -29,6 +33,10 @@ final class FileCoordinatorStore implements CoordinatorStore
         $this->makeDirectory($directory.'/participants');
         $this->makeDirectory($directory.'/checkpoints');
         $this->atomicWrite($directory.'/plan.json', $this->encode($plan));
+        $this->recordEvent(TimelineEvent::make($plan->runId, 'run.created', data: [
+            'participants' => $plan->participants,
+            'checkpoint_count' => count($plan->checkpoints),
+        ]));
     }
 
     public function plan(string $runId): RacePlan
@@ -52,6 +60,7 @@ final class FileCoordinatorStore implements CoordinatorStore
     public function markReady(string $runId, string $participantId): void
     {
         $this->atomicWrite($this->participantPath($runId, $participantId, 'ready'), 'ready');
+        $this->recordEvent(TimelineEvent::make($runId, 'participant.ready', $participantId));
     }
 
     public function readyCount(string $runId): int
@@ -61,7 +70,9 @@ final class FileCoordinatorStore implements CoordinatorStore
 
     public function releaseStart(string $runId): void
     {
-        $this->atomicWrite($this->runDirectory($runId).'/start.release', (string) Clock::nowNs());
+        $releasedAt = Clock::nowNs();
+        $this->atomicWrite($this->runDirectory($runId).'/start.release', (string) $releasedAt);
+        $this->recordEvent(TimelineEvent::make($runId, 'barrier.start_released', occurredAtNs: $releasedAt));
     }
 
     public function waitForStart(string $runId, int $timeoutMs): void
@@ -76,8 +87,10 @@ final class FileCoordinatorStore implements CoordinatorStore
     public function reachCheckpoint(string $runId, string $participantId, string $checkpoint): void
     {
         $directory = $this->checkpointDirectory($runId, $checkpoint);
+        $reachedAt = Clock::nowNs();
         $this->makeDirectory($directory);
-        $this->atomicWrite($directory.'/'.$this->safeParticipant($participantId).'.reached', (string) Clock::nowNs());
+        $this->atomicWrite($directory.'/'.$this->safeParticipant($participantId).'.reached', (string) $reachedAt);
+        $this->recordEvent(TimelineEvent::make($runId, 'checkpoint.reached', $participantId, $checkpoint, occurredAtNs: $reachedAt));
     }
 
     public function checkpointCount(string $runId, string $checkpoint): int
@@ -88,8 +101,10 @@ final class FileCoordinatorStore implements CoordinatorStore
     public function releaseCheckpoint(string $runId, string $checkpoint): void
     {
         $directory = $this->checkpointDirectory($runId, $checkpoint);
+        $releasedAt = Clock::nowNs();
         $this->makeDirectory($directory);
-        $this->atomicWrite($directory.'/release', (string) Clock::nowNs());
+        $this->atomicWrite($directory.'/release', (string) $releasedAt);
+        $this->recordEvent(TimelineEvent::make($runId, 'checkpoint.released', checkpoint: $checkpoint, occurredAtNs: $releasedAt));
     }
 
     public function waitForCheckpoint(string $runId, string $checkpoint, int $timeoutMs): void
@@ -107,6 +122,21 @@ final class FileCoordinatorStore implements CoordinatorStore
             $this->participantPath($result->runId, $result->participantId, 'result.json'),
             $this->encode($result),
         );
+        $outcome = $result->workerError !== null
+            ? 'worker_error'
+            : ($result->exceptionClass !== null ? 'exception' : 'response');
+        $this->recordEvent(TimelineEvent::make(
+            $result->runId,
+            'participant.finished',
+            $result->participantId,
+            data: [
+                'outcome' => $outcome,
+                'status' => $result->status,
+                'duration_ms' => $result->durationMs(),
+                'exception_class' => $result->exceptionClass,
+            ],
+            occurredAtNs: $result->finishedAtNs,
+        ));
     }
 
     public function results(string $runId): array
@@ -128,6 +158,62 @@ final class FileCoordinatorStore implements CoordinatorStore
         usort($results, fn (ParticipantResult $a, ParticipantResult $b): int => $a->participantId <=> $b->participantId);
 
         return $results;
+    }
+
+    public function recordEvent(TimelineEvent $event): void
+    {
+        $directory = $this->runDirectory($event->runId);
+
+        if (! is_file($directory.'/plan.json')) {
+            throw new RaceProofException("Cannot record timeline event for missing run [{$event->runId}].");
+        }
+
+        $path = $directory.'/timeline.jsonl';
+        $line = $this->encodeLine($event);
+
+        if (file_put_contents($path, $line, FILE_APPEND | LOCK_EX) === false) {
+            throw new RaceProofException("Unable to append RaceProof timeline [{$path}].");
+        }
+
+        @chmod($path, 0600);
+    }
+
+    public function timeline(string $runId): RaceTimeline
+    {
+        $path = $this->runDirectory($runId).'/timeline.jsonl';
+
+        if (! is_file($path)) {
+            return new RaceTimeline($runId, warnings: ['Timeline file is missing.']);
+        }
+
+        $events = [];
+        $warnings = [];
+        $file = new SplFileObject($path, 'rb');
+        $lineNumber = 0;
+
+        while (! $file->eof()) {
+            $line = $file->fgets();
+            $lineNumber++;
+
+            if ($line === false || trim($line) === '') {
+                continue;
+            }
+
+            try {
+                $decoded = json_decode($line, true, 64, JSON_THROW_ON_ERROR);
+                $event = TimelineEvent::fromArray(Input::mapValue($decoded, 'timeline event'));
+
+                if ($event->runId !== $runId) {
+                    throw new RaceProofException('Timeline event belongs to another run.');
+                }
+
+                $events[] = $event;
+            } catch (Throwable) {
+                $warnings[] = "Timeline line {$lineNumber} is malformed and was ignored.";
+            }
+        }
+
+        return new RaceTimeline($runId, $events, $warnings);
     }
 
     public function cleanup(string $runId): void
@@ -237,6 +323,15 @@ final class FileCoordinatorStore implements CoordinatorStore
             return json_encode($value, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
         } catch (JsonException $exception) {
             throw new RaceProofException('Unable to encode RaceProof data.', 0, $exception);
+        }
+    }
+
+    private function encodeLine(JsonSerializable $value): string
+    {
+        try {
+            return json_encode($value, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE)."\n";
+        } catch (JsonException $exception) {
+            throw new RaceProofException('Unable to encode RaceProof timeline event.', 0, $exception);
         }
     }
 }

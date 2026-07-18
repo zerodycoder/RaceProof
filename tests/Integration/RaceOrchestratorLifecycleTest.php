@@ -11,10 +11,14 @@ use RaceProof\Laravel\Contracts\WorkerProcessFactory;
 use RaceProof\Laravel\Data\ParticipantResult;
 use RaceProof\Laravel\Data\RacePlan;
 use RaceProof\Laravel\Data\RequestSpec;
+use RaceProof\Laravel\Data\TimelineEvent;
+use RaceProof\Laravel\Exceptions\RaceExecutionFailed;
 use RaceProof\Laravel\Exceptions\RaceProofException;
 use RaceProof\Laravel\Execution\RaceOrchestrator;
+use RaceProof\Laravel\Results\RaceTimeline;
 use RaceProof\Laravel\Support\DatabaseSafety;
 use RaceProof\Laravel\Support\EnvironmentGuard;
+use RaceProof\Laravel\Support\SensitiveDataRedactor;
 use RuntimeException;
 
 final class RaceOrchestratorLifecycleTest extends TestCase
@@ -43,6 +47,41 @@ final class RaceOrchestratorLifecycleTest extends TestCase
         self::assertSame(1, $processes['p1']->waitCalls);
         self::assertSame(1, $processes['p2']->waitCalls);
         self::assertSame(0, $processes['p1']->stopCalls);
+        self::assertSame([
+            'participant.spawned',
+            'participant.spawned',
+            'participant.exited',
+            'participant.exited',
+            'run.completed',
+            'run.cleanup_started',
+        ], $this->eventTypes($result->timeline));
+    }
+
+    public function test_a_timeline_warning_retains_an_otherwise_clean_run(): void
+    {
+        $plan = $this->plan();
+        $store = new LifecycleCoordinatorStore;
+        $store->ready = 2;
+        $store->timelineWarnings = ['Timeline line 2 is malformed and was ignored.'];
+        $store->storedResults = [
+            $this->participant($plan, 'p1', 200),
+            $this->participant($plan, 'p2', 200),
+        ];
+        $processes = [
+            'p1' => new LifecycleWorkerProcess(running: false),
+            'p2' => new LifecycleWorkerProcess(running: false),
+        ];
+
+        $result = $this->orchestrator(
+            $store,
+            new LifecycleProcessFactory($processes),
+            new LifecycleClock([0]),
+        )->run($plan);
+
+        self::assertSame('/raceproof-artifacts/'.$plan->runId, $result->artifactPath);
+        self::assertSame([], $store->cleanedRuns);
+        self::assertSame($store->timelineWarnings, $result->timeline?->warnings);
+        self::assertNotContains('run.cleanup_started', $this->eventTypes($result->timeline));
     }
 
     public function test_early_exit_is_bounded_and_all_other_workers_are_stopped_and_waited(): void
@@ -53,7 +92,7 @@ final class RaceOrchestratorLifecycleTest extends TestCase
             running: false,
             exitCode: 7,
             output: str_repeat('o', 40),
-            errorOutput: 'worker-error',
+            errorOutput: 'Authorization: Bearer secret-token',
         );
         $second = new LifecycleWorkerProcess(running: true);
         $this->app['config']->set('raceproof.capture.worker_output_bytes', 32);
@@ -65,10 +104,19 @@ final class RaceOrchestratorLifecycleTest extends TestCase
                 new LifecycleClock([0]),
             )->run($plan);
             self::fail('Expected an early worker exit.');
-        } catch (RaceProofException $exception) {
+        } catch (RaceExecutionFailed $exception) {
             self::assertStringContainsString('exited before the start barrier with exit code 7', $exception->getMessage());
             self::assertStringContainsString('[truncated]', $exception->getMessage());
             self::assertStringNotContainsString(str_repeat('o', 40), $exception->getMessage());
+            self::assertStringNotContainsString('secret-token', $exception->getMessage());
+            self::assertSame([
+                'participant.spawned',
+                'participant.spawned',
+                'participant.early_exit',
+                'participant.exited',
+                'participant.exited',
+                'run.failed',
+            ], $this->eventTypes($exception->result->timeline));
         }
 
         self::assertSame(1, $first->waitCalls);
@@ -123,6 +171,14 @@ final class RaceOrchestratorLifecycleTest extends TestCase
         );
         self::assertSame(1, $processes['p1']->stopCalls);
         self::assertSame(1, $processes['p1']->waitCalls);
+        self::assertSame([
+            'participant.spawned',
+            'participant.spawned',
+            'run.timed_out',
+            'participant.exited',
+            'participant.exited',
+            'run.completed',
+        ], $this->eventTypes($result->timeline));
     }
 
     public function test_missing_result_is_distinct_from_timeout_and_retains_artifacts(): void
@@ -158,11 +214,13 @@ final class RaceOrchestratorLifecycleTest extends TestCase
         $first = new LifecycleWorkerProcess(running: true);
         $factory = new LifecycleProcessFactory(['p1' => $first], failParticipant: 'p2');
 
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('factory failed for p2');
-
         try {
             $this->orchestrator($store, $factory, new LifecycleClock([0]))->run($plan);
+            self::fail('Expected a wrapped execution failure.');
+        } catch (RaceExecutionFailed $exception) {
+            self::assertStringContainsString('factory failed for p2', $exception->getMessage());
+            self::assertInstanceOf(RuntimeException::class, $exception->getPrevious());
+            self::assertSame('/raceproof-artifacts/'.$plan->runId, $exception->result->artifactPath);
         } finally {
             self::assertSame(1, $first->stopCalls);
             self::assertSame(1, $first->waitCalls);
@@ -181,6 +239,7 @@ final class RaceOrchestratorLifecycleTest extends TestCase
             $this->app->make(DatabaseSafety::class),
             $factory,
             $clock,
+            $this->app->make(SensitiveDataRedactor::class),
         );
     }
 
@@ -205,6 +264,17 @@ final class RaceOrchestratorLifecycleTest extends TestCase
     {
         return new ParticipantResult($plan->runId, $participantId, $status, 1, 2);
     }
+
+    /** @return list<string> */
+    private function eventTypes(?RaceTimeline $timeline): array
+    {
+        self::assertNotNull($timeline);
+
+        return array_map(
+            static fn (TimelineEvent $event): string => $event->type,
+            $timeline->events,
+        );
+    }
 }
 
 final class LifecycleCoordinatorStore implements CoordinatorStore
@@ -221,6 +291,12 @@ final class LifecycleCoordinatorStore implements CoordinatorStore
 
     /** @var list<string> */
     public array $releasedCheckpoints = [];
+
+    /** @var list<TimelineEvent> */
+    public array $events = [];
+
+    /** @var list<string> */
+    public array $timelineWarnings = [];
 
     public ?RacePlan $createdPlan = null;
 
@@ -267,6 +343,16 @@ final class LifecycleCoordinatorStore implements CoordinatorStore
     public function results(string $runId): array
     {
         return $this->storedResults;
+    }
+
+    public function recordEvent(TimelineEvent $event): void
+    {
+        $this->events[] = $event;
+    }
+
+    public function timeline(string $runId): RaceTimeline
+    {
+        return new RaceTimeline($runId, $this->events, $this->timelineWarnings);
     }
 
     public function cleanup(string $runId): void
