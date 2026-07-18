@@ -1,0 +1,10 @@
+/vendor/
+/.phpunit.cache/
+/build/
+/.idea/
+/.vscode/
+composer.phar
+phpunit.xml
+tests/Fixtures/*/storage/database.sqlite
+tests/Fixtures/*/storage/framework/raceproof/
+tests/Fixtures/*/storage/logs/*.log

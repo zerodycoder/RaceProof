@@ -1,0 +1,61 @@
+{
+    "name": "raceproof/laravel",
+    "description": "Controlled and reproducible concurrency testing for Laravel applications.",
+    "keywords": ["laravel", "testing", "concurrency", "race-condition"],
+    "license": "MIT",
+    "type": "library",
+    "require": {
+        "php": "^8.2",
+        "illuminate/auth": "^12.0 || ^13.0",
+        "illuminate/console": "^12.0 || ^13.0",
+        "illuminate/database": "^12.0 || ^13.0",
+        "illuminate/http": "^12.0 || ^13.0",
+        "illuminate/support": "^12.0 || ^13.0",
+        "symfony/process": "^7.2"
+    },
+    "require-dev": {
+        "larastan/larastan": "^3.0",
+        "laravel/pint": "^1.0",
+        "orchestra/testbench": "^10.0 || ^11.0",
+        "phpunit/phpunit": "^11.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "RaceProof\\Laravel\\": "src/"
+        },
+        "files": [
+            "src/helpers.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "RaceProof\\Laravel\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "test:unit": "phpunit --testsuite Unit",
+        "test:integration": "phpunit --testsuite Integration",
+        "analyse": "phpstan analyse --configuration phpstan.neon.dist --memory-limit=1G",
+        "format": "pint",
+        "format:test": "pint --test"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "RaceProof\\Laravel\\RaceProofServiceProvider"
+            ],
+            "aliases": {
+                "RacePoint": "RaceProof\\Laravel\\Facades\\RacePoint"
+            }
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
