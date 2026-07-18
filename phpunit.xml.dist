@@ -10,6 +10,7 @@
     <source>
         <include>
             <directory suffix=".php">src</directory>
+            <directory suffix=".php">runtime/src</directory>
         </include>
     </source>
     <testsuites>

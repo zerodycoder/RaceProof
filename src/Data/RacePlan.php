@@ -20,6 +20,7 @@ final readonly class RacePlan implements JsonSerializable
         public int $spawnTimeoutMs = 10_000,
         public int $runTimeoutMs = 15_000,
         public int $pollIntervalMs = 5,
+        public ?BootstrapSpec $bootstrap = null,
     ) {
         if (! preg_match('/^[a-f0-9]{32}$/', $runId)) {
             throw new InvalidRacePlan('Run ID must be a 32 character lowercase hex value.');
@@ -44,6 +45,7 @@ final readonly class RacePlan implements JsonSerializable
     public static function fromArray(array $data): self
     {
         $auth = $data['auth'] ?? null;
+        $bootstrap = $data['bootstrap'] ?? null;
 
         return new self(
             runId: Input::string($data, 'run_id'),
@@ -54,6 +56,7 @@ final readonly class RacePlan implements JsonSerializable
             spawnTimeoutMs: Input::integer($data, 'spawn_timeout_ms', 10_000),
             runTimeoutMs: Input::integer($data, 'run_timeout_ms', 15_000),
             pollIntervalMs: Input::integer($data, 'poll_interval_ms', 5),
+            bootstrap: $bootstrap === null ? null : BootstrapSpec::fromArray(Input::mapValue($bootstrap, 'bootstrap')),
         );
     }
 
@@ -69,6 +72,7 @@ final readonly class RacePlan implements JsonSerializable
             'spawn_timeout_ms' => $this->spawnTimeoutMs,
             'run_timeout_ms' => $this->runTimeoutMs,
             'poll_interval_ms' => $this->pollIntervalMs,
+            'bootstrap' => $this->bootstrap,
         ];
     }
 }

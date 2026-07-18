@@ -6,12 +6,16 @@ namespace RaceProof\Laravel\Tests\Integration;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Route;
+use RaceProof\Laravel\Contracts\ParticipantBootstrap;
 use RaceProof\Laravel\Contracts\RequestExecutor;
 use RaceProof\Laravel\Coordination\FileCoordinatorStore;
+use RaceProof\Laravel\Data\BootstrapSpec;
 use RaceProof\Laravel\Data\ParticipantContext;
 use RaceProof\Laravel\Data\ParticipantResult;
 use RaceProof\Laravel\Data\RacePlan;
 use RaceProof\Laravel\Data\RequestSpec;
+use RaceProof\Laravel\Data\TimelineEvent;
+use RaceProof\Runtime\Checkpoint;
 use RuntimeException;
 
 final class ConsoleCommandsTest extends TestCase
@@ -121,7 +125,36 @@ final class ConsoleCommandsTest extends TestCase
         self::assertStringNotContainsString('hunter2', (string) $results[0]->workerError);
     }
 
-    private function plan(string $runId): RacePlan
+    public function test_worker_records_a_redacted_bootstrap_failure_and_deactivates_runtime(): void
+    {
+        $plan = $this->plan(
+            str_repeat('d', 32),
+            new BootstrapSpec(FailingParticipantBootstrap::class, ['mode' => 'failure-test']),
+        );
+        $store = new FileCoordinatorStore($this->coordinatorPath);
+        $store->createRun($plan);
+
+        $this->artisan('raceproof:worker', [
+            '--run' => $plan->runId,
+            '--participant' => 'p1',
+            '--coordinator' => $this->coordinatorPath,
+        ])->assertExitCode(Command::FAILURE);
+
+        $results = $store->results($plan->runId);
+        $types = array_map(
+            static fn (TimelineEvent $event): string => $event->type,
+            $store->timeline($plan->runId)->events,
+        );
+
+        self::assertCount(1, $results);
+        self::assertStringContainsString('token=[REDACTED]', (string) $results[0]->workerError);
+        self::assertStringNotContainsString('bootstrap-secret', (string) $results[0]->workerError);
+        self::assertContains('participant.bootstrap_started', $types);
+        self::assertContains('participant.bootstrap_failed', $types);
+        self::assertFalse(Checkpoint::active());
+    }
+
+    private function plan(string $runId, ?BootstrapSpec $bootstrap = null): RacePlan
     {
         return new RacePlan(
             runId: $runId,
@@ -130,6 +163,7 @@ final class ConsoleCommandsTest extends TestCase
             spawnTimeoutMs: 1_000,
             runTimeoutMs: 1_000,
             pollIntervalMs: 1,
+            bootstrap: $bootstrap,
         );
     }
 
@@ -155,5 +189,13 @@ final class ConsoleCommandsTest extends TestCase
         }
 
         @rmdir($directory);
+    }
+}
+
+final class FailingParticipantBootstrap implements ParticipantBootstrap
+{
+    public function bootstrap(ParticipantContext $context, array $configuration): void
+    {
+        throw new RuntimeException('bootstrap failed token=bootstrap-secret');
     }
 }

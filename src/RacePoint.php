@@ -6,8 +6,9 @@ namespace RaceProof\Laravel;
 
 use RaceProof\Laravel\Exceptions\InvalidRacePlan;
 use RaceProof\Laravel\Execution\RaceContext;
+use RaceProof\Runtime\Contracts\CheckpointHandler;
 
-final readonly class RacePoint
+final readonly class RacePoint implements CheckpointHandler
 {
     public function __construct(private RaceContext $context) {}
 

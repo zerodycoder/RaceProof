@@ -31,7 +31,7 @@ Every event has the same envelope:
 Version 1 records these event families:
 
 - run lifecycle: `run.created`, `run.spawn_timed_out`, `run.timed_out`, `run.completed`, `run.failed`, `run.cleanup_started`;
-- participant lifecycle: `participant.spawned`, `participant.ready`, `participant.finished`, `participant.early_exit`, `participant.exited`;
+- participant lifecycle: `participant.spawned`, `participant.bootstrap_started`, `participant.bootstrap_completed`, `participant.bootstrap_failed`, `participant.ready`, `participant.finished`, `participant.early_exit`, `participant.exited`;
 - coordination: `barrier.start_released`, `checkpoint.reached`, `checkpoint.released`.
 
 ## Failure tolerance

@@ -9,9 +9,14 @@ use RaceProof\Laravel\Contracts\RequestExecutor;
 use RaceProof\Laravel\Coordination\FileCoordinatorStore;
 use RaceProof\Laravel\Data\ParticipantContext;
 use RaceProof\Laravel\Data\ParticipantResult;
+use RaceProof\Laravel\Data\TimelineEvent;
+use RaceProof\Laravel\Execution\ParticipantBootstrapRunner;
 use RaceProof\Laravel\Execution\RaceContext;
+use RaceProof\Laravel\RacePoint;
 use RaceProof\Laravel\Support\EnvironmentGuard;
 use RaceProof\Laravel\Support\SensitiveDataRedactor;
+use RaceProof\Runtime\Checkpoint;
+use RaceProof\Runtime\CheckpointActivation;
 use Throwable;
 
 final class WorkerCommand extends Command
@@ -28,6 +33,8 @@ final class WorkerCommand extends Command
         private readonly RaceContext $context,
         private readonly EnvironmentGuard $environment,
         private readonly SensitiveDataRedactor $redactor,
+        private readonly ParticipantBootstrapRunner $bootstrapRunner,
+        private readonly RacePoint $checkpointHandler,
     ) {
         parent::__construct();
         $this->setHidden(true);
@@ -50,16 +57,45 @@ final class WorkerCommand extends Command
         $coordinator = $coordinatorOption;
         $store = new FileCoordinatorStore($coordinator);
         $plan = null;
+        $activation = null;
 
         try {
             $this->environment->ensureEnabled();
             $plan = $store->plan($runId);
+            $participantContext = new ParticipantContext($runId, $participantId);
+
+            if ($plan->bootstrap !== null) {
+                $store->recordEvent(TimelineEvent::make(
+                    $runId,
+                    'participant.bootstrap_started',
+                    $participantId,
+                    data: ['class' => $plan->bootstrap->class],
+                ));
+
+                try {
+                    $this->bootstrapRunner->run($plan, $participantContext);
+                } catch (Throwable $bootstrapException) {
+                    $store->recordEvent(TimelineEvent::make(
+                        $runId,
+                        'participant.bootstrap_failed',
+                        $participantId,
+                        data: [
+                            'exception_class' => $bootstrapException::class,
+                            'message' => $this->redactor->diagnostic($bootstrapException->getMessage()),
+                        ],
+                    ));
+                    throw $bootstrapException;
+                }
+
+                $store->recordEvent(TimelineEvent::make($runId, 'participant.bootstrap_completed', $participantId));
+            }
+
             $this->context->activate($plan, $participantId, $store);
             $store->markReady($runId, $participantId);
             $store->waitForStart($runId, $plan->spawnTimeoutMs);
-            $result = $this->executor->execute($plan, new ParticipantContext($runId, $participantId));
+            $activation = Checkpoint::activate($this->checkpointHandler);
+            $result = $this->executor->execute($plan, $participantContext);
             $store->storeResult($result);
-            $this->context->clear();
 
             return self::SUCCESS;
         } catch (Throwable $exception) {
@@ -81,6 +117,10 @@ final class WorkerCommand extends Command
 
             return self::FAILURE;
         } finally {
+            if ($activation instanceof CheckpointActivation && Checkpoint::active()) {
+                Checkpoint::deactivate($activation);
+            }
+
             $this->context->clear();
         }
     }

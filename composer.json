@@ -4,8 +4,21 @@
     "keywords": ["laravel", "testing", "concurrency", "race-condition"],
     "license": "MIT",
     "type": "library",
+    "repositories": [
+        {
+            "type": "path",
+            "url": "runtime",
+            "options": {
+                "symlink": true,
+                "versions": {
+                    "raceproof/runtime": "0.1.0"
+                }
+            }
+        }
+    ],
     "require": {
         "php": "^8.2",
+        "raceproof/runtime": "^0.1",
         "illuminate/auth": "^12.0 || ^13.0",
         "illuminate/console": "^12.0 || ^13.0",
         "illuminate/database": "^12.0 || ^13.0",
@@ -42,9 +55,11 @@
             "@php tools/check-coverage.php build/coverage/clover.xml 90"
         ],
         "analyse": "phpstan analyse --configuration phpstan.neon.dist --memory-limit=1G",
+        "validate:runtime": "composer --working-dir=runtime validate --strict",
         "format": "pint",
         "format:test": "pint --test",
         "check": [
+            "@validate:runtime",
             "@test",
             "@format:test",
             "@analyse"

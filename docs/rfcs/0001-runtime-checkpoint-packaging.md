@@ -1,7 +1,8 @@
 # RFC 0001: runtime checkpoint packaging
 
-- Status: proposed
+- Status: accepted and superseded by ADR
 - Decision target: v0.2
+- Decision: [ADR 0001](../adr/0001-separate-runtime-checkpoint-package.md)
 
 ## Context
 
@@ -26,3 +27,5 @@ Publish a tiny runtime package containing only the no-op-safe checkpoint API and
 3. Generate an application-owned shim during installation.
 
 The v0.2 decision must include a threat model, upgrade path, package ownership plan, and a working integration test before this RFC becomes an ADR.
+
+All required properties were proven in #10 and the separate runtime-package direction was accepted on 2026-07-18.

@@ -13,7 +13,7 @@ Application code with a deliberately unsafe read/write gap:
 ```php
 $product = Product::query()->findOrFail($id);
 
-RacePoint::sync('stock-read');
+race_point('stock-read');
 
 if ($product->stock < 1) {
     abort(409);
@@ -50,19 +50,18 @@ Every participant boots the real application and sends its request through Larav
 
 ## Installation
 
+If application code contains checkpoints, install the production-safe runtime directly and keep the orchestrator dev-only:
+
 ```bash
+composer require raceproof/runtime:^0.1
 composer require raceproof/laravel --dev
 php artisan vendor:publish --tag=raceproof-config
 php artisan raceproof:doctor
 ```
 
-There is one important production-safety choice:
+If application code has no checkpoints, omit `raceproof/runtime` and install only the main dev package. Runtime checkpoint calls are no-ops unless a validated worker activates an in-memory handler; the runtime ships no Laravel integration, process runner, commands, filesystem access, or network behavior.
 
-- If RaceProof is only used to start requests together, installing with `--dev` is correct.
-- If application code directly calls the `RacePoint` facade, the class must exist in production. Install the package as a normal dependency; it is a no-op outside an active worker and all commands refuse production execution.
-- A dev-only alternative is `function_exists('race_point') && race_point('stock-read');`. The guard is required because dev dependencies are absent in production.
-
-This trade-off is explicit; a service provider cannot make a missing dev-only class safe.
+See [runtime checkpoint deployment](docs/runtime-checkpoints.md) for migration from the old facade/guarded-helper models.
 
 ## Supported MVP surface
 
@@ -87,6 +86,7 @@ race()
     ->startTogether()
     ->releaseWhenAllReach('after-read')
     ->run();
+    ->withBootstrap(CheckoutParticipantBootstrap::class, ['tenant' => 'acme'])
 ```
 
 Implemented assertions and queries:
@@ -133,7 +133,7 @@ For payment, inventory, or booking suites, use a dedicated disposable database a
 
 Runtime changes made in the parent test process do not automatically exist in workers. This includes container mocks, runtime routes, `Queue::fake()`, `Mail::fake()`, `Http::fake()`, and config values changed only in memory. Persist shared setup in the database or configure it through environment/application files loaded by every worker.
 
-Factories are fine when they commit records before `run()`. Transaction-based test traits are not: child processes cannot see the parent's uncommitted rows.
+Factories are fine when they commit records before `run()`. Transaction-based test traits are not: child processes cannot see the parent's uncommitted rows. Use a [participant bootstrap](docs/participant-bootstrap.md) for trusted class-based environment, config, auth, or process-local setup.
 
 ## What “reproducible” means
 
@@ -159,14 +159,13 @@ vendor/bin/phpstan analyse
 
 The integration suite includes a real three-process Laravel checkpoint test and a broken/fixed overselling scenario. The latter forces three workers to read stock `1`; the broken implementation produces three orders and stock `-2`, while the atomic fix produces one order, stock `0`, one `201`, and two `409` responses.
 
-See [architecture](docs/architecture.md), [timeline evidence](docs/timeline.md), [database testing](docs/database-testing.md), and [production safety](docs/production-safety.md) for the operational details.
+See [architecture](docs/architecture.md), [participant bootstrap](docs/participant-bootstrap.md), [runtime deployment](docs/runtime-checkpoints.md), [timeline evidence](docs/timeline.md), [database testing](docs/database-testing.md), and [production safety](docs/production-safety.md) for the operational details.
 
 ## Near-term roadmap
 
 1. Harden the technical MVP on Linux CI with MySQL and PostgreSQL.
-2. Add participant bootstrap classes for process-local setup without closure serialization.
-3. Validate authentication adapters for session, Sanctum, and token guards.
-4. Publish four complete broken/fixed demonstrations before stabilizing the API.
+2. Validate authentication adapters for session, Sanctum, and token guards.
+3. Publish four complete broken/fixed demonstrations before stabilizing the API.
 
 Redis coordination, network mode, queues, schedule fuzzing, exact interleaving control, and dashboards are deliberately outside the first release.
 

@@ -30,6 +30,14 @@ The file coordinator assumes every worker can access the same local filesystem. 
 
 Workers record `hrtime(true)` immediately before invoking the HTTP kernel. On the same host this monotonic clock allows the parent to calculate start spread and run duration without wall-clock changes. These timestamps must not be compared across distributed machines.
 
+## Participant bootstrap
+
+An optional application-authored bootstrap class is serialized by class name plus JSON-safe configuration. Each worker resolves it through Laravel's container after plan validation and before READY. Closures, objects, resources, non-finite values, and executable serialization never cross the process boundary.
+
+## Runtime checkpoint bridge
+
+Application instrumentation belongs to the zero-framework `raceproof/runtime` package. Its checkpoint API is inactive by default. A validated worker installs the main package's handler in process memory and retains the activation capability until worker shutdown. No request, header, environment variable, file, or network input can activate the bridge.
+
 ## Worker lifecycle
 
 The orchestrator creates workers through a process-factory contract and observes time through an injectable monotonic clock. Production uses Symfony Process and `hrtime`; deterministic tests use in-memory processes and a controlled clock.

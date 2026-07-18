@@ -2,22 +2,13 @@
 
 RaceProof refuses to execute in Laravel's `production` environment even when its enabled flag is set. Outside `testing`, a second explicit `RACEPROOF_ALLOW_NON_TESTING=1` gate is required. The worker command is hidden, accepts only validated run/participant identifiers, and reads plans from the configured local coordinator.
 
-## Dev dependency and application checkpoints
+## Production checkpoints
 
-PHP `use` statements do not load a class, but executing `RacePoint::sync()` does. If the package was installed with `--dev`, that class is absent after a production `composer install --no-dev` and the application will fail when the line executes.
+Applications containing `race_point()` calls must list `raceproof/runtime` directly in Composer `require`. Keep `raceproof/laravel` in `require-dev`. The runtime is no-op by default and has no Laravel, process, command, coordinator, filesystem, deserialization, or network surface.
 
-Choose one model:
+A header or environment flag cannot activate checkpoints. Only the validated worker command installs a process-local handler, and cleanup requires its exact activation capability. Arbitrary PHP execution is outside this boundary because it already controls the process.
 
-1. Keep the package installed as a normal dependency. `RacePoint` is a no-op without an active worker and the runner stays blocked in production.
-2. Keep RaceProof dev-only and use a guarded helper:
-
-   ```php
-   function_exists('race_point') && race_point('stock-read');
-   ```
-
-3. Hide instrumentation behind an application-owned abstraction whose production implementation is a no-op.
-
-The project may later extract a tiny runtime bridge, but the MVP does not pretend a missing class can be handled by a service provider.
+See [runtime checkpoint deployment](runtime-checkpoints.md) and [ADR 0001](adr/0001-separate-runtime-checkpoint-package.md).
 
 ## Secrets
 

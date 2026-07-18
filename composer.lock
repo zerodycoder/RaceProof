@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "1f1c1ffa33219dbccbe01f4e8b479dc5",
+    "content-hash": "d49a5adf4a3f763e3b254b8cdb1f3bcb",
     "packages": [
         {
             "name": "brick/math",
@@ -2902,6 +2902,41 @@
                 "source": "https://github.com/php-fig/simple-cache/tree/3.0.0"
             },
             "time": "2021-10-29T13:26:27+00:00"
+        },
+        {
+            "name": "raceproof/runtime",
+            "version": "0.1.0",
+            "dist": {
+                "type": "path",
+                "url": "runtime",
+                "reference": "63460b99cbf3d4f4bfd8f40fbac8cec66a970dae"
+            },
+            "require": {
+                "php": "^8.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "RaceProof\\Runtime\\": "src/"
+                },
+                "files": [
+                    "src/helpers.php"
+                ]
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Production-safe no-op checkpoint runtime for RaceProof instrumentation.",
+            "keywords": [
+                "concurrency",
+                "php",
+                "race-condition",
+                "testing"
+            ],
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
         },
         {
             "name": "ralouphie/getallheaders",

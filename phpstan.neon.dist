@@ -5,6 +5,7 @@ parameters:
     level: max
     paths:
         - src
+        - runtime/src
         - tools
     tmpDir: build/phpstan
     treatPhpDocTypesAsCertain: false

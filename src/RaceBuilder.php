@@ -7,6 +7,7 @@ namespace RaceProof\Laravel;
 use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Database\Eloquent\Model;
 use RaceProof\Laravel\Data\AuthSpec;
+use RaceProof\Laravel\Data\BootstrapSpec;
 use RaceProof\Laravel\Data\RacePlan;
 use RaceProof\Laravel\Data\RequestSpec;
 use RaceProof\Laravel\Exceptions\InvalidRacePlan;
@@ -35,6 +36,8 @@ final class RaceBuilder
     private bool $json = true;
 
     private ?AuthSpec $auth = null;
+
+    private ?BootstrapSpec $bootstrap = null;
 
     /** @var list<string> */
     private array $checkpoints = [];
@@ -100,6 +103,14 @@ final class RaceBuilder
         return $this;
     }
 
+    /** @param array<string, mixed> $configuration */
+    public function withBootstrap(string $bootstrap, array $configuration = []): self
+    {
+        $this->bootstrap = new BootstrapSpec($bootstrap, $configuration);
+
+        return $this;
+    }
+
     public function startTogether(): self
     {
         return $this;
@@ -136,6 +147,7 @@ final class RaceBuilder
             spawnTimeoutMs: ConfigValue::integer($this->config, 'raceproof.runner.spawn_timeout_ms', 10_000),
             runTimeoutMs: ConfigValue::integer($this->config, 'raceproof.runner.run_timeout_ms', 15_000),
             pollIntervalMs: ConfigValue::integer($this->config, 'raceproof.runner.poll_interval_ms', 5),
+            bootstrap: $this->bootstrap,
         );
 
         return $this->orchestrator->run($plan);
