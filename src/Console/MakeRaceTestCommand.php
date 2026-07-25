@@ -44,10 +44,9 @@ final class MakeRaceTestCommand extends Command
             ! is_string($uri)
             || ! str_starts_with($uri, '/')
             || strlen($uri) > 2_048
-            || str_contains($uri, "\n")
-            || str_contains($uri, "\r")
+            || preg_match('/[\x00-\x1F\x7F]/', $uri) === 1
         ) {
-            $this->components->error('The URI must start with / and contain no line breaks.');
+            $this->components->error('The URI must start with / and contain no control characters.');
 
             return self::INVALID;
         }

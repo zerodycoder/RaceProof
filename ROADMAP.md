@@ -54,7 +54,7 @@ A stable v1 requires all of the following:
 ### v0.5 — visual evidence
 
 - [x] Opt-in local/testing-only report archive with bounded retention
-- [x] Responsive no-build Studio dashboard and participant/checkpoint lanes
+- [ ] Browser-validated responsive Studio dashboard and participant/checkpoint lanes
 - [x] Safe PHPUnit/Pest test scaffolding and report inspection commands
 - [x] Production route, read, and write rejection with redacted JSON export
 

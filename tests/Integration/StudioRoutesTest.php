@@ -46,6 +46,7 @@ final class StudioRoutesTest extends TestCase
 
         $index
             ->assertOk()
+            ->assertHeader('Cache-Control', 'no-store, private')
             ->assertHeader('X-Frame-Options', 'DENY')
             ->assertHeader('X-Content-Type-Options', 'nosniff')
             ->assertSee('Make every race visible.')
@@ -89,6 +90,7 @@ final class StudioRoutesTest extends TestCase
         $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.42'])
             ->get('/raceproof')
             ->assertForbidden()
+            ->assertHeader('Cache-Control', 'no-store, private')
             ->assertHeader('X-Frame-Options', 'DENY')
             ->assertSee('explicitly allowed direct client addresses');
     }

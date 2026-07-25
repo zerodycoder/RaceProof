@@ -186,7 +186,8 @@ Studio is a development diagnostic surface, not an administration panel:
 - the direct client address must be in the explicit Studio allowlist;
 - Content Security Policy blocks scripts, frames, forms, remote assets, and
   external content;
-- download and HTML responses set `nosniff`, `DENY`, and no-referrer headers;
+- download and HTML responses set no-store, `nosniff`, `DENY`, and no-referrer
+  headers;
 - request plans, bearer tokens, cookies, session credentials, and bootstrap
   configuration are never copied into Studio reports;
 - configured credential keys, authorization/cookie headers, bearer tokens,

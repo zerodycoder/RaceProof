@@ -63,7 +63,9 @@ final readonly class StudioController
     private function securityHeaders(): array
     {
         return [
+            'Cache-Control' => 'no-store, private',
             'Content-Security-Policy' => "default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+            'Pragma' => 'no-cache',
             'Referrer-Policy' => 'no-referrer',
             'X-Content-Type-Options' => 'nosniff',
             'X-Frame-Options' => 'DENY',

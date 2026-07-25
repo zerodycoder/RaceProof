@@ -26,8 +26,10 @@ final readonly class EnsureStudioRequestIsLocal
 
         if (! is_string($remoteAddress) || ! in_array($remoteAddress, $allowed, true)) {
             return new Response('RaceProof Studio accepts only explicitly allowed direct client addresses.', 403, [
+                'Cache-Control' => 'no-store, private',
                 'Content-Type' => 'text/plain; charset=UTF-8',
                 'Content-Security-Policy' => "default-src 'none'; frame-ancestors 'none'",
+                'Pragma' => 'no-cache',
                 'Referrer-Policy' => 'no-referrer',
                 'X-Content-Type-Options' => 'nosniff',
                 'X-Frame-Options' => 'DENY',

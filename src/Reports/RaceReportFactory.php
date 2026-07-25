@@ -31,10 +31,10 @@ final readonly class RaceReportFactory
             'raceproof.reporting.timeline_event_limit',
             500,
         ));
-        $redactedEventKeys = array_map(
-            static fn (string $key): string => strtolower($key),
+        $redactedEventKeys = array_values(array_filter(array_map(
+            static fn (string $key): string => strtolower(trim($key)),
             ConfigValue::stringList($this->config, 'raceproof.capture.redact_keys'),
-        );
+        )));
         $reportedEvents = [];
 
         foreach (array_slice($events, 0, $eventLimit) as $event) {

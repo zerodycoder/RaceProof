@@ -91,6 +91,10 @@ final class StudioConsoleCommandsTest extends TestCase
             'uri' => "https://example.test/\nInjected",
         ])->assertExitCode(Command::INVALID);
         $this->artisan('make:race-test', [
+            'name' => 'NullByteUri',
+            'uri' => "/api/checkout\0hidden",
+        ])->assertExitCode(Command::INVALID);
+        $this->artisan('make:race-test', [
             'name' => 'BadParticipants',
             'uri' => '/api/checkout',
             '--participants' => '101',
