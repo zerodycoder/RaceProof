@@ -133,7 +133,7 @@ final class StudioConsoleCommandsTest extends TestCase
         $runId = str_repeat('f', 32);
         $archive = $this->app->make(ReportArchive::class);
         $archive->store($this->raceResult($runId));
-        file_put_contents($this->workspace.'/reports/keep.txt', 'unrelated');
+        file_put_contents($this->workspace.'/reports/settings.json', '{"keep":true}');
 
         $this->artisan('raceproof:clean')->assertExitCode(Command::SUCCESS);
         self::assertNotNull($archive->find($runId));
@@ -143,7 +143,7 @@ final class StudioConsoleCommandsTest extends TestCase
             ->assertExitCode(Command::SUCCESS);
 
         self::assertNull($archive->find($runId));
-        self::assertFileExists($this->workspace.'/reports/keep.txt');
+        self::assertFileExists($this->workspace.'/reports/settings.json');
     }
 
     private function raceResult(string $runId): RaceResult

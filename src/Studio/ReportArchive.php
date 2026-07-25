@@ -98,7 +98,7 @@ final readonly class ReportArchive
 
         $runs = [];
 
-        foreach (glob($this->directory().'/*.json') ?: [] as $path) {
+        foreach ($this->reportPaths() as $path) {
             $run = $this->read($path);
 
             if ($run !== null) {
@@ -134,13 +134,12 @@ final readonly class ReportArchive
 
         $removed = 0;
 
-        foreach (glob($this->directory().'/*.json') ?: [] as $path) {
-            if (
-                preg_match('/^[a-f0-9]{32}\.json$/D', basename($path)) === 1
-                && @unlink($path)
-            ) {
-                $removed++;
+        foreach ($this->reportPaths() as $path) {
+            if (! @unlink($path)) {
+                throw new RaceProofException('Unable to remove a RaceProof Studio report.');
             }
+
+            $removed++;
         }
 
         return $removed;
@@ -197,7 +196,7 @@ final readonly class ReportArchive
             'raceproof.studio.max_reports',
             50,
         ));
-        $paths = glob($this->directory().'/*.json') ?: [];
+        $paths = $this->reportPaths();
 
         usort($paths, static function (string $left, string $right): int {
             $leftTime = filemtime($left);
@@ -207,8 +206,22 @@ final readonly class ReportArchive
         });
 
         foreach (array_slice($paths, $maximumReports) as $path) {
-            @unlink($path);
+            if (! @unlink($path)) {
+                throw new RaceProofException('Unable to prune an expired RaceProof Studio report.');
+            }
         }
+    }
+
+    /** @return list<string> */
+    private function reportPaths(): array
+    {
+        return array_values(array_filter(
+            glob($this->directory().'/*.json') ?: [],
+            static fn (string $path): bool => preg_match(
+                '/^[a-f0-9]{32}\.json$/D',
+                basename($path),
+            ) === 1,
+        ));
     }
 
     private function directory(): string

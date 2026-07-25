@@ -83,6 +83,8 @@ final class StudioArchiveTest extends TestCase
         $first = str_repeat('a', 32);
         $second = str_repeat('b', 32);
         $third = str_repeat('c', 32);
+        mkdir($this->archivePath, 0700, true);
+        file_put_contents($this->archivePath.'/settings.json', '{"keep":true}');
 
         $archive->store($this->raceResult($first));
         touch($this->archivePath.'/'.$first.'.json', time() - 20);
@@ -93,6 +95,7 @@ final class StudioArchiveTest extends TestCase
         self::assertFileDoesNotExist($this->archivePath.'/'.$first.'.json');
         self::assertFileExists($this->archivePath.'/'.$second.'.json');
         self::assertFileExists($this->archivePath.'/'.$third.'.json');
+        self::assertFileExists($this->archivePath.'/settings.json');
         self::assertCount(2, $archive->all());
     }
 
