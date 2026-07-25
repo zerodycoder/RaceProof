@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace RaceProof\Laravel\Results;
 
 use JsonSerializable;
+use RaceProof\Laravel\Contracts\Reporter;
 use RaceProof\Laravel\Data\ParticipantResult;
 use RaceProof\Laravel\Exceptions\RaceAssertionFailed;
 
@@ -130,6 +131,11 @@ final readonly class RaceResult implements JsonSerializable
         $lines[] = 'Artifacts: '.($this->artifactPath ?? 'none (successful run was cleaned)').'.';
 
         return implode("\n", $lines);
+    }
+
+    public function report(Reporter $reporter): string
+    {
+        return $reporter->report($this);
     }
 
     public function assertAllFinished(): self

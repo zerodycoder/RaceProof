@@ -35,4 +35,12 @@ return [
         'redact_headers' => ['authorization', 'cookie', 'set-cookie'],
         'redact_keys' => ['password', 'passwd', 'secret', 'token', 'access_token', 'refresh_token', 'client_secret', 'api_key', 'api-key'],
     ],
+
+    'reporting' => [
+        'human_output_bytes' => 16_384,
+        'diagnostic_text_bytes' => 4_096,
+        'response_body_bytes' => 4_096,
+        'header_limit' => 32,
+        'timeline_warning_limit' => 100,
+    ],
 ];

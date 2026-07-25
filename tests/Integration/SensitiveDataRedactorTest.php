@@ -52,4 +52,14 @@ final class SensitiveDataRedactorTest extends TestCase
         self::assertStringContainsString('token=[REDACTED]', $captured);
         self::assertStringNotContainsString('still-secret', $captured);
     }
+
+    public function test_byte_limits_never_split_a_utf8_character(): void
+    {
+        $redactor = $this->app->make(SensitiveDataRedactor::class);
+        $captured = $redactor->bounded("\x1B".str_repeat('é', 20), 16);
+
+        self::assertTrue(mb_check_encoding($captured, 'UTF-8'));
+        self::assertLessThanOrEqual(16, strlen($captured));
+        self::assertStringNotContainsString("\x1B", $captured);
+    }
 }

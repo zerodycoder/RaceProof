@@ -38,7 +38,9 @@ Version 1 records these event families:
 
 The reader streams the file one line at a time. A blank, partial, malformed, unsupported, or cross-run line is ignored and added to `RaceTimeline::warnings`; valid lines before and after it remain available. File order is append order, while `occurred_at_ns` records when each process created its event.
 
-`RaceResult` includes the parsed timeline in its JSON representation. `RaceResult::failureReport()` renders a concise participant, status, timing, checkpoint, timeline-warning, and artifact summary. Assertion failures append the same report. Parent-side orchestration failures throw `RaceExecutionFailed`, whose `result` property exposes partial participant and timeline evidence.
+`RaceResult` includes the parsed timeline in its legacy JSON representation. `RaceResult::failureReport()` renders a concise participant, status, timing, checkpoint, timeline-warning, and artifact summary. Assertion failures append the same report. Parent-side orchestration failures throw `RaceExecutionFailed`, whose `result` property exposes partial participant and timeline evidence.
+
+For automation, the [evidence reporters](reporters.md) project the result into one versioned, bounded, redacted model. JSON and JUnit reports include timeline counts and bounded warning details rather than copying the entire event stream; `timeline.jsonl` remains the authoritative event-level artifact.
 
 ## Sensitive data
 

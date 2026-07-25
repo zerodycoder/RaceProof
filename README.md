@@ -118,8 +118,13 @@ $result->participant('p2');
 $result->startSpreadMs();
 $result->durationMs();
 $result->failureReport();
+$result->report(app(HumanReporter::class));
+$result->report(app(JsonReporter::class));
+$result->report(app(JUnitReporter::class));
 json_encode($result);
 ```
+
+All three reporters share a versioned, redacted report model. See [evidence reporters](docs/reporters.md) for CLI/CI examples, the JSON v1 contract, JUnit outcome mapping, and output bounds.
 
 ## Safety model
 
@@ -174,11 +179,11 @@ The integration suite includes a real three-process Laravel checkpoint test and 
 
 The database suite runs isolated migrations with an exact database-name allowlist and proves broken/fixed behavior for overselling, coupons, wallets, quotes, uniqueness, lock misuse, deadlocks, and lock timeouts. CI also produces 100/100 machine-readable critical evidence for both MySQL and PostgreSQL.
 
-See [architecture](docs/architecture.md), [per-participant requests and authentication](docs/participant-specs.md), [participant bootstrap](docs/participant-bootstrap.md), [runtime deployment](docs/runtime-checkpoints.md), [timeline evidence](docs/timeline.md), [database testing](docs/database-testing.md), and [production safety](docs/production-safety.md) for the operational details.
+See [architecture](docs/architecture.md), [per-participant requests and authentication](docs/participant-specs.md), [participant bootstrap](docs/participant-bootstrap.md), [evidence reporters](docs/reporters.md), [runtime deployment](docs/runtime-checkpoints.md), [timeline evidence](docs/timeline.md), [database testing](docs/database-testing.md), and [production safety](docs/production-safety.md) for the operational details.
 
 ## Near-term roadmap
 
-1. Add Pest ergonomics and pluggable evidence reporters.
+1. Add Pest ergonomics and polished workflow guides.
 2. Stabilize the public API and publish the beta release.
 
 Redis coordination, network mode, queues, schedule fuzzing, exact interleaving control, and dashboards are deliberately outside the first release.
