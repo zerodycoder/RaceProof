@@ -1,0 +1,11 @@
+{
+    "$schema": "./evidence.schema.json",
+    "schema_version": 1,
+    "updated_on": null,
+    "invitation_summary": {
+        "invited_projects": 0,
+        "reviewed_on": null
+    },
+    "adoption_cases": [],
+    "feedback": []
+}

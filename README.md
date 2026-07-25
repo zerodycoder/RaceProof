@@ -204,7 +204,7 @@ Four published broken/fixed demonstrations use the executable routes exercised b
 - [wallet debit](examples/wallet-debit/README.md);
 - [quote acceptance](examples/quote-acceptance/README.md).
 
-See [PHPUnit and Pest workflows](docs/testing-workflows.md), the [public API contract](docs/public-api.md), [versioning policy](docs/versioning.md), [upgrade guide](UPGRADING.md), [release runbook](docs/releasing.md), the [platform support matrix](docs/platform-support.md), the [troubleshooting decision guide](docs/troubleshooting.md), [architecture](docs/architecture.md), [participant authentication](docs/participant-specs.md), [participant bootstrap](docs/participant-bootstrap.md), [evidence reporters](docs/reporters.md), [runtime deployment](docs/runtime-checkpoints.md), [timeline evidence](docs/timeline.md), [database testing](docs/database-testing.md), and [production safety](docs/production-safety.md).
+See [PHPUnit and Pest workflows](docs/testing-workflows.md), the [public API contract](docs/public-api.md), [versioning policy](docs/versioning.md), [upgrade guide](UPGRADING.md), [release runbook](docs/releasing.md), the [private-beta runbook](docs/private-beta.md), [current beta evidence](docs/beta-evidence.md), the [platform support matrix](docs/platform-support.md), the [troubleshooting decision guide](docs/troubleshooting.md), [architecture](docs/architecture.md), [participant authentication](docs/participant-specs.md), [participant bootstrap](docs/participant-bootstrap.md), [evidence reporters](docs/reporters.md), [runtime deployment](docs/runtime-checkpoints.md), [timeline evidence](docs/timeline.md), [database testing](docs/database-testing.md), and [production safety](docs/production-safety.md).
 
 ## Near-term roadmap
 

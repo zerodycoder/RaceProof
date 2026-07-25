@@ -27,6 +27,12 @@ compares hashes, installs the artifact pair in a clean Composer project, and
 checks the production no-op runtime contract. Changes to frozen symbols must
 follow [the public API review process](docs/public-api.md).
 
+Private-beta feedback follows [the evidence and consent runbook](docs/private-beta.md).
+Never put participant identities, contacts, repository URLs, credentials, raw
+environment dumps, or unreviewed logs in a pull request. `composer beta:check`
+validates the bounded public registry and its generated report; it does not prove
+that an invitation, adoption, consent record, or test run occurred.
+
 ## Making a change
 
 1. Open or reference an issue for behavior changes and large refactors.

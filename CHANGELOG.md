@@ -7,6 +7,9 @@
 - Added reproducible dual-package artifacts, clean artifact installation,
   signed-checksum/provenance release automation, ordered runtime splitting,
   Packagist polling, and a fail-closed rollback runbook.
+- Added a private-beta invitation/feedback/consent kit, a bounded anonymized
+  evidence registry, and fail-closed validation/reporting without claiming
+  invitations or adoption that have not occurred.
 - Added per-participant payload, header, cookie, token, session, Sanctum identity, and bootstrap overrides with real multi-process authentication coverage.
 - Added a stable schema-v1 evidence model with bounded human, JSON, and JUnit reporters.
 - Added an executable Pest 3 workflow to the supported PHP/Laravel CI matrix.

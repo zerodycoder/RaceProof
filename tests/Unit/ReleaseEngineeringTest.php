@@ -68,7 +68,10 @@ final class ReleaseEngineeringTest extends TestCase
 
         try {
             self::assertNotFalse($laravelZip->locateName('docs/public-api.md'));
+            self::assertNotFalse($laravelZip->locateName('docs/templates/private-beta-invitation.md'));
             self::assertNotFalse($laravelZip->locateName('api/public-api.json'));
+            self::assertNotFalse($laravelZip->locateName('beta/evidence.schema.json'));
+            self::assertNotFalse($laravelZip->locateName('beta/evidence.json'));
             self::assertNotFalse($laravelZip->locateName('examples/overselling/routes.php'));
         } finally {
             $laravelZip->close();

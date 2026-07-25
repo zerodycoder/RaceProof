@@ -52,3 +52,9 @@ The frozen v1 surface is enforced by `composer api:check`. Release CI separately
 builds reproducible Laravel/runtime archives, installs them together, and keeps
 the runtime-first publication order explicit. See the [release runbook](releasing.md)
 for signatures, provenance, Packagist verification, and rollback rules.
+
+`composer beta:check` validates the bounded, consented public evidence registry
+and verifies that its generated report is current. It deliberately does not make
+the human evidence gate pass. `composer beta:gate` remains fail-closed until the
+audited invitation, adoption, and resulting-fix thresholds in the
+[private-beta runbook](private-beta.md) are actually met.

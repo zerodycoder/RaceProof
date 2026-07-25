@@ -65,6 +65,9 @@
         ],
         "analyse": "phpstan analyse --configuration phpstan.neon.dist --memory-limit=1G",
         "api:check": "@php tools/api/check.php",
+        "beta:check": "@php tools/beta/check.php",
+        "beta:gate": "@php tools/beta/gate.php",
+        "beta:report": "@php tools/beta/report.php",
         "release:dry-run": "@php tools/release/dry-run.php",
         "validate:runtime": "composer --working-dir=runtime validate --strict",
         "format": "pint",
@@ -75,7 +78,8 @@
             "@test:pest",
             "@format:test",
             "@analyse",
-            "@api:check"
+            "@api:check",
+            "@beta:check"
         ]
     },
     "extra": {
