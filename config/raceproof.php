@@ -41,6 +41,21 @@ return [
         'diagnostic_text_bytes' => 4_096,
         'response_body_bytes' => 4_096,
         'header_limit' => 32,
+        'timeline_event_limit' => 500,
+        'timeline_event_data_limit' => 16,
         'timeline_warning_limit' => 100,
+    ],
+
+    'studio' => [
+        'enabled' => (bool) env('RACEPROOF_STUDIO_ENABLED', false),
+        'path' => storage_path('framework/raceproof-studio'),
+        'route_prefix' => 'raceproof',
+        'allowed_ips' => ['127.0.0.1', '::1'],
+        'max_reports' => 50,
+        'max_report_bytes' => 1_048_576,
+    ],
+
+    'scaffolding' => [
+        'test_path' => base_path('tests/Feature'),
     ],
 ];

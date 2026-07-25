@@ -190,6 +190,38 @@ Human, JSON, and JUnit reporters all use one versioned, bounded, redacted report
 model. See [evidence reporters](docs/reporters.md) for CI examples and the JSON
 v1 contract.
 
+## RaceProof Studio
+
+Studio is an optional, local evidence viewer. It visualizes retained runs,
+participant outcomes, timing, checkpoint lanes, warnings, and bounded response
+evidence without moving execution or assertions out of Pest/PHPUnit.
+
+<p align="center">
+  <img src="docs/assets/raceproof-studio.png" alt="RaceProof Studio showing a passed three-participant run and its checkpoint execution lanes" width="100%">
+</p>
+
+Enable it explicitly in a local or testing environment:
+
+```dotenv
+RACEPROOF_STUDIO_ENABLED=true
+```
+
+```bash
+php artisan make:race-test InventoryOversell /api/checkout --participants=3
+php artisan test --filter=InventoryOversellTest
+php artisan raceproof:reports
+php artisan raceproof:studio
+```
+
+Open `/raceproof` on the application's normal local development server. Studio
+is server-rendered and requires no Node/Vite setup. It never registers routes,
+reads archives, or writes reports in production, even if its flag is
+misconfigured. The dashboard is deliberately not an arbitrary endpoint runner:
+the committed test remains the reproducible source of truth.
+
+Read the [Studio guide](docs/studio.md) for configuration, retention, CLI, and
+security details.
+
 ## Safety model
 
 RaceProof fails closed:

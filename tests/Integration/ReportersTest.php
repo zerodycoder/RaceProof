@@ -42,10 +42,15 @@ final class ReportersTest extends TestCase
         self::assertSame(2, $report->timelineWarningCount);
         self::assertCount(1, $report->timelineWarnings);
         self::assertTrue($report->timelineWarningsTruncated);
+        self::assertSame(2, $report->timelineEventCount);
+        self::assertCount(1, $report->timelineEvents);
+        self::assertTrue($report->timelineEventsTruncated);
+        self::assertSame('[REDACTED]', $report->timelineEvents[0]['data']['token']);
         self::assertStringNotContainsString('body-secret', $serialized);
         self::assertStringNotContainsString('header-secret', $serialized);
         self::assertStringNotContainsString('worker-secret', $serialized);
         self::assertStringNotContainsString('exception-secret', $serialized);
+        self::assertStringNotContainsString('event-secret', $serialized);
         self::assertStringNotContainsString('warning-secret', $serialized);
         self::assertStringContainsString('[REDACTED]', $serialized);
     }
@@ -72,6 +77,8 @@ final class ReportersTest extends TestCase
         self::assertSame(1, $decoded['schema_version']);
         self::assertSame('timed_out', $decoded['run']['outcome']);
         self::assertSame('missing', $decoded['participants'][4]['outcome']);
+        self::assertCount(1, $decoded['timeline']['events']);
+        self::assertTrue($decoded['timeline']['events_truncated']);
         self::assertIsArray($decoded['timeline']['warnings']);
         self::assertStringNotContainsString('body-secret', $json);
     }
@@ -110,6 +117,8 @@ final class ReportersTest extends TestCase
         $this->app['config']->set('raceproof.reporting.diagnostic_text_bytes', 96);
         $this->app['config']->set('raceproof.reporting.response_body_bytes', 64);
         $this->app['config']->set('raceproof.reporting.header_limit', 1);
+        $this->app['config']->set('raceproof.reporting.timeline_event_limit', 1);
+        $this->app['config']->set('raceproof.reporting.timeline_event_data_limit', 1);
         $this->app['config']->set('raceproof.reporting.timeline_warning_limit', 1);
     }
 
@@ -164,7 +173,13 @@ final class ReportersTest extends TestCase
             timeline: new RaceTimeline(
                 $runId,
                 [
-                    TimelineEvent::make($runId, 'participant.ready', 'p1', occurredAtNs: 1),
+                    TimelineEvent::make(
+                        $runId,
+                        'participant.ready',
+                        'p1',
+                        data: ['token' => 'event-secret'],
+                        occurredAtNs: 1,
+                    ),
                     TimelineEvent::make($runId, 'checkpoint.reached', 'p1', 'after-read', occurredAtNs: 2),
                 ],
                 [

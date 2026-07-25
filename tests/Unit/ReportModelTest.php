@@ -71,6 +71,8 @@ final class ReportModelTest extends TestCase
             participants: [],
             coordinationSummary: null,
             timelineEventCount: 0,
+            timelineEvents: [],
+            timelineEventsTruncated: false,
             timelineWarningCount: 0,
             timelineWarnings: [],
             timelineWarningsTruncated: false,

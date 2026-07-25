@@ -25,6 +25,40 @@ final readonly class RaceReportFactory
             static fn (ParticipantReport $participant): bool => $participant->failed(),
         ));
         $warnings = $result->timeline === null ? [] : $result->timeline->warnings;
+        $events = $result->timeline === null ? [] : $result->timeline->events;
+        $eventLimit = max(0, ConfigValue::integer(
+            $this->config,
+            'raceproof.reporting.timeline_event_limit',
+            500,
+        ));
+        $redactedEventKeys = array_values(array_filter(array_map(
+            static fn (string $key): string => strtolower(trim($key)),
+            ConfigValue::stringList($this->config, 'raceproof.capture.redact_keys'),
+        )));
+        $reportedEvents = [];
+
+        foreach (array_slice($events, 0, $eventLimit) as $event) {
+            $eventDataLimit = max(0, ConfigValue::integer(
+                $this->config,
+                'raceproof.reporting.timeline_event_data_limit',
+                16,
+            ));
+            $data = [];
+
+            foreach (array_slice($event->data, 0, $eventDataLimit, true) as $key => $value) {
+                $data[$this->diagnostic($key)] = in_array(strtolower($key), $redactedEventKeys, true)
+                    ? '[REDACTED]'
+                    : (is_string($value) ? $this->diagnostic($value) : $value);
+            }
+
+            $reportedEvents[] = [
+                'type' => $event->type,
+                'occurred_at_ns' => $event->occurredAtNs,
+                'participant_id' => $event->participantId,
+                'checkpoint' => $event->checkpoint,
+                'data' => $data,
+            ];
+        }
         $warningLimit = max(0, ConfigValue::integer(
             $this->config,
             'raceproof.reporting.timeline_warning_limit',
@@ -56,7 +90,9 @@ final readonly class RaceReportFactory
             artifactPath: $result->artifactPath === null ? null : $this->diagnostic($result->artifactPath),
             participants: $participants,
             coordinationSummary: $this->coordinationSummary($result),
-            timelineEventCount: count($result->timeline === null ? [] : $result->timeline->events),
+            timelineEventCount: count($events),
+            timelineEvents: $reportedEvents,
+            timelineEventsTruncated: count($events) > count($reportedEvents),
             timelineWarningCount: count($warnings),
             timelineWarnings: $reportedWarnings,
             timelineWarningsTruncated: count($warnings) > count($reportedWarnings),

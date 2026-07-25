@@ -51,6 +51,13 @@ A stable v1 requires all of the following:
 - [x] Human, JSON, and JUnit-compatible reports
 - [x] Five-minute guides and troubleshooting playbook
 
+### v0.5 — visual evidence
+
+- [x] Opt-in local/testing-only report archive with bounded retention
+- [x] Browser-validated responsive Studio dashboard and participant/checkpoint lanes
+- [x] Safe PHPUnit/Pest test scaffolding and report inspection commands
+- [x] Production route, read, and write rejection with redacted JSON export
+
 ### v1.0 — trusted stable release
 
 - [x] Stable public API and semantic-versioning policy
@@ -61,4 +68,6 @@ A stable v1 requires all of the following:
 
 ## Later, based on adoption
 
-Redis coordination, network mode, queue races, interleaving fuzzing, exact schedule control, and an HTML timeline are intentionally post-v1 candidates. They should be prioritized from user evidence, not added to inflate scope.
+Redis coordination, network mode, queue races, interleaving fuzzing, and exact
+schedule control are intentionally post-v1 candidates. They should be
+prioritized from user evidence, not added to inflate scope.

@@ -14,6 +14,13 @@ and Pest because both boot Laravel and call the package normally.
 
 ## PHPUnit
 
+Generate a safe starting point with a real URI and no placeholder passing
+assertion:
+
+```bash
+php artisan make:race-test OversellingRace /api/oversell/fixed --participants=2
+```
+
 ```php
 <?php
 
@@ -53,6 +60,10 @@ vendor/bin/phpunit --filter OversellingRaceTest
 Install the Pest major compatible with the application's PHP version. RaceProof
 itself does not require Pest. This repository uses Pest 3 because its supported
 matrix includes PHP 8.2 and PHPUnit 11.
+
+```bash
+php artisan make:race-test OversellingRace /api/oversell/fixed --participants=2 --pest
+```
 
 ```php
 <?php

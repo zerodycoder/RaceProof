@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added the opt-in local/testing-only RaceProof Studio with bounded redacted
+  report retention, responsive participant/checkpoint timelines, JSON export,
+  report inspection commands, and PHPUnit/Pest test scaffolding that keeps
+  execution and assertions code-first.
 - Prepared the public project surface with a redesigned README, tested demo
   assets, documentation map, MIT licensing guide, citation metadata, and a
   checksum-verified worktree/history secret-scan gate.

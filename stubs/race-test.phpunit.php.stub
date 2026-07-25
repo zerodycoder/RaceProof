@@ -1,0 +1,29 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Feature;
+
+use Tests\TestCase;
+
+use function RaceProof\Laravel\race;
+
+final class {{ class }} extends TestCase
+{
+    public function test_concurrent_requests_finish_without_infrastructure_or_server_failures(): void
+    {
+        $result = race()
+            ->participants({{ participants }})
+            ->postJson({{ uri }})
+            ->startTogether()
+            ->run();
+
+        $result
+            ->assertAllFinished()
+            ->assertNoWorkerFailures()
+            ->assertNoTimeouts()
+            ->assertNoServerErrors();
+
+        // Add a domain invariant here, such as a final balance, stock, or row count.
+    }
+}
