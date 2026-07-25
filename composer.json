@@ -31,6 +31,7 @@
         "laravel/pint": "^1.0",
         "laravel/sanctum": "^4.3",
         "orchestra/testbench": "^10.0 || ^11.0",
+        "pestphp/pest": "^3.8",
         "phpunit/phpunit": "^11.5"
     },
     "autoload": {
@@ -48,6 +49,7 @@
     },
     "scripts": {
         "test": "phpunit",
+        "test:pest": "pest tests/Pest",
         "test:unit": "phpunit --testsuite Unit",
         "test:integration": "phpunit --testsuite Integration",
         "test:database": "phpunit --testsuite Database",
@@ -63,6 +65,7 @@
         "check": [
             "@validate:runtime",
             "@test",
+            "@test:pest",
             "@format:test",
             "@analyse"
         ]

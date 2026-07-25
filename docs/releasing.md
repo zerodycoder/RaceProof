@@ -8,12 +8,12 @@ RaceProof is pre-release software. Do not publish a stable tag until every appli
 - [ ] Move relevant entries from `Unreleased` into a dated changelog section.
 - [ ] Keep `raceproof/runtime` and `raceproof/laravel` minor versions and dependency constraints aligned.
 - [ ] Validate the runtime manifest and rerun its bare-PHP/forbidden-surface packaging proof.
-- [ ] Confirm the supported PHP, Laravel, operating-system, and database matrix.
+- [ ] Confirm the [supported PHP, Laravel, operating-system, and database matrix](platform-support.md).
 - [ ] Run `composer validate --strict`, `composer audit --locked`, and `composer check`.
 - [ ] Confirm the coverage job is at or above 90% and retain its Clover artifact.
 - [ ] Confirm every required MySQL/PostgreSQL repetition run meets its documented target.
 - [ ] Review production refusal, database allowlist, path safety, process cleanup, and secret redaction.
-- [ ] Verify installation and the five-minute example in a fresh Laravel application.
+- [ ] Verify installation and the [five-minute example](five-minute-guide.md) in a fresh Laravel application.
 - [ ] Document known limitations and upgrade steps without overstating guarantees.
 
 ## Review

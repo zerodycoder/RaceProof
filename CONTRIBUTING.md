@@ -17,7 +17,10 @@ composer install
 composer check
 ```
 
-The full CI matrix runs on the oldest and newest supported PHP/Laravel combinations. Coverage is measured separately and must remain at or above 90% line coverage.
+`composer check` runs PHPUnit, the real-process Pest contract, Pint, and PHPStan
+at level max. The full CI matrix runs on the oldest and newest supported
+PHP/Laravel combinations. Coverage is measured separately and must remain at or
+above 90% line coverage.
 
 ## Making a change
 

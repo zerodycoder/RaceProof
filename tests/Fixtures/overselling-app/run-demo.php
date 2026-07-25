@@ -53,8 +53,8 @@ $reset();
 
 $broken = race()
     ->participants(3)
-    ->postJson('/api/broken')
-    ->releaseWhenAllReach('stock-read')
+    ->postJson('/api/oversell/broken')
+    ->releaseWhenAllReach('oversell-read')
     ->run();
 
 $brokenState = [
@@ -67,8 +67,8 @@ $reset();
 
 $fixed = race()
     ->participants(3)
-    ->postJson('/api/fixed')
-    ->releaseWhenAllReach('before-atomic-update')
+    ->postJson('/api/oversell/fixed')
+    ->releaseWhenAllReach('oversell-claim')
     ->run();
 
 $fixedState = [

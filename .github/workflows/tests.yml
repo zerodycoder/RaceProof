@@ -41,7 +41,8 @@ jobs:
       - run: composer require --no-update "illuminate/support:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}"
       - run: composer update --prefer-dist --no-interaction --no-progress
       - run: composer audit --locked --no-interaction
-      - run: composer check
+      - name: Run PHPUnit, Pest, Pint, and PHPStan
+        run: composer check
 
   coverage:
     runs-on: ubuntu-latest

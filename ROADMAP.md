@@ -31,31 +31,31 @@ A stable v1 requires all of the following:
 
 ### v0.2 — reliable core
 
-- [ ] Worker liveness, orphan cleanup, and crash diagnostics
-- [ ] Actionable console and retained timeline reporting
-- [ ] Participant bootstrap contract
-- [ ] Resolve runtime checkpoint packaging without requiring the dev package in production
+- [x] Worker liveness, orphan cleanup, and crash diagnostics
+- [x] Actionable console and retained timeline reporting
+- [x] Participant bootstrap contract
+- [x] Resolve runtime checkpoint packaging without requiring the dev package in production
 
 ### v0.3 — database fidelity
 
-- [ ] MySQL CI and deterministic broken/fixed scenarios
-- [ ] PostgreSQL CI and deterministic broken/fixed scenarios
-- [ ] Coupon, wallet, quote, constraint, lock misuse, and timeout/deadlock examples
-- [ ] 100-repetition reliability evidence for release-critical scenarios
+- [x] MySQL CI and deterministic broken/fixed scenarios
+- [x] PostgreSQL CI and deterministic broken/fixed scenarios
+- [x] Coupon, wallet, quote, constraint, lock misuse, and timeout/deadlock examples
+- [x] 100-repetition reliability evidence for release-critical scenarios
 
 ### v0.4 — developer experience
 
-- [ ] Per-participant payload, headers, identity, and setup
-- [ ] Session, token, and Sanctum authentication coverage
-- [ ] PHPUnit and Pest documentation
-- [ ] Human, JSON, and JUnit-compatible reports
-- [ ] Five-minute guides and troubleshooting playbook
+- [x] Per-participant payload, headers, identity, and setup
+- [x] Session, token, and Sanctum authentication coverage
+- [x] PHPUnit and Pest documentation
+- [x] Human, JSON, and JUnit-compatible reports
+- [x] Five-minute guides and troubleshooting playbook
 
 ### v1.0 — trusted stable release
 
 - [ ] Stable public API and semantic-versioning policy
 - [ ] Automated tagged releases and Packagist publication
-- [ ] Four polished end-to-end demonstrations
+- [x] Four polished end-to-end demonstrations
 - [ ] Public beta evidence and adoption gates
 - [ ] Final security, compatibility, reliability, and documentation audit
 

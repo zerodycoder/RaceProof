@@ -4,23 +4,36 @@
 
 RaceProof starts independent Laravel processes against the same database, holds them at explicit barriers, and returns one result that can assert response distributions and database invariants. It is a test tool—not a load tester, a lock library, an automatic race detector, or a formal proof that no race exists.
 
-> Current status: technical MVP. The local kernel runner, file coordinator, start barrier, `RacePoint`, per-participant request/auth/bootstrap specs, versioned event timelines, actionable failure reports, crash/timeout collection, JSON results, database safety checks, and deterministic database demonstrations are implemented.
+> Current status: feature-complete v0.4 developer-experience milestone. The local kernel runner, file coordinator, start barrier, `RacePoint`, per-participant request/auth/bootstrap specs, versioned event timelines, human/JSON/JUnit reports, crash/timeout collection, database safety checks, and deterministic database demonstrations are implemented. The public API is not frozen for v1 yet.
 
 ## The five-minute example
 
-Application code with a deliberately unsafe read/write gap:
+The canonical, copy-ready broken/fixed walkthrough is the
+[tested five-minute guide](docs/five-minute-guide.md). The short form follows.
+
+Application code after replacing the stale read/write gap with an atomic claim:
 
 ```php
-$product = Product::query()->findOrFail($id);
+race_point('stock-claim');
 
-race_point('stock-read');
+$created = DB::transaction(function () use ($id): bool {
+    $claimed = Product::query()
+        ->whereKey($id)
+        ->where('stock', '>', 0)
+        ->decrement('stock');
 
-if ($product->stock < 1) {
+    if ($claimed === 0) {
+        return false;
+    }
+
+    Order::query()->create(['product_id' => $id]);
+
+    return true;
+});
+
+if (! $created) {
     abort(409);
 }
-
-$product->decrement('stock');
-Order::query()->create(['product_id' => $product->id]);
 ```
 
 Test:
@@ -30,8 +43,8 @@ use function RaceProof\Laravel\race;
 
 $result = race()
     ->participants(10)
-    ->postJson('/api/checkout', ['product_id' => $product->id])
-    ->releaseWhenAllReach('stock-read')
+    ->postJson('/api/checkout', ['product_id' => $id])
+    ->releaseWhenAllReach('stock-claim')
     ->run();
 
 $result
@@ -67,9 +80,9 @@ See [runtime checkpoint deployment](docs/runtime-checkpoints.md) for migration f
 
 - PHP 8.2+
 - Laravel 12 and 13
-- Linux and WSL are the primary targets
-- macOS should work through Symfony Process
-- Native Windows is currently validated as an experimental target
+- Ubuntu Linux is continuously verified; WSL2 is a primary development target
+- macOS is best-effort compatible but is not continuously verified
+- Native Windows is experimental and has maintainer smoke evidence, not CI parity
 - MySQL 8.4 and PostgreSQL 17 are continuously verified; compatible MySQL/PostgreSQL releases are expected to work
 - SQLite in-memory is rejected; SQLite files are useful only for package smoke tests and do not model production lock behavior
 
@@ -168,6 +181,7 @@ php artisan raceproof:clean
 ```bash
 composer install
 composer test
+composer test:pest
 vendor/bin/pint --test
 vendor/bin/phpstan analyse
 
@@ -175,22 +189,29 @@ vendor/bin/phpstan analyse
 composer test:database
 ```
 
-The integration suite includes a real three-process Laravel checkpoint test and a broken/fixed overselling scenario. The latter forces three workers to read stock `1`; the broken implementation produces three orders and stock `-2`, while the atomic fix produces one order, stock `0`, one `201`, and two `409` responses.
+The integration suite includes a real three-process PHPUnit checkpoint test, the same workflow written in Pest, and a broken/fixed overselling scenario. The latter forces three workers to read stock `1`; the broken implementation produces three orders and stock `-2`, while the atomic fix produces one order, stock `0`, one `201`, and two `409` responses.
 
 The database suite runs isolated migrations with an exact database-name allowlist and proves broken/fixed behavior for overselling, coupons, wallets, quotes, uniqueness, lock misuse, deadlocks, and lock timeouts. CI also produces 100/100 machine-readable critical evidence for both MySQL and PostgreSQL.
 
-See [architecture](docs/architecture.md), [per-participant requests and authentication](docs/participant-specs.md), [participant bootstrap](docs/participant-bootstrap.md), [evidence reporters](docs/reporters.md), [runtime deployment](docs/runtime-checkpoints.md), [timeline evidence](docs/timeline.md), [database testing](docs/database-testing.md), and [production safety](docs/production-safety.md) for the operational details.
+Four published broken/fixed demonstrations use the executable routes exercised by that database suite:
+
+- [overselling](examples/overselling/README.md);
+- [coupon redemption](examples/coupon-redemption/README.md);
+- [wallet debit](examples/wallet-debit/README.md);
+- [quote acceptance](examples/quote-acceptance/README.md).
+
+See [PHPUnit and Pest workflows](docs/testing-workflows.md), the [platform support matrix](docs/platform-support.md), the [troubleshooting decision guide](docs/troubleshooting.md), [architecture](docs/architecture.md), [participant authentication](docs/participant-specs.md), [participant bootstrap](docs/participant-bootstrap.md), [evidence reporters](docs/reporters.md), [runtime deployment](docs/runtime-checkpoints.md), [timeline evidence](docs/timeline.md), [database testing](docs/database-testing.md), and [production safety](docs/production-safety.md).
 
 ## Near-term roadmap
 
-1. Add Pest ergonomics and polished workflow guides.
-2. Stabilize the public API and publish the beta release.
+1. Freeze the public API and automate verifiable package releases.
+2. Run the evidence-backed beta before declaring a stable release.
 
 Redis coordination, network mode, queues, schedule fuzzing, exact interleaving control, and dashboards are deliberately outside the first release.
 
 ## Project standards
 
-Changes are developed as focused pull requests and merged only after review and green CI. The enforced checks include the supported PHP/Laravel matrix, PHPUnit, Pint, PHPStan level max, Composer validation/audit, and a 90% line-coverage floor.
+Changes are developed as focused pull requests and merged only after review and green CI. The enforced checks include the supported PHP/Laravel matrix, PHPUnit, a real-process Pest contract, Pint, PHPStan level max, Composer validation/audit, and a 90% line-coverage floor.
 
 - [Roadmap](ROADMAP.md)
 - [Quality policy](docs/quality.md)

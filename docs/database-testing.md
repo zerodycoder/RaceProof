@@ -56,6 +56,14 @@ The `Database` test suite runs against disposable MySQL 8.4 and PostgreSQL 17 se
 
 The six business invariants are also combined into one critical evidence race. CI repeats its broken and fixed forms 100 times per engine and uploads the JSON result as `database-evidence-mysql` and `database-evidence-pgsql`. This is repeatability evidence for the controlled scenarios, not a claim that arbitrary schedules are proven safe.
 
+The first four business scenarios are published as executable demonstrations:
+[overselling](../examples/overselling/README.md),
+[coupon redemption](../examples/coupon-redemption/README.md),
+[wallet debit](../examples/wallet-debit/README.md), and
+[quote acceptance](../examples/quote-acceptance/README.md). Their route files
+are required directly by the database fixture, so CI executes the published code
+rather than a private copy.
+
 ## Run locally with Docker Compose
 
 Start either or both disposable services:

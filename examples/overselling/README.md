@@ -1,14 +1,16 @@
-# Overselling demonstration
+# Overselling: stale stock check
 
-The executable version lives in `tests/Fixtures/overselling-app` and is exercised by `OversellingDemoTest`.
+The executable broken and fixed endpoints are in [routes.php](routes.php). The
+regular integration suite runs them with three independent Laravel processes,
+and the MySQL/PostgreSQL suite runs the same file with two processes.
 
-With stock set to one, three worker processes read the same value and rendezvous at `stock-read`. The broken implementation checks the stale value and then decrements without a conditional write:
+With stock set to one, three worker processes read the same value and rendezvous at `oversell-read`. The broken implementation checks the stale value and then decrements without a conditional write:
 
 ```php
-$product = DB::table('products')->find(1);
-race_point('stock-read');
+$stock = (int) DB::table('products')->where('id', 1)->value('stock');
+race_point('oversell-read');
 
-if ($product->stock < 1) {
+if ($stock < 1) {
     abort(409);
 }
 
@@ -16,7 +18,7 @@ DB::table('products')->where('id', 1)->decrement('stock');
 DB::table('orders')->insert(['product_id' => 1]);
 ```
 
-Observed invariant violation:
+Observed broken:
 
 ```text
 201 responses: 3
@@ -37,7 +39,7 @@ if ($claimed === 0) {
 }
 ```
 
-Observed fixed state:
+Observed fixed:
 
 ```text
 201 responses: 1
@@ -46,4 +48,11 @@ orders:        1
 stock:         0
 ```
 
-The repository fixture uses file-backed SQLite only to keep the package mechanics self-contained. Real application validation must run against its MySQL/MariaDB or PostgreSQL engine.
+The regression test targets `/api/oversell/fixed`, releases `oversell-claim`,
+expects one `201` and the remaining responses to be `409`, then asserts one
+order and stock zero. The executable route wraps the conditional claim and order
+insert in one transaction. HTTP counts alone are not the invariant.
+
+The SQLite fixture keeps the fast package test self-contained. The release
+evidence for this example comes from the same routes on MySQL 8.4 and
+PostgreSQL 17.

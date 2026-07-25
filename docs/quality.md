@@ -9,12 +9,18 @@ Every pull request must pass:
 - the PHP 8.2 / Laravel 12 compatibility job;
 - the PHP 8.5 / Laravel 13 compatibility job;
 - PHPUnit unit and integration suites;
+- the Pest real-process workflow contract;
 - Pint formatting;
 - PHPStan at level max;
 - strict Composer validation and locked dependency audit;
 - at least 90% executable-line coverage.
 
 Coverage is a floor, not proof of correctness. Concurrency behavior also needs invariant assertions and repetition evidence.
+
+The complete CI gate runs on Ubuntu Linux. MySQL 8.4 and PostgreSQL 17 are
+release-evidence targets there. macOS and native Windows have the explicitly
+weaker support levels documented in the [platform matrix](platform-support.md);
+local smoke evidence must not be presented as continuous compatibility.
 
 ## Reliability evidence
 
