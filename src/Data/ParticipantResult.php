@@ -10,7 +10,11 @@ use RaceProof\Laravel\Support\Input;
 
 final readonly class ParticipantResult implements JsonSerializable
 {
-    /** @param array<string, string> $headers */
+    /**
+     * @internal RaceProof creates participant results from worker evidence.
+     *
+     * @param  array<string, string>  $headers
+     */
     public function __construct(
         public string $runId,
         public string $participantId,
@@ -24,6 +28,7 @@ final readonly class ParticipantResult implements JsonSerializable
         public ?string $workerError = null,
     ) {}
 
+    /** @internal */
     public static function workerFailure(string $runId, string $participantId, string $message, ?int $startedAtNs = null): self
     {
         $now = Clock::nowNs();
@@ -38,7 +43,11 @@ final readonly class ParticipantResult implements JsonSerializable
         );
     }
 
-    /** @param array<string, mixed> $data */
+    /**
+     * @internal
+     *
+     * @param  array<string, mixed>  $data
+     */
     public static function fromArray(array $data): self
     {
         return new self(

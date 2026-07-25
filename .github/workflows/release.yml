@@ -1,0 +1,211 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]*.[0-9]*.[0-9]*'
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.repository == 'zerodycoder/RaceProof'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: release
+
+    steps:
+      - name: Check out the complete signed-tag history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.5'
+          coverage: none
+          extensions: zip
+          tools: composer:v2
+
+      - name: Import the release signing key
+        id: gpg
+        uses: crazy-max/ghaction-import-gpg@2dc316deee8e90f13e1a351ab510b4d5bc0c82cd # v7.0.0
+        with:
+          gpg_private_key: ${{ secrets.RELEASE_GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.RELEASE_GPG_PASSPHRASE }}
+          git_user_signingkey: true
+          git_tag_gpgsign: true
+
+      - name: Install release tooling
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Validate tag, source metadata, and required secrets
+        id: release
+        env:
+          RUNTIME_SPLIT_REPOSITORY: ${{ vars.RUNTIME_SPLIT_REPOSITORY }}
+          RUNTIME_SPLIT_TOKEN: ${{ secrets.RUNTIME_SPLIT_TOKEN }}
+          PACKAGIST_USERNAME: ${{ secrets.PACKAGIST_USERNAME }}
+          PACKAGIST_API_TOKEN: ${{ secrets.PACKAGIST_API_TOKEN }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          test -n "$RUNTIME_SPLIT_REPOSITORY"
+          test -n "$RUNTIME_SPLIT_TOKEN"
+          test -n "$PACKAGIST_USERNAME"
+          test -n "$PACKAGIST_API_TOKEN"
+          git verify-tag "$GITHUB_REF_NAME"
+          git fetch origin main
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+          php tools/release/validate.php "$version" "$GITHUB_REF_NAME"
+          composer validate --strict
+          composer --working-dir=runtime validate --strict
+          composer audit --locked --no-interaction
+          composer api:check
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Verify required CI on the exact release commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          check_names="$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/check-runs?per_page=100" \
+            --jq '.check_runs[] | select(.conclusion == "success") | .name')"
+          grep -Fx 'tests (8.2, ^12.0, ^10.0)' <<< "$check_names"
+          grep -Fx 'tests (8.5, ^13.0, ^11.0)' <<< "$check_names"
+          grep -Fx 'coverage' <<< "$check_names"
+          grep -F 'database (mysql, mysql:8.4' <<< "$check_names"
+          grep -F 'database (pgsql, postgres:17' <<< "$check_names"
+          grep -Fx 'release-dry-run' <<< "$check_names"
+
+      - name: Build and install reproducible release artifacts
+        env:
+          RACEPROOF_RELEASE_DRY_RUN_VERSION: ${{ steps.release.outputs.version }}
+        run: composer release:dry-run
+
+      - name: Split and sign the runtime tag
+        id: runtime
+        env:
+          RUNTIME_SPLIT_REPOSITORY: ${{ vars.RUNTIME_SPLIT_REPOSITORY }}
+          RUNTIME_SPLIT_TOKEN: ${{ secrets.RUNTIME_SPLIT_TOKEN }}
+        run: |
+          runtime_commit="$(git subtree split --prefix=runtime "$GITHUB_SHA" | tail -n 1)"
+          test "$(printf '%s' "$runtime_commit" | wc -c)" -eq 40
+          runtime_remote="https://x-access-token:${RUNTIME_SPLIT_TOKEN}@github.com/${RUNTIME_SPLIT_REPOSITORY}.git"
+          existing_tag="$(git ls-remote "$runtime_remote" "refs/tags/$GITHUB_REF_NAME^{}" | cut -f1)"
+          existing_main="$(git ls-remote "$runtime_remote" refs/heads/main | cut -f1)"
+          mkdir -p build/release/runtime-git
+          git -C build/release/runtime-git init
+          if [ -n "$existing_tag" ]; then
+            test "$existing_tag" = "$runtime_commit"
+            test "$existing_main" = "$runtime_commit"
+            git -C build/release/runtime-git fetch \
+              "$runtime_remote" "refs/tags/$GITHUB_REF_NAME:refs/tags/$GITHUB_REF_NAME"
+            git -C build/release/runtime-git verify-tag "$GITHUB_REF_NAME"
+          else
+            git push "$runtime_remote" "$runtime_commit:refs/heads/main"
+            git -C build/release/runtime-git fetch "$GITHUB_WORKSPACE" "$runtime_commit"
+            git -C build/release/runtime-git config user.name "${{ steps.gpg.outputs.name }}"
+            git -C build/release/runtime-git config user.email "${{ steps.gpg.outputs.email }}"
+            git -C build/release/runtime-git config user.signingkey "${{ steps.gpg.outputs.fingerprint }}"
+            git -C build/release/runtime-git config tag.gpgsign true
+            git -C build/release/runtime-git tag -s "$GITHUB_REF_NAME" "$runtime_commit" \
+              -m "raceproof/runtime ${{ steps.release.outputs.version }}"
+            git -C build/release/runtime-git push "$runtime_remote" "refs/tags/$GITHUB_REF_NAME"
+          fi
+          echo "commit=$runtime_commit" >> "$GITHUB_OUTPUT"
+
+      - name: Create signed checksums, provenance, and release notes
+        env:
+          RUNTIME_SPLIT_REPOSITORY: ${{ vars.RUNTIME_SPLIT_REPOSITORY }}
+        run: |
+          directory="build/release/dry-run/${{ steps.release.outputs.version }}"
+          php tools/release/provenance.php \
+            "${{ steps.release.outputs.version }}" \
+            "$GITHUB_SHA" \
+            "${{ steps.runtime.outputs.commit }}" \
+            "$GITHUB_REPOSITORY" \
+            "$GITHUB_RUN_ID" \
+            "$directory"
+          php tools/release/notes.php \
+            "${{ steps.release.outputs.version }}" \
+            "$directory/release-notes.md"
+          gpg --batch --yes --armor --detach-sign \
+            --local-user "${{ steps.gpg.outputs.fingerprint }}" \
+            --output "$directory/SHA256SUMS.asc" \
+            "$directory/SHA256SUMS"
+          gpg --batch --yes --armor --detach-sign \
+            --local-user "${{ steps.gpg.outputs.fingerprint }}" \
+            --output "$directory/provenance.json.asc" \
+            "$directory/provenance.json"
+
+      - name: Attest package provenance when the repository plan supports it
+        if: vars.ENABLE_GITHUB_ATTESTATIONS == 'true'
+        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4
+        with:
+          subject-path: build/release/dry-run/${{ steps.release.outputs.version }}/*.zip
+
+      - name: Publish raceproof/runtime GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.RUNTIME_SPLIT_TOKEN }}
+          RUNTIME_SPLIT_REPOSITORY: ${{ vars.RUNTIME_SPLIT_REPOSITORY }}
+        run: |
+          directory="build/release/dry-run/${{ steps.release.outputs.version }}"
+          gh release create "$GITHUB_REF_NAME" \
+            --repo "$RUNTIME_SPLIT_REPOSITORY" \
+            --verify-tag \
+            --title "raceproof/runtime ${{ steps.release.outputs.version }}" \
+            --notes-file "$directory/release-notes.md" \
+            "$directory/raceproof-runtime-${{ steps.release.outputs.version }}.zip" \
+            "$directory/SHA256SUMS" \
+            "$directory/SHA256SUMS.asc" \
+            "$directory/provenance.json" \
+            "$directory/provenance.json.asc"
+
+      - name: Publish and verify raceproof/runtime on Packagist
+        env:
+          PACKAGIST_USERNAME: ${{ secrets.PACKAGIST_USERNAME }}
+          PACKAGIST_API_TOKEN: ${{ secrets.PACKAGIST_API_TOKEN }}
+          RUNTIME_SPLIT_REPOSITORY: ${{ vars.RUNTIME_SPLIT_REPOSITORY }}
+        run: |
+          php tools/release/packagist.php update "https://github.com/$RUNTIME_SPLIT_REPOSITORY"
+          php tools/release/packagist.php wait raceproof/runtime "${{ steps.release.outputs.version }}"
+
+      - name: Publish raceproof/laravel GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          directory="build/release/dry-run/${{ steps.release.outputs.version }}"
+          gh release create "$GITHUB_REF_NAME" \
+            --verify-tag \
+            --title "RaceProof ${{ steps.release.outputs.version }}" \
+            --notes-file "$directory/release-notes.md" \
+            "$directory/raceproof-laravel-${{ steps.release.outputs.version }}.zip" \
+            "$directory/raceproof-runtime-${{ steps.release.outputs.version }}.zip" \
+            "$directory/SHA256SUMS" \
+            "$directory/SHA256SUMS.asc" \
+            "$directory/provenance.json" \
+            "$directory/provenance.json.asc"
+
+      - name: Publish, verify, and install raceproof/laravel from Packagist
+        env:
+          PACKAGIST_USERNAME: ${{ secrets.PACKAGIST_USERNAME }}
+          PACKAGIST_API_TOKEN: ${{ secrets.PACKAGIST_API_TOKEN }}
+        run: |
+          php tools/release/packagist.php update "https://github.com/$GITHUB_REPOSITORY"
+          php tools/release/packagist.php wait raceproof/laravel "${{ steps.release.outputs.version }}"
+          php tools/release/packagist.php install "${{ steps.release.outputs.version }}"
+
+      - name: Retain release evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: release-evidence-${{ steps.release.outputs.version }}
+          path: build/release/dry-run/${{ steps.release.outputs.version }}
+          if-no-files-found: warn
+          retention-days: 90

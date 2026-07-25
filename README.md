@@ -4,7 +4,7 @@
 
 RaceProof starts independent Laravel processes against the same database, holds them at explicit barriers, and returns one result that can assert response distributions and database invariants. It is a test tool—not a load tester, a lock library, an automatic race detector, or a formal proof that no race exists.
 
-> Current status: feature-complete v0.4 developer-experience milestone. The local kernel runner, file coordinator, start barrier, `RacePoint`, per-participant request/auth/bootstrap specs, versioned event timelines, human/JSON/JUnit reports, crash/timeout collection, database safety checks, and deterministic database demonstrations are implemented. The public API is not frozen for v1 yet.
+> Current status: the v1 API candidate is frozen and release tooling is implemented on `main`, but no package has been published. The local kernel runner, file coordinator, start barrier, `RacePoint`, per-participant request/auth/bootstrap specs, versioned event timelines, human/JSON/JUnit reports, crash/timeout collection, database safety checks, deterministic database demonstrations, public-API guard, and release dry-run are implemented.
 
 ## The five-minute example
 
@@ -62,6 +62,10 @@ $result
 Every participant boots the real application and sends its request through Laravel's HTTP kernel. They share the application's configured database and coordinator directory.
 
 ## Installation
+
+No Packagist release exists yet. The commands below are the tagged-release
+installation contract and become resolvable only after the first published beta;
+contributors should use a source checkout in the meantime.
 
 If application code contains checkpoints, install the production-safe runtime directly and keep the orchestrator dev-only:
 
@@ -200,11 +204,12 @@ Four published broken/fixed demonstrations use the executable routes exercised b
 - [wallet debit](examples/wallet-debit/README.md);
 - [quote acceptance](examples/quote-acceptance/README.md).
 
-See [PHPUnit and Pest workflows](docs/testing-workflows.md), the [platform support matrix](docs/platform-support.md), the [troubleshooting decision guide](docs/troubleshooting.md), [architecture](docs/architecture.md), [participant authentication](docs/participant-specs.md), [participant bootstrap](docs/participant-bootstrap.md), [evidence reporters](docs/reporters.md), [runtime deployment](docs/runtime-checkpoints.md), [timeline evidence](docs/timeline.md), [database testing](docs/database-testing.md), and [production safety](docs/production-safety.md).
+See [PHPUnit and Pest workflows](docs/testing-workflows.md), the [public API contract](docs/public-api.md), [versioning policy](docs/versioning.md), [upgrade guide](UPGRADING.md), [release runbook](docs/releasing.md), the [platform support matrix](docs/platform-support.md), the [troubleshooting decision guide](docs/troubleshooting.md), [architecture](docs/architecture.md), [participant authentication](docs/participant-specs.md), [participant bootstrap](docs/participant-bootstrap.md), [evidence reporters](docs/reporters.md), [runtime deployment](docs/runtime-checkpoints.md), [timeline evidence](docs/timeline.md), [database testing](docs/database-testing.md), and [production safety](docs/production-safety.md).
 
 ## Near-term roadmap
 
-1. Freeze the public API and automate verifiable package releases.
+1. Provision the public split repository and Packagist records, then exercise the
+   fail-closed release workflow on the beta.
 2. Run the evidence-backed beta before declaring a stable release.
 
 Redis coordination, network mode, queues, schedule fuzzing, exact interleaving control, and dashboards are deliberately outside the first release.

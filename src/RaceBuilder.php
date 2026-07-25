@@ -49,6 +49,7 @@ final class RaceBuilder
     /** @var list<string> */
     private array $checkpoints = [];
 
+    /** @internal Resolve the builder through race() or Laravel's container. */
     public function __construct(
         private readonly RaceOrchestrator $orchestrator,
         private readonly Config $config,

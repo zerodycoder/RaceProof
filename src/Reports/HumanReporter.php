@@ -12,6 +12,7 @@ use RaceProof\Laravel\Support\SensitiveDataRedactor;
 
 final readonly class HumanReporter implements Reporter
 {
+    /** @internal Resolve reporters through Laravel's container. */
     public function __construct(
         private RaceReportFactory $factory,
         private Config $config,

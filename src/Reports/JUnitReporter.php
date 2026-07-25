@@ -9,6 +9,7 @@ use RaceProof\Laravel\Results\RaceResult;
 
 final readonly class JUnitReporter implements Reporter
 {
+    /** @internal Resolve reporters through Laravel's container. */
     public function __construct(private RaceReportFactory $factory) {}
 
     public function report(RaceResult $result): string

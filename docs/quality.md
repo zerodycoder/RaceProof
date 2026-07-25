@@ -47,3 +47,8 @@ When the repository has only one maintainer, GitHub does not permit that author 
 ## Release evidence
 
 Every release records its supported matrix, test counts, coverage percentage, database repetition results, known limitations, and migration notes. Artifacts that substantiate gates should remain attached to CI or the release record.
+
+The frozen v1 surface is enforced by `composer api:check`. Release CI separately
+builds reproducible Laravel/runtime archives, installs them together, and keeps
+the runtime-first publication order explicit. See the [release runbook](releasing.md)
+for signatures, provenance, Packagist verification, and rollback rules.

@@ -12,7 +12,11 @@ final readonly class TimelineEvent implements JsonSerializable
 {
     public const SCHEMA_VERSION = 1;
 
-    /** @param array<string, bool|float|int|string|null> $data */
+    /**
+     * @internal RaceProof creates validated timeline events.
+     *
+     * @param  array<string, bool|float|int|string|null>  $data
+     */
     public function __construct(
         public int $schemaVersion,
         public string $eventId,
@@ -58,7 +62,11 @@ final readonly class TimelineEvent implements JsonSerializable
         }
     }
 
-    /** @param array<string, bool|float|int|string|null> $data */
+    /**
+     * @internal
+     *
+     * @param  array<string, bool|float|int|string|null>  $data
+     */
     public static function make(
         string $runId,
         string $type,
@@ -79,7 +87,11 @@ final readonly class TimelineEvent implements JsonSerializable
         );
     }
 
-    /** @param array<string, mixed> $data */
+    /**
+     * @internal
+     *
+     * @param  array<string, mixed>  $data
+     */
     public static function fromArray(array $data): self
     {
         $eventData = $data['data'] ?? [];

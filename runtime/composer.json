@@ -2,8 +2,13 @@
     "name": "raceproof/runtime",
     "description": "Production-safe no-op checkpoint runtime for RaceProof instrumentation.",
     "keywords": ["php", "testing", "concurrency", "race-condition"],
+    "homepage": "https://github.com/zerodycoder/RaceProof",
     "license": "MIT",
     "type": "library",
+    "support": {
+        "issues": "https://github.com/zerodycoder/RaceProof/issues",
+        "source": "https://github.com/zerodycoder/RaceProof"
+    },
     "require": {
         "php": "^8.2"
     },

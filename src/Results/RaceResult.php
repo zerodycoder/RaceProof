@@ -11,7 +11,11 @@ use RaceProof\Laravel\Exceptions\RaceAssertionFailed;
 
 final readonly class RaceResult implements JsonSerializable
 {
-    /** @param list<ParticipantResult> $participants */
+    /**
+     * @internal RaceOrchestrator creates the aggregate result.
+     *
+     * @param  list<ParticipantResult>  $participants
+     */
     public function __construct(
         public string $runId,
         public int $expectedParticipants,

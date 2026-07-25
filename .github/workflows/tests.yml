@@ -70,6 +70,23 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  release-dry-run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          coverage: none
+          extensions: zip
+          tools: composer:v2
+
+      - run: composer install --prefer-dist --no-interaction --no-progress
+      - run: composer release:dry-run
+
   database:
     runs-on: ubuntu-latest
     timeout-minutes: 30

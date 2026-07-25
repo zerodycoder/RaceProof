@@ -10,6 +10,8 @@ use RaceProof\Laravel\Data\TimelineEvent;
 final readonly class RaceTimeline implements JsonSerializable
 {
     /**
+     * @internal RaceProof reconstructs timelines from retained evidence.
+     *
      * @param  list<TimelineEvent>  $events
      * @param  list<string>  $warnings
      */

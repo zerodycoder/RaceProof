@@ -2,8 +2,13 @@
     "name": "raceproof/laravel",
     "description": "Controlled and reproducible concurrency testing for Laravel applications.",
     "keywords": ["laravel", "testing", "concurrency", "race-condition"],
+    "homepage": "https://github.com/zerodycoder/RaceProof",
     "license": "MIT",
     "type": "library",
+    "support": {
+        "issues": "https://github.com/zerodycoder/RaceProof/issues",
+        "source": "https://github.com/zerodycoder/RaceProof"
+    },
     "repositories": [
         {
             "type": "path",
@@ -59,6 +64,8 @@
             "@php tools/check-coverage.php build/coverage/clover.xml 90"
         ],
         "analyse": "phpstan analyse --configuration phpstan.neon.dist --memory-limit=1G",
+        "api:check": "@php tools/api/check.php",
+        "release:dry-run": "@php tools/release/dry-run.php",
         "validate:runtime": "composer --working-dir=runtime validate --strict",
         "format": "pint",
         "format:test": "pint --test",
@@ -67,7 +74,8 @@
             "@test",
             "@test:pest",
             "@format:test",
-            "@analyse"
+            "@analyse",
+            "@api:check"
         ]
     },
     "extra": {

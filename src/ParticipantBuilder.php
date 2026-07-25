@@ -25,6 +25,7 @@ final class ParticipantBuilder
 
     private ?BootstrapSpec $bootstrap;
 
+    /** @internal RaceBuilder creates participant builders for forParticipant(). */
     public function __construct(?ParticipantSpec $spec = null)
     {
         if ($spec === null) {
@@ -93,6 +94,7 @@ final class ParticipantBuilder
         return $this;
     }
 
+    /** @internal Used only to serialize the fluent participant configuration. */
     public function spec(): ParticipantSpec
     {
         return new ParticipantSpec(

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Froze the v1 public API candidate with a reflection-backed signature guard and
+  published semantic-versioning, deprecation, and upgrade policies.
+- Added reproducible dual-package artifacts, clean artifact installation,
+  signed-checksum/provenance release automation, ordered runtime splitting,
+  Packagist polling, and a fail-closed rollback runbook.
 - Added per-participant payload, header, cookie, token, session, Sanctum identity, and bootstrap overrides with real multi-process authentication coverage.
 - Added a stable schema-v1 evidence model with bounded human, JSON, and JUnit reporters.
 - Added an executable Pest 3 workflow to the supported PHP/Laravel CI matrix.

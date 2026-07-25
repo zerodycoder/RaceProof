@@ -22,6 +22,11 @@ at level max. The full CI matrix runs on the oldest and newest supported
 PHP/Laravel combinations. Coverage is measured separately and must remain at or
 above 90% line coverage.
 
+CI also runs `composer release:dry-run`, which builds each package twice,
+compares hashes, installs the artifact pair in a clean Composer project, and
+checks the production no-op runtime contract. Changes to frozen symbols must
+follow [the public API review process](docs/public-api.md).
+
 ## Making a change
 
 1. Open or reference an issue for behavior changes and large refactors.
@@ -42,7 +47,10 @@ Do not weaken synchronization, reduce repetitions, or relax assertions to hide a
 
 RaceProof is a controlled concurrency test tool. It is not a load tester, production traffic generator, automatic race detector, or formal proof system. New features must preserve the production refusal and database safety model.
 
-Public APIs require tests, documentation, and a compatibility note. Serialization formats shared with workers are treated as compatibility-sensitive.
+Public APIs require tests, documentation, and a compatibility note.
+Serialization formats shared with workers are treated as
+compatibility-sensitive. Do not refresh the API baseline merely to make CI pass;
+review the SemVer impact first.
 
 ## Reporting security issues
 
