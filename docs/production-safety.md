@@ -15,3 +15,5 @@ See [runtime checkpoint deployment](runtime-checkpoints.md) and [ADR 0001](adr/0
 Only configured response headers are captured. Authorization, cookies, and set-cookie headers are redacted if explicitly allowlisted. Response bodies are capped.
 
 Exception diagnostics and worker stdout/stderr are redacted before their byte limits are applied. RaceProof removes authorization/cookie header values, bearer tokens, and values whose keys match `raceproof.capture.redact_keys`. Pattern-based redaction is defense in depth and cannot classify every application-specific secret or sensitive response body. Workers must not print credentials or tokens. Retained run directories should be treated as CI artifacts with restricted access and short retention.
+
+Request credentials cannot be redacted from `plan.json` because workers need their exact header and cookie values. Coordinator files are permissioned to `0600` where supported, but failed runs are retained. Authentication tests should use disposable, least-privilege tokens and sessions, and retained artifacts must be removed promptly after diagnosis.

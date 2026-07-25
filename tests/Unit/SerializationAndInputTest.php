@@ -53,6 +53,7 @@ final class SerializationAndInputTest extends TestCase
             ['model' => 'App\\Models\\User', 'key' => 5, 'guard' => 'web'],
             AuthSpec::fromArray(['model' => 'App\\Models\\User', 'key' => 5])->jsonSerialize(),
         );
+        self::assertSame([], $restored->participantSpecs);
     }
 
     /** @return iterable<string, array{Closure(): void}> */

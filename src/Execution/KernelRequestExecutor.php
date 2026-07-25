@@ -11,6 +11,7 @@ use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use RaceProof\Laravel\Contracts\RequestExecutor;
+use RaceProof\Laravel\Data\AuthSpec;
 use RaceProof\Laravel\Data\ParticipantContext;
 use RaceProof\Laravel\Data\ParticipantResult;
 use RaceProof\Laravel\Data\RacePlan;
@@ -32,8 +33,8 @@ final readonly class KernelRequestExecutor implements RequestExecutor
 
     public function execute(RacePlan $plan, ParticipantContext $context): ParticipantResult
     {
-        $request = $this->makeRequest($plan);
-        $this->applyAuthentication($plan, $request);
+        $request = $this->makeRequest($plan, $context);
+        $this->applyAuthentication($plan->authFor($context->participantId), $request);
         $startedAt = Clock::nowNs();
         $response = null;
 
@@ -66,9 +67,9 @@ final readonly class KernelRequestExecutor implements RequestExecutor
         }
     }
 
-    private function makeRequest(RacePlan $plan): Request
+    private function makeRequest(RacePlan $plan, ParticipantContext $context): Request
     {
-        $spec = $plan->request;
+        $spec = $plan->requestFor($context->participantId);
         $content = $spec->json ? json_encode($spec->payload, JSON_THROW_ON_ERROR) : null;
         $parameters = $spec->json ? [] : $spec->payload;
         $request = Request::create(
@@ -93,20 +94,20 @@ final readonly class KernelRequestExecutor implements RequestExecutor
         return $request;
     }
 
-    private function applyAuthentication(RacePlan $plan, Request $request): void
+    private function applyAuthentication(?AuthSpec $auth, Request $request): void
     {
-        if ($plan->auth === null) {
+        if ($auth === null) {
             return;
         }
 
-        $modelClass = $plan->auth->model;
+        $modelClass = $auth->model;
 
         if (! is_a($modelClass, Model::class, true)) {
             throw new RaceProofException("Authentication model [{$modelClass}] is not an Eloquent model.");
         }
 
         $model = new $modelClass;
-        $user = $model->newQuery()->find($plan->auth->key);
+        $user = $model->newQuery()->find($auth->key);
 
         if ($user === null) {
             throw new RaceProofException("Authentication model [{$modelClass}] was not found.");
@@ -116,7 +117,7 @@ final readonly class KernelRequestExecutor implements RequestExecutor
             throw new RaceProofException("Authentication model [{$modelClass}] must implement Authenticatable.");
         }
 
-        $guard = $this->auth->guard($plan->auth->guard);
+        $guard = $this->auth->guard($auth->guard);
         $guard->setUser($user);
         $request->setUserResolver(fn () => $user);
     }

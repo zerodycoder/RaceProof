@@ -33,6 +33,7 @@ final class PlanValidationTest extends TestCase
         yield 'non-object request' => [array_replace($valid, ['request' => 'POST /checkout'])];
         yield 'non-string header' => [array_replace_recursive($valid, ['request' => ['headers' => ['X-Test' => 123]]])];
         yield 'non-string checkpoint' => [array_replace($valid, ['checkpoints' => [123]])];
+        yield 'participant specs list' => [array_replace($valid, ['participant_specs' => [['payload' => []]]])];
     }
 
     /** @param array<string, mixed> $plan */

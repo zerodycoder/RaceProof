@@ -36,6 +36,7 @@ final class FileCoordinatorStore implements CoordinatorStore
         $this->recordEvent(TimelineEvent::make($plan->runId, 'run.created', data: [
             'participants' => $plan->participants,
             'checkpoint_count' => count($plan->checkpoints),
+            'participant_override_count' => count($plan->participantSpecs),
         ]));
     }
 

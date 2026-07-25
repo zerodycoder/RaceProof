@@ -4,7 +4,7 @@
 
 RaceProof starts independent Laravel processes against the same database, holds them at explicit barriers, and returns one result that can assert response distributions and database invariants. It is a test tool—not a load tester, a lock library, an automatic race detector, or a formal proof that no race exists.
 
-> Current status: technical MVP. The local kernel runner, file coordinator, start barrier, `RacePoint`, versioned event timelines, actionable failure reports, crash/timeout collection, JSON results, database safety checks, and a deterministic overselling demonstration are implemented.
+> Current status: technical MVP. The local kernel runner, file coordinator, start barrier, `RacePoint`, per-participant request/auth/bootstrap specs, versioned event timelines, actionable failure reports, crash/timeout collection, JSON results, database safety checks, and deterministic database demonstrations are implemented.
 
 ## The five-minute example
 
@@ -76,6 +76,8 @@ See [runtime checkpoint deployment](docs/runtime-checkpoints.md) for migration f
 Implemented builder methods:
 
 ```php
+use RaceProof\Laravel\ParticipantBuilder;
+
 race()
     ->participants(5)
     ->postJson('/api/endpoint', ['id' => 1])
@@ -83,11 +85,19 @@ race()
     ->withCookies(['locale' => 'en'])
     ->withToken($token)
     ->actingAs($user, 'web')
+    ->forParticipant('p1', fn (ParticipantBuilder $participant) => $participant
+        ->withPayload(['id' => 2])
+        ->withHeaders(['X-Tenant' => 'north'])
+        ->withToken($participantToken)
+        ->actingAs($participantUser)
+        ->withBootstrap(CheckoutParticipantBootstrap::class, ['tenant' => 'north']))
+    ->withBootstrap(CheckoutParticipantBootstrap::class, ['tenant' => 'acme'])
     ->startTogether()
     ->releaseWhenAllReach('after-read')
     ->run();
-    ->withBootstrap(CheckoutParticipantBootstrap::class, ['tenant' => 'acme'])
 ```
+
+Participant overrides are validated before orchestration and cross the process boundary only as JSON. See [per-participant requests and authentication](docs/participant-specs.md) for merge semantics plus session, token, Sanctum, identity, and credential-handling guidance.
 
 Implemented assertions and queries:
 
@@ -164,13 +174,12 @@ The integration suite includes a real three-process Laravel checkpoint test and 
 
 The database suite runs isolated migrations with an exact database-name allowlist and proves broken/fixed behavior for overselling, coupons, wallets, quotes, uniqueness, lock misuse, deadlocks, and lock timeouts. CI also produces 100/100 machine-readable critical evidence for both MySQL and PostgreSQL.
 
-See [architecture](docs/architecture.md), [participant bootstrap](docs/participant-bootstrap.md), [runtime deployment](docs/runtime-checkpoints.md), [timeline evidence](docs/timeline.md), [database testing](docs/database-testing.md), and [production safety](docs/production-safety.md) for the operational details.
+See [architecture](docs/architecture.md), [per-participant requests and authentication](docs/participant-specs.md), [participant bootstrap](docs/participant-bootstrap.md), [runtime deployment](docs/runtime-checkpoints.md), [timeline evidence](docs/timeline.md), [database testing](docs/database-testing.md), and [production safety](docs/production-safety.md) for the operational details.
 
 ## Near-term roadmap
 
-1. Validate authentication adapters for session, Sanctum, and token guards.
-2. Add Pest ergonomics and pluggable evidence reporters.
-3. Stabilize the public API and publish the beta release.
+1. Add Pest ergonomics and pluggable evidence reporters.
+2. Stabilize the public API and publish the beta release.
 
 Redis coordination, network mode, queues, schedule fuzzing, exact interleaving control, and dashboards are deliberately outside the first release.
 

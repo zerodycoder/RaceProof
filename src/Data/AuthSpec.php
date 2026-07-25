@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace RaceProof\Laravel\Data;
 
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Model;
 use JsonSerializable;
+use RaceProof\Laravel\Exceptions\InvalidRacePlan;
 use RaceProof\Laravel\Support\Input;
 
 final readonly class AuthSpec implements JsonSerializable
@@ -13,7 +16,30 @@ final readonly class AuthSpec implements JsonSerializable
         public string $model,
         public int|string $key,
         public string $guard = 'web',
-    ) {}
+    ) {
+        if ($model === '') {
+            throw new InvalidRacePlan('Authentication model must not be empty.');
+        }
+
+        if (trim($guard) === '') {
+            throw new InvalidRacePlan('Authentication guard must not be empty.');
+        }
+    }
+
+    public static function fromModel(Model $user, string $guard = 'web'): self
+    {
+        $key = $user->getKey();
+
+        if (! $user->exists || (! is_int($key) && ! is_string($key))) {
+            throw new InvalidRacePlan('actingAs() requires a persisted Eloquent model.');
+        }
+
+        if (! $user instanceof Authenticatable) {
+            throw new InvalidRacePlan('actingAs() requires an Eloquent model that implements Authenticatable.');
+        }
+
+        return new self($user::class, $key, $guard);
+    }
 
     /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self

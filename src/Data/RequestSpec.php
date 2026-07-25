@@ -7,6 +7,7 @@ namespace RaceProof\Laravel\Data;
 use JsonSerializable;
 use RaceProof\Laravel\Exceptions\InvalidRacePlan;
 use RaceProof\Laravel\Support\Input;
+use RaceProof\Laravel\Support\RequestData;
 
 final readonly class RequestSpec implements JsonSerializable
 {
@@ -26,6 +27,14 @@ final readonly class RequestSpec implements JsonSerializable
         if ($uri === '' || ! str_starts_with($uri, '/')) {
             throw new InvalidRacePlan('The request URI must start with /.');
         }
+
+        if ($method === '' || ! preg_match('/^[A-Za-z]+$/', $method)) {
+            throw new InvalidRacePlan('The request method is invalid.');
+        }
+
+        RequestData::validatePayload($payload);
+        RequestData::validateHeaders($headers);
+        RequestData::validateCookies($cookies);
     }
 
     /** @param array<string, mixed> $data */

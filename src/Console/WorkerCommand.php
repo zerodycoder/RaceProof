@@ -63,13 +63,14 @@ final class WorkerCommand extends Command
             $this->environment->ensureEnabled();
             $plan = $store->plan($runId);
             $participantContext = new ParticipantContext($runId, $participantId);
+            $bootstrapSpec = $plan->bootstrapFor($participantId);
 
-            if ($plan->bootstrap !== null) {
+            if ($bootstrapSpec !== null) {
                 $store->recordEvent(TimelineEvent::make(
                     $runId,
                     'participant.bootstrap_started',
                     $participantId,
-                    data: ['class' => $plan->bootstrap->class],
+                    data: ['class' => $bootstrapSpec->class],
                 ));
 
                 try {

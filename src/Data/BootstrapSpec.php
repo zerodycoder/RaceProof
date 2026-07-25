@@ -8,6 +8,7 @@ use JsonSerializable;
 use RaceProof\Laravel\Contracts\ParticipantBootstrap;
 use RaceProof\Laravel\Exceptions\InvalidRacePlan;
 use RaceProof\Laravel\Support\Input;
+use RaceProof\Laravel\Support\JsonValue;
 
 final readonly class BootstrapSpec implements JsonSerializable
 {
@@ -25,7 +26,7 @@ final readonly class BootstrapSpec implements JsonSerializable
                 throw new InvalidRacePlan('Participant bootstrap configuration must use string keys.');
             }
 
-            self::validateJsonValue($value, 'bootstrap.'.$key);
+            JsonValue::assert($value, 'bootstrap.'.$key, 'Participant bootstrap field');
         }
     }
 
@@ -45,36 +46,5 @@ final readonly class BootstrapSpec implements JsonSerializable
             'class' => $this->class,
             'configuration' => (object) $this->configuration,
         ];
-    }
-
-    private static function validateJsonValue(mixed $value, string $path): void
-    {
-        if ($value === null || is_bool($value) || is_int($value) || is_string($value)) {
-            return;
-        }
-
-        if (is_float($value) && is_finite($value)) {
-            return;
-        }
-
-        if (! is_array($value)) {
-            throw new InvalidRacePlan("Participant bootstrap field [{$path}] is not JSON-safe.");
-        }
-
-        if (array_is_list($value)) {
-            foreach ($value as $index => $item) {
-                self::validateJsonValue($item, $path.'.'.$index);
-            }
-
-            return;
-        }
-
-        foreach ($value as $key => $item) {
-            if (! is_string($key)) {
-                throw new InvalidRacePlan("Participant bootstrap field [{$path}] must use string object keys.");
-            }
-
-            self::validateJsonValue($item, $path.'.'.$key);
-        }
     }
 }

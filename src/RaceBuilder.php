@@ -4,16 +4,20 @@ declare(strict_types=1);
 
 namespace RaceProof\Laravel;
 
+use Closure;
 use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Database\Eloquent\Model;
 use RaceProof\Laravel\Data\AuthSpec;
 use RaceProof\Laravel\Data\BootstrapSpec;
+use RaceProof\Laravel\Data\ParticipantSpec;
 use RaceProof\Laravel\Data\RacePlan;
 use RaceProof\Laravel\Data\RequestSpec;
 use RaceProof\Laravel\Exceptions\InvalidRacePlan;
 use RaceProof\Laravel\Execution\RaceOrchestrator;
 use RaceProof\Laravel\Results\RaceResult;
 use RaceProof\Laravel\Support\ConfigValue;
+use RaceProof\Laravel\Support\ParticipantId;
+use RaceProof\Laravel\Support\RequestData;
 use RaceProof\Laravel\Support\RunId;
 
 final class RaceBuilder
@@ -38,6 +42,9 @@ final class RaceBuilder
     private ?AuthSpec $auth = null;
 
     private ?BootstrapSpec $bootstrap = null;
+
+    /** @var array<string, ParticipantSpec> */
+    private array $participantSpecs = [];
 
     /** @var list<string> */
     private array $checkpoints = [];
@@ -70,6 +77,7 @@ final class RaceBuilder
     /** @param array<string, string> $headers */
     public function withHeaders(array $headers): self
     {
+        RequestData::validateHeaders($headers);
         $this->headers = array_merge($this->headers, $headers);
 
         return $this;
@@ -78,6 +86,7 @@ final class RaceBuilder
     /** @param array<string, string> $cookies */
     public function withCookies(array $cookies): self
     {
+        RequestData::validateCookies($cookies);
         $this->cookies = array_merge($this->cookies, $cookies);
 
         return $this;
@@ -85,20 +94,14 @@ final class RaceBuilder
 
     public function withToken(string $token, string $type = 'Bearer'): self
     {
-        $this->headers['Authorization'] = trim($type.' '.$token);
+        $this->headers['Authorization'] = RequestData::authorization($token, $type);
 
         return $this;
     }
 
     public function actingAs(Model $user, string $guard = 'web'): self
     {
-        $key = $user->getKey();
-
-        if (! is_int($key) && ! is_string($key)) {
-            throw new InvalidRacePlan('actingAs() requires a persisted Eloquent model.');
-        }
-
-        $this->auth = new AuthSpec($user::class, $key, $guard);
+        $this->auth = AuthSpec::fromModel($user, $guard);
 
         return $this;
     }
@@ -107,6 +110,17 @@ final class RaceBuilder
     public function withBootstrap(string $bootstrap, array $configuration = []): self
     {
         $this->bootstrap = new BootstrapSpec($bootstrap, $configuration);
+
+        return $this;
+    }
+
+    /** @param Closure(ParticipantBuilder): mixed $configure */
+    public function forParticipant(string $participantId, Closure $configure): self
+    {
+        ParticipantId::number($participantId);
+        $participant = new ParticipantBuilder($this->participantSpecs[$participantId] ?? null);
+        $configure($participant);
+        $this->participantSpecs[$participantId] = $participant->spec();
 
         return $this;
     }
@@ -148,6 +162,7 @@ final class RaceBuilder
             runTimeoutMs: ConfigValue::integer($this->config, 'raceproof.runner.run_timeout_ms', 15_000),
             pollIntervalMs: ConfigValue::integer($this->config, 'raceproof.runner.poll_interval_ms', 5),
             bootstrap: $this->bootstrap,
+            participantSpecs: $this->participantSpecs,
         );
 
         return $this->orchestrator->run($plan);

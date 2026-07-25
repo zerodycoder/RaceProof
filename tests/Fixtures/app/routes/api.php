@@ -19,3 +19,16 @@ Route::post('/bootstrap', function () {
         'checkpoint_active' => Checkpoint::active(),
     ]);
 });
+
+Route::post('/participant-spec', function () {
+    $token = request()->bearerToken();
+
+    return response()->json([
+        'payload' => request()->string('payload')->toString(),
+        'header' => request()->header('X-Participant'),
+        'cookie' => request()->cookie('participant'),
+        'token_hash' => is_string($token) ? hash('sha256', $token) : null,
+        'user_id' => auth()->id(),
+        'bootstrap' => config('raceproof.fixture.bootstrap'),
+    ]);
+});

@@ -16,16 +16,18 @@ final readonly class ParticipantBootstrapRunner
 
     public function run(RacePlan $plan, ParticipantContext $context): void
     {
-        if ($plan->bootstrap === null) {
+        $bootstrapSpec = $plan->bootstrapFor($context->participantId);
+
+        if ($bootstrapSpec === null) {
             return;
         }
 
-        $bootstrap = $this->app->make($plan->bootstrap->class);
+        $bootstrap = $this->app->make($bootstrapSpec->class);
 
         if (! $bootstrap instanceof ParticipantBootstrap) {
-            throw new InvalidRacePlan("Resolved participant bootstrap [{$plan->bootstrap->class}] is invalid.");
+            throw new InvalidRacePlan("Resolved participant bootstrap [{$bootstrapSpec->class}] is invalid.");
         }
 
-        $bootstrap->bootstrap($context, $plan->bootstrap->configuration);
+        $bootstrap->bootstrap($context, $bootstrapSpec->configuration);
     }
 }
