@@ -54,8 +54,8 @@ The exact meaning and boundaries of these levels are in [the compatibility polic
 
 | Gate | Tracking issue | Status |
 | --- | ---: | --- |
-| `public-package-publication` | [#18](https://github.com/zerodycoder/RaceProof/issues/18) | blocked |
-| `beta-adoption-evidence` | [#19](https://github.com/zerodycoder/RaceProof/issues/19) | blocked |
-| `stable-release` | [#20](https://github.com/zerodycoder/RaceProof/issues/20) | blocked |
+| `public-package-publication` | [#2](https://github.com/zerodycoder/RaceProof/issues/2) | blocked |
+| `beta-adoption-evidence` | [#3](https://github.com/zerodycoder/RaceProof/issues/3) | blocked |
+| `stable-release` | [#4](https://github.com/zerodycoder/RaceProof/issues/4) | blocked |
 
-Stable publication remains prohibited until the package-publication gate in #18 and beta-adoption gate in #19 are backed by real external evidence and the published-artifact upgrade path exists. Issue #20 records the stable workflow outcome and is closed only after publication succeeds; it is reported here but is not a circular pre-publication predicate.
+Stable publication remains prohibited until the package-publication gate in #2 and beta-adoption gate in #3 are backed by real external evidence and the published-artifact upgrade path exists. Issue #4 records the stable workflow outcome and is closed only after publication succeeds; it is reported here but is not a circular pre-publication predicate.
