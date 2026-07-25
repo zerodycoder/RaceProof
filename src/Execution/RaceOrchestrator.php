@@ -15,6 +15,7 @@ use RaceProof\Laravel\Data\TimelineEvent;
 use RaceProof\Laravel\Exceptions\RaceExecutionFailed;
 use RaceProof\Laravel\Exceptions\RaceProofException;
 use RaceProof\Laravel\Results\RaceResult;
+use RaceProof\Laravel\Studio\ReportArchive;
 use RaceProof\Laravel\Support\ConfigValue;
 use RaceProof\Laravel\Support\DatabaseSafety;
 use RaceProof\Laravel\Support\EnvironmentGuard;
@@ -31,6 +32,7 @@ final readonly class RaceOrchestrator
         private WorkerProcessFactory $processFactory,
         private RaceClock $clock,
         private SensitiveDataRedactor $redactor,
+        private ReportArchive $archive,
     ) {}
 
     public function run(RacePlan $plan): RaceResult
@@ -108,19 +110,21 @@ final readonly class RaceOrchestrator
                 $timeline = $this->store->timeline($plan->runId);
             }
 
-            if ($cleanup) {
-                $this->store->cleanup($plan->runId);
-            }
-            $artifactPath = $cleanup ? null : $this->artifactPath($plan);
-
-            return new RaceResult(
+            $result = new RaceResult(
                 runId: $plan->runId,
                 expectedParticipants: $plan->participants,
                 participants: $results,
                 timedOut: $timedOut,
-                artifactPath: $artifactPath,
+                artifactPath: $cleanup ? null : $this->artifactPath($plan),
                 timeline: $timeline,
             );
+            $this->archive->store($result);
+
+            if ($cleanup) {
+                $this->store->cleanup($plan->runId);
+            }
+
+            return $result;
         } catch (Throwable $exception) {
             return $this->failedRun($plan, $processes, $timedOut, $exception);
         }
@@ -185,6 +189,12 @@ final readonly class RaceOrchestrator
             artifactPath: $this->artifactPath($plan),
             timeline: $timeline,
         );
+
+        try {
+            $this->archive->store($result);
+        } catch (Throwable $archiveException) {
+            $message .= ' Studio archive failure: '.$this->redactor->diagnostic($archiveException->getMessage()).'.';
+        }
 
         throw new RaceExecutionFailed($message, $result, $exception);
     }

@@ -127,7 +127,9 @@ final class Release
                 'config',
                 'docs',
                 'examples',
+                'resources',
                 'src',
+                'stubs',
             ],
             manifest: $laravelManifest,
         );

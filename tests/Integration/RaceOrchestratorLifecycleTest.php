@@ -16,6 +16,7 @@ use RaceProof\Laravel\Exceptions\RaceExecutionFailed;
 use RaceProof\Laravel\Exceptions\RaceProofException;
 use RaceProof\Laravel\Execution\RaceOrchestrator;
 use RaceProof\Laravel\Results\RaceTimeline;
+use RaceProof\Laravel\Studio\ReportArchive;
 use RaceProof\Laravel\Support\DatabaseSafety;
 use RaceProof\Laravel\Support\EnvironmentGuard;
 use RaceProof\Laravel\Support\SensitiveDataRedactor;
@@ -82,6 +83,46 @@ final class RaceOrchestratorLifecycleTest extends TestCase
         self::assertSame([], $store->cleanedRuns);
         self::assertSame($store->timelineWarnings, $result->timeline?->warnings);
         self::assertNotContains('run.cleanup_started', $this->eventTypes($result->timeline));
+    }
+
+    public function test_completed_run_is_archived_before_successful_scratch_evidence_is_cleaned(): void
+    {
+        $archivePath = dirname(__DIR__, 2).'/build/studio-orchestrator-tests/'.bin2hex(random_bytes(8));
+        $plan = $this->plan();
+        $store = new LifecycleCoordinatorStore;
+        $store->ready = 2;
+        $store->storedResults = [
+            $this->participant($plan, 'p1', 200),
+            $this->participant($plan, 'p2', 200),
+        ];
+        $processes = [
+            'p1' => new LifecycleWorkerProcess(running: false),
+            'p2' => new LifecycleWorkerProcess(running: false),
+        ];
+        $this->app['config']->set('raceproof.studio.enabled', true);
+        $this->app['config']->set('raceproof.studio.path', $archivePath);
+        $this->app->forgetInstance(ReportArchive::class);
+
+        try {
+            $result = $this->orchestrator(
+                $store,
+                new LifecycleProcessFactory($processes),
+                new LifecycleClock([0]),
+            )->run($plan);
+            $reportPath = $archivePath.'/'.$plan->runId.'.json';
+            $report = file_get_contents($reportPath);
+
+            self::assertNull($result->artifactPath);
+            self::assertSame([$plan->runId], $store->cleanedRuns);
+            self::assertFileExists($reportPath);
+            self::assertIsString($report);
+            self::assertStringContainsString('"outcome": "passed"', $report);
+            self::assertStringContainsString('"run.cleanup_started"', $report);
+        } finally {
+            $this->removeDirectory($archivePath);
+            $this->app['config']->set('raceproof.studio.enabled', false);
+            $this->app->forgetInstance(ReportArchive::class);
+        }
     }
 
     public function test_early_exit_is_bounded_and_all_other_workers_are_stopped_and_waited(): void
@@ -240,6 +281,7 @@ final class RaceOrchestratorLifecycleTest extends TestCase
             $factory,
             $clock,
             $this->app->make(SensitiveDataRedactor::class),
+            $this->app->make(ReportArchive::class),
         );
     }
 
@@ -274,6 +316,30 @@ final class RaceOrchestratorLifecycleTest extends TestCase
             static fn (TimelineEvent $event): string => $event->type,
             $timeline->events,
         );
+    }
+
+    private function removeDirectory(string $directory): void
+    {
+        if (! is_dir($directory)) {
+            return;
+        }
+
+        $entries = scandir($directory);
+
+        if ($entries === false) {
+            return;
+        }
+
+        foreach ($entries as $entry) {
+            if ($entry === '.' || $entry === '..') {
+                continue;
+            }
+
+            $path = $directory.'/'.$entry;
+            is_dir($path) ? $this->removeDirectory($path) : @unlink($path);
+        }
+
+        @rmdir($directory);
     }
 }
 

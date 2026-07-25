@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "7909df015f6a06e8b26fdf952d433d4f",
+    "content-hash": "728a6d61608047d80d0717e3f59caef7",
     "packages": [
         {
             "name": "brick/math",
@@ -2909,7 +2909,7 @@
             "dist": {
                 "type": "path",
                 "url": "runtime",
-                "reference": "63460b99cbf3d4f4bfd8f40fbac8cec66a970dae"
+                "reference": "0b5d8f628112d8d12650742de9fa3813489a3a4b"
             },
             "require": {
                 "php": "^8.2"
@@ -2927,12 +2927,17 @@
                 "MIT"
             ],
             "description": "Production-safe no-op checkpoint runtime for RaceProof instrumentation.",
+            "homepage": "https://github.com/zerodycoder/RaceProof",
             "keywords": [
                 "concurrency",
                 "php",
                 "race-condition",
                 "testing"
             ],
+            "support": {
+                "issues": "https://github.com/zerodycoder/RaceProof/issues",
+                "source": "https://github.com/zerodycoder/RaceProof"
+            },
             "transport-options": {
                 "symlink": true,
                 "relative": true

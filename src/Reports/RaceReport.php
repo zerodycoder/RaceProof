@@ -14,6 +14,13 @@ final readonly class RaceReport implements JsonSerializable
     /**
      * @param  array<int, int>  $statuses
      * @param  list<ParticipantReport>  $participants
+     * @param  list<array{
+     *     type:string,
+     *     occurred_at_ns:int,
+     *     participant_id:string|null,
+     *     checkpoint:string|null,
+     *     data:array<string, bool|float|int|string|null>
+     * }>  $timelineEvents
      * @param  list<string>  $timelineWarnings
      */
     public function __construct(
@@ -31,6 +38,8 @@ final readonly class RaceReport implements JsonSerializable
         public array $participants,
         public ?string $coordinationSummary,
         public int $timelineEventCount,
+        public array $timelineEvents,
+        public bool $timelineEventsTruncated,
         public int $timelineWarningCount,
         public array $timelineWarnings,
         public bool $timelineWarningsTruncated,
@@ -65,6 +74,8 @@ final readonly class RaceReport implements JsonSerializable
             'coordination_summary' => $this->coordinationSummary,
             'timeline' => [
                 'event_count' => $this->timelineEventCount,
+                'events' => $this->timelineEvents,
+                'events_truncated' => $this->timelineEventsTruncated,
                 'warning_count' => $this->timelineWarningCount,
                 'warnings' => $this->timelineWarnings,
                 'warnings_truncated' => $this->timelineWarningsTruncated,
