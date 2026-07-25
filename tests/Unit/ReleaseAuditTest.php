@@ -71,6 +71,48 @@ final class ReleaseAuditTest extends TestCase
         );
     }
 
+    public function test_external_gate_issue_numbers_can_move_without_weakening_the_gate_contract(): void
+    {
+        $root = dirname(__DIR__, 2);
+        $audit = ReleaseAudit::load($root.'/audit/release-audit.json');
+
+        foreach ([2, 3, 4] as $index => $issue) {
+            /** @var array<string, mixed> $gate */
+            $gate = $audit['external_gates'][$index];
+            $gate['issue'] = $issue;
+            $audit['external_gates'][$index] = $gate;
+        }
+
+        self::assertSame([], ReleaseAudit::validationErrors($root, $audit));
+        self::assertStringContainsString(
+            'package-publication gate in #2 and beta-adoption gate in #3',
+            ReleaseAudit::render($audit),
+        );
+        self::assertSame([2, 3, 4], ReleaseAudit::machineEvidence($audit)['blocked_issues']);
+    }
+
+    public function test_external_gate_issue_numbers_must_be_positive_and_unique(): void
+    {
+        $root = dirname(__DIR__, 2);
+        $audit = ReleaseAudit::load($root.'/audit/release-audit.json');
+        /** @var array<string, mixed> $first */
+        $first = $audit['external_gates'][0];
+        /** @var array<string, mixed> $second */
+        $second = $audit['external_gates'][1];
+        $first['issue'] = 0;
+        $second['issue'] = 20;
+        $audit['external_gates'][0] = $first;
+        $audit['external_gates'][1] = $second;
+
+        $errors = ReleaseAudit::validationErrors($root, $audit);
+
+        self::assertContains(
+            '$.external_gates[0] must contain a string id and positive integer issue.',
+            $errors,
+        );
+        self::assertContains('$.external_gates issue numbers must be unique.', $errors);
+    }
+
     public function test_report_does_not_turn_pre_release_checks_into_stable_approval(): void
     {
         $root = dirname(__DIR__, 2);

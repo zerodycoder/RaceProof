@@ -105,7 +105,7 @@ final class Release
         self::archive(
             base: $root.'/runtime',
             archive: $runtimeArchive,
-            paths: ['LICENSE.md', 'README.md', 'composer.json', 'src'],
+            paths: ['LICENSE', 'README.md', 'composer.json', 'src'],
             manifest: $runtimeManifest,
         );
         self::archive(
@@ -114,7 +114,7 @@ final class Release
             paths: [
                 'CHANGELOG.md',
                 'CONTRIBUTING.md',
-                'LICENSE.md',
+                'LICENSE',
                 'README.md',
                 'ROADMAP.md',
                 'SECURITY.md',

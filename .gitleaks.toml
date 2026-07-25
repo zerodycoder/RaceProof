@@ -1,0 +1,11 @@
+title = "RaceProof secret scanning"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Generated dependencies and build output are not source inputs."
+paths = [
+  '''(^|[\\/])vendor[\\/]''',
+  '''(^|[\\/])build[\\/]''',
+]

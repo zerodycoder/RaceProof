@@ -68,5 +68,6 @@ machine-readable evidence. See [the pre-release audit](release-audit.md).
 
 `composer release:gate` is stricter and is invoked automatically for stable
 tags. It cannot pass while the published upgrade, package publication, real beta
-evidence, or resulting-fix gates remain blocked. Issue #20 records the release
-workflow outcome and is deliberately not a circular pre-publication predicate.
+evidence, or resulting-fix gates remain blocked. The `stable-release` gate in
+[`audit/release-audit.json`](../audit/release-audit.json) records the workflow
+outcome and is deliberately not a circular pre-publication predicate.

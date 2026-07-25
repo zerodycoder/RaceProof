@@ -58,4 +58,4 @@ The exact meaning and boundaries of these levels are in [the compatibility polic
 | `beta-adoption-evidence` | [#19](https://github.com/zerodycoder/RaceProof/issues/19) | blocked |
 | `stable-release` | [#20](https://github.com/zerodycoder/RaceProof/issues/20) | blocked |
 
-Stable publication remains prohibited until the #18 and #19 gates are backed by real external evidence and the published-artifact upgrade path exists. Issue #20 records the stable workflow outcome and is closed only after publication succeeds; it is reported here but is not a circular pre-publication predicate.
+Stable publication remains prohibited until the package-publication gate in #18 and beta-adoption gate in #19 are backed by real external evidence and the published-artifact upgrade path exists. Issue #20 records the stable workflow outcome and is closed only after publication succeeds; it is reported here but is not a circular pre-publication predicate.

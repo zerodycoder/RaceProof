@@ -1,7 +1,7 @@
 blank_issues_enabled: false
 contact_links:
   - name: Security vulnerability
-    url: https://github.com/zerodycoder/RaceProof/security
+    url: https://github.com/zerodycoder/RaceProof/security/advisories/new
     about: Report vulnerabilities privately; do not open a public issue.
   - name: Support policy
     url: https://github.com/zerodycoder/RaceProof/blob/main/SUPPORT.md

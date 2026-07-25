@@ -154,15 +154,19 @@ final class ReleaseAudit
         $lines[] = '| Gate | Tracking issue | Status |';
         $lines[] = '| --- | ---: | --- |';
 
+        $gateIssues = [];
+
         foreach ($gates as $gate) {
             if (! self::isObject($gate)) {
                 throw new RuntimeException('Validated release gate unexpectedly changed shape.');
             }
 
             $issue = self::integerField($gate, 'issue');
+            $identifier = self::stringField($gate, 'id');
+            $gateIssues[$identifier] = $issue;
             $lines[] = sprintf(
                 '| `%s` | [#%d](https://github.com/zerodycoder/RaceProof/issues/%d) | %s |',
-                self::stringField($gate, 'id'),
+                $identifier,
                 $issue,
                 $issue,
                 self::stringField($gate, 'status'),
@@ -170,7 +174,12 @@ final class ReleaseAudit
         }
 
         $lines[] = '';
-        $lines[] = 'Stable publication remains prohibited until the #18 and #19 gates are backed by real external evidence and the published-artifact upgrade path exists. Issue #20 records the stable workflow outcome and is closed only after publication succeeds; it is reported here but is not a circular pre-publication predicate.';
+        $lines[] = sprintf(
+            'Stable publication remains prohibited until the package-publication gate in #%d and beta-adoption gate in #%d are backed by real external evidence and the published-artifact upgrade path exists. Issue #%d records the stable workflow outcome and is closed only after publication succeeds; it is reported here but is not a circular pre-publication predicate.',
+            $gateIssues['public-package-publication'],
+            $gateIssues['beta-adoption-evidence'],
+            $gateIssues['stable-release'],
+        );
         $lines[] = '';
 
         return implode("\n", $lines);
@@ -216,7 +225,16 @@ final class ReleaseAudit
 
     /**
      * @param  array<string, mixed>  $audit
-     * @return array<string, mixed>
+     * @return array{
+     *     schema_version: 1,
+     *     audit_definition_sha256: string,
+     *     automated_controls: int,
+     *     mutation_risk_hotspots: int,
+     *     fresh_install: string,
+     *     published_upgrade: string,
+     *     release_status: 'eligible'|'blocked',
+     *     blocked_issues: list<int>
+     * }
      */
     public static function machineEvidence(array $audit): array
     {
@@ -546,11 +564,12 @@ final class ReleaseAudit
         }
 
         $expected = [
-            'public-package-publication' => 18,
-            'beta-adoption-evidence' => 19,
-            'stable-release' => 20,
+            'public-package-publication',
+            'beta-adoption-evidence',
+            'stable-release',
         ];
         $actual = [];
+        $issues = [];
 
         foreach ($gates as $index => $gate) {
             $path = "$.external_gates[{$index}]";
@@ -564,10 +583,11 @@ final class ReleaseAudit
             $identifier = $gate['id'] ?? null;
             $issue = $gate['issue'] ?? null;
 
-            if (! is_string($identifier) || ! is_int($issue)) {
-                $errors[] = "{$path} must contain a string id and integer issue.";
+            if (! is_string($identifier) || ! is_int($issue) || $issue < 1) {
+                $errors[] = "{$path} must contain a string id and positive integer issue.";
             } else {
-                $actual[$identifier] = $issue;
+                $actual[] = $identifier;
+                $issues[] = $issue;
             }
 
             if (! in_array($gate['status'] ?? null, ['blocked', 'verified'], true)) {
@@ -576,7 +596,11 @@ final class ReleaseAudit
         }
 
         if ($actual !== $expected) {
-            $errors[] = '$.external_gates must track issues #18, #19, and #20.';
+            $errors[] = '$.external_gates must track the package-publication, beta-adoption, and stable-release gates in order.';
+        }
+
+        if (count(array_unique($issues)) !== count($issues)) {
+            $errors[] = '$.external_gates issue numbers must be unique.';
         }
     }
 
@@ -612,7 +636,16 @@ final class ReleaseAudit
             $errors[] = '.github/workflows/tests.yml must define the release-audit job.';
         }
 
-        foreach (["php: '8.2'", "php: '8.5'", 'image: mysql:8.4', 'image: postgres:17'] as $needle) {
+        foreach ([
+            'secret-scan:',
+            'fetch-depth: 0',
+            'gitleaks dir . --no-banner --redact',
+            'gitleaks git . --no-banner --redact',
+            "php: '8.2'",
+            "php: '8.5'",
+            'image: mysql:8.4',
+            'image: postgres:17',
+        ] as $needle) {
             if (! is_string($testsWorkflow) || ! str_contains($testsWorkflow, $needle)) {
                 $errors[] = ".github/workflows/tests.yml is missing {$needle}.";
             }

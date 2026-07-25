@@ -67,6 +67,7 @@ final class ReleaseEngineeringTest extends TestCase
         self::assertTrue($laravelZip->open($first['laravel']['path']));
 
         try {
+            self::assertNotFalse($laravelZip->locateName('LICENSE'));
             self::assertNotFalse($laravelZip->locateName('docs/public-api.md'));
             self::assertNotFalse($laravelZip->locateName('docs/release-audit.md'));
             self::assertNotFalse($laravelZip->locateName('docs/templates/private-beta-invitation.md'));
@@ -92,6 +93,7 @@ final class ReleaseEngineeringTest extends TestCase
         self::assertTrue($runtimeZip->open($first['runtime']['path']));
 
         try {
+            self::assertNotFalse($runtimeZip->locateName('LICENSE'));
             self::assertNotFalse($runtimeZip->locateName('src/helpers.php'));
 
             for ($index = 0; $index < $runtimeZip->numFiles; $index++) {
@@ -126,6 +128,11 @@ final class ReleaseEngineeringTest extends TestCase
         self::assertStringContainsString('composer release:gate', $workflow);
         self::assertStringContainsString('if [[ "$version" != *-* ]]', $workflow);
         self::assertStringContainsString('release-audit:', $testsWorkflow);
+        self::assertStringContainsString('secret-scan:', $testsWorkflow);
+        self::assertStringContainsString('fetch-depth: 0', $testsWorkflow);
+        self::assertStringContainsString('gitleaks dir . --no-banner --redact', $testsWorkflow);
+        self::assertStringContainsString('gitleaks git . --no-banner --redact', $testsWorkflow);
+        self::assertStringContainsString('- secret-scan', $testsWorkflow);
         self::assertStringContainsString('- release-dry-run', $testsWorkflow);
         self::assertStringContainsString('- database', $testsWorkflow);
         self::assertStringContainsString('composer update --with', $testsWorkflow);

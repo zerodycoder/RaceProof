@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Prepared the public project surface with a redesigned README, tested demo
+  assets, documentation map, MIT licensing guide, citation metadata, and a
+  checksum-verified worktree/history secret-scan gate.
+- Made external release-gate issue references portable across repository
+  migration while preserving the exact gate identities, order, uniqueness,
+  evidence status, and fail-closed stable-release behavior.
 - Froze the v1 public API candidate with a reflection-backed signature guard and
   published semantic-versioning, deprecation, and upgrade policies.
 - Added reproducible dual-package artifacts, clean artifact installation,

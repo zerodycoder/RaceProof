@@ -40,4 +40,6 @@ if (file_put_contents($directory.'/evidence.json', $evidence, LOCK_EX) === false
     exit(1);
 }
 
-fwrite(STDOUT, "Release audit controls pass; external evidence and the stable workflow outcome remain blocked in issues #18, #19, and #20.\n");
+$blockedIssues = ReleaseAudit::machineEvidence($audit)['blocked_issues'];
+$blocked = implode(', #', $blockedIssues);
+fwrite(STDOUT, "Release audit controls pass; external evidence and the stable workflow outcome remain blocked in issues #{$blocked}.\n");

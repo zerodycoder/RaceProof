@@ -1,0 +1,35 @@
+name: Documentation improvement
+description: Report unclear, incomplete, or incorrect RaceProof documentation
+title: "[Docs]: "
+labels:
+  - documentation
+body:
+  - type: input
+    id: location
+    attributes:
+      label: Page or section
+      description: Link to the page and name the heading or code sample.
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is unclear or incorrect?
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested improvement
+      description: Include the reader's goal and the outcome the documentation should enable.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checked
+    attributes:
+      label: Checks
+      options:
+        - label: I searched the existing documentation and open issues for this topic.
+          required: true
+        - label: This report contains no credentials, private repository details, or production data.
+          required: true

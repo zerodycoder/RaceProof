@@ -12,12 +12,15 @@ promises and must not be overstated in release material.
   published release.
 - Private-beta evidence currently records 0/10 invited projects and 0/5
   confirmed adopters.
-- Stable publication is blocked by the evidence gates in #18 and #19 and the
-  missing published-upgrade baseline; #20 tracks the eventual workflow outcome.
+- Stable publication is blocked by the package-publication and beta-adoption
+  gates in [`audit/release-audit.json`](../audit/release-audit.json) and the
+  missing published-upgrade baseline; the `stable-release` gate tracks the
+  eventual workflow outcome.
 
 The stable release workflow enforces the evidence and upgrade boundaries with
-`composer release:gate`; documentation alone is not the control. Issue #20 is
-closed only after that workflow publishes successfully.
+`composer release:gate`; documentation alone is not the control. The issue
+named by `stable-release` is closed only after that workflow publishes
+successfully.
 
 The deterministic artifact dry-run proves a clean local Composer artifact
 installation. It is not evidence of GitHub/Packagist publication or an upgrade

@@ -62,11 +62,12 @@ other required job succeeds.
 
 For a stable version, the release workflow also runs `composer release:gate`.
 That command fails unless the prior published-artifact upgrade is verified,
-the package-publication and beta gates in #18 and #19 are marked with audited
-evidence, and the beta registry itself satisfies its invitation, adopter,
-consent, and resulting-fix gates. Issue #20 tracks the workflow outcome itself
-and is closed only after publication, so it is reported but cannot be a
-pre-publication prerequisite.
+the package-publication and beta gates named in
+[`audit/release-audit.json`](../audit/release-audit.json) are marked with
+audited evidence, and the beta registry itself satisfies its invitation,
+adopter, consent, and resulting-fix gates. The `stable-release` issue tracks
+the workflow outcome itself and is closed only after publication, so it is
+reported but cannot be a pre-publication prerequisite.
 Prerelease tags do not run the stable gate because a real beta release is needed
 to collect that evidence.
 

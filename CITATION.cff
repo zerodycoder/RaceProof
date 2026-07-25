@@ -1,0 +1,14 @@
+cff-version: 1.2.0
+message: "If RaceProof supports your research or engineering work, please cite this repository."
+title: "RaceProof for Laravel"
+type: software
+authors:
+  - alias: zerodycoder
+repository-code: "https://github.com/zerodycoder/RaceProof"
+url: "https://github.com/zerodycoder/RaceProof"
+license: MIT
+keywords:
+  - Laravel
+  - concurrency testing
+  - race conditions
+  - reproducible testing
