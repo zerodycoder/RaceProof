@@ -10,6 +10,9 @@
 - Added a private-beta invitation/feedback/consent kit, a bounded anonymized
   evidence registry, and fail-closed validation/reporting without claiming
   invitations or adoption that have not occurred.
+- Added a dependent pre-release audit job, pinned CI action references,
+  compatibility/maintenance/limitations policies, and an executable
+  mutation-risk registry while keeping external release blockers explicit.
 - Added per-participant payload, header, cookie, token, session, Sanctum identity, and bootstrap overrides with real multi-process authentication coverage.
 - Added a stable schema-v1 evidence model with bounded human, JSON, and JUnit reporters.
 - Added an executable Pest 3 workflow to the supported PHP/Laravel CI matrix.

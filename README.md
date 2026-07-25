@@ -204,7 +204,7 @@ Four published broken/fixed demonstrations use the executable routes exercised b
 - [wallet debit](examples/wallet-debit/README.md);
 - [quote acceptance](examples/quote-acceptance/README.md).
 
-See [PHPUnit and Pest workflows](docs/testing-workflows.md), the [public API contract](docs/public-api.md), [versioning policy](docs/versioning.md), [upgrade guide](UPGRADING.md), [release runbook](docs/releasing.md), the [private-beta runbook](docs/private-beta.md), [current beta evidence](docs/beta-evidence.md), the [platform support matrix](docs/platform-support.md), the [troubleshooting decision guide](docs/troubleshooting.md), [architecture](docs/architecture.md), [participant authentication](docs/participant-specs.md), [participant bootstrap](docs/participant-bootstrap.md), [evidence reporters](docs/reporters.md), [runtime deployment](docs/runtime-checkpoints.md), [timeline evidence](docs/timeline.md), [database testing](docs/database-testing.md), and [production safety](docs/production-safety.md).
+See [PHPUnit and Pest workflows](docs/testing-workflows.md), the [public API contract](docs/public-api.md), [versioning policy](docs/versioning.md), [upgrade guide](UPGRADING.md), [release runbook](docs/releasing.md), [pre-release audit](docs/release-audit.md), [compatibility policy](docs/compatibility.md), [maintenance policy](docs/maintenance.md), [known limitations](docs/known-limitations.md), the [private-beta runbook](docs/private-beta.md), [current beta evidence](docs/beta-evidence.md), the [platform support matrix](docs/platform-support.md), the [troubleshooting decision guide](docs/troubleshooting.md), [architecture](docs/architecture.md), [participant authentication](docs/participant-specs.md), [participant bootstrap](docs/participant-bootstrap.md), [evidence reporters](docs/reporters.md), [runtime deployment](docs/runtime-checkpoints.md), [timeline evidence](docs/timeline.md), [database testing](docs/database-testing.md), and [production safety](docs/production-safety.md).
 
 ## Near-term roadmap
 
@@ -216,11 +216,13 @@ Redis coordination, network mode, queues, schedule fuzzing, exact interleaving c
 
 ## Project standards
 
-Changes are developed as focused pull requests and merged only after review and green CI. The enforced checks include the supported PHP/Laravel matrix, PHPUnit, a real-process Pest contract, Pint, PHPStan level max, Composer validation/audit, and a 90% line-coverage floor.
+Changes are developed as focused pull requests and merged only after review and green CI. The enforced checks include the supported PHP/Laravel matrix, PHPUnit, a real-process Pest contract, Pint, PHPStan level max, Composer validation/audit, a 90% line-coverage floor, both real databases, the artifact dry-run, and the dependent pre-release audit.
 
 - [Roadmap](ROADMAP.md)
 - [Quality policy](docs/quality.md)
 - [Release checklist](docs/releasing.md)
+- [Pre-release audit](docs/release-audit.md)
+- [Known limitations](docs/known-limitations.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
 - [Support](SUPPORT.md)

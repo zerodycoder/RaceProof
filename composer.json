@@ -68,7 +68,10 @@
         "beta:check": "@php tools/beta/check.php",
         "beta:gate": "@php tools/beta/gate.php",
         "beta:report": "@php tools/beta/report.php",
+        "release:audit": "@php tools/audit/check.php",
+        "release:audit-report": "@php tools/audit/report.php",
         "release:dry-run": "@php tools/release/dry-run.php",
+        "release:gate": "@php tools/audit/gate.php",
         "validate:runtime": "composer --working-dir=runtime validate --strict",
         "format": "pint",
         "format:test": "pint --test",
@@ -79,7 +82,8 @@
             "@format:test",
             "@analyse",
             "@api:check",
-            "@beta:check"
+            "@beta:check",
+            "@release:audit"
         ]
     },
     "extra": {

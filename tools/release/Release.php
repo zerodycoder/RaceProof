@@ -121,6 +121,7 @@ final class Release
                 'SUPPORT.md',
                 'UPGRADING.md',
                 'api',
+                'audit',
                 'beta',
                 'composer.json',
                 'config',

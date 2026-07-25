@@ -1,0 +1,253 @@
+{
+    "schema_version": 1,
+    "prepared_on": "2026-07-25",
+    "controls": [
+        {
+            "id": "environment-database-safety",
+            "scope": "Production refusal, explicit local opt-in, open transactions, shared SQLite, and exact database allowlists.",
+            "mutation_hotspot": true,
+            "sources": [
+                "src/Support/EnvironmentGuard.php",
+                "src/Support/DatabaseSafety.php"
+            ],
+            "tests": [
+                {
+                    "file": "tests/Integration/SafetyGuardEdgesTest.php",
+                    "method": "test_environment_guard_always_rejects_production"
+                },
+                {
+                    "file": "tests/Integration/SafetyGuardEdgesTest.php",
+                    "method": "test_environment_guard_rejects_non_testing_without_explicit_opt_in"
+                },
+                {
+                    "file": "tests/Integration/SafetyGuardEdgesTest.php",
+                    "method": "test_database_guard_rejects_in_memory_sqlite_when_enabled"
+                },
+                {
+                    "file": "tests/Integration/SafetyGuardsTest.php",
+                    "method": "test_it_rejects_an_open_parent_database_transaction"
+                },
+                {
+                    "file": "tests/Integration/SafetyGuardsTest.php",
+                    "method": "test_it_rejects_a_database_outside_the_allowlist"
+                }
+            ]
+        },
+        {
+            "id": "worker-lifecycle",
+            "scope": "Spawn failures, early exits, timeouts, stop/wait ordering, orphan prevention, cleanup, and retained failure evidence.",
+            "mutation_hotspot": true,
+            "sources": [
+                "src/Execution/RaceOrchestrator.php",
+                "src/Execution/SymfonyWorkerProcess.php"
+            ],
+            "tests": [
+                {
+                    "file": "tests/Integration/RaceOrchestratorLifecycleTest.php",
+                    "method": "test_clean_workers_are_waited_reaped_and_then_cleaned_up"
+                },
+                {
+                    "file": "tests/Integration/RaceOrchestratorLifecycleTest.php",
+                    "method": "test_early_exit_is_bounded_and_all_other_workers_are_stopped_and_waited"
+                },
+                {
+                    "file": "tests/Integration/RaceOrchestratorLifecycleTest.php",
+                    "method": "test_spawn_timeout_uses_the_injected_clock_without_real_sleep"
+                },
+                {
+                    "file": "tests/Integration/RaceOrchestratorLifecycleTest.php",
+                    "method": "test_run_timeout_stops_and_reaps_workers_and_returns_structured_failures"
+                },
+                {
+                    "file": "tests/Integration/RaceOrchestratorLifecycleTest.php",
+                    "method": "test_factory_failure_still_stops_and_waits_already_started_workers"
+                },
+                {
+                    "file": "tests/Unit/SymfonyWorkerProcessStopTest.php",
+                    "method": "test_stop_terminates_a_running_process_before_wait_returns"
+                }
+            ]
+        },
+        {
+            "id": "redaction-reporting",
+            "scope": "Credential patterns, invalid UTF-8, byte bounds, response/report projection, and valid JSON/XML after redaction.",
+            "mutation_hotspot": true,
+            "sources": [
+                "src/Support/SensitiveDataRedactor.php",
+                "src/Reports/RaceReportFactory.php",
+                "src/Reports/JUnitReporter.php"
+            ],
+            "tests": [
+                {
+                    "file": "tests/Integration/SensitiveDataRedactorTest.php",
+                    "method": "test_worker_output_is_redacted_before_it_is_byte_bounded"
+                },
+                {
+                    "file": "tests/Integration/SensitiveDataRedactorTest.php",
+                    "method": "test_diagnostics_redact_json_credentials_and_bearer_tokens"
+                },
+                {
+                    "file": "tests/Integration/SensitiveDataRedactorTest.php",
+                    "method": "test_invalid_utf8_and_empty_configured_keys_cannot_bypass_redaction"
+                },
+                {
+                    "file": "tests/Integration/SensitiveDataRedactorTest.php",
+                    "method": "test_byte_limits_never_split_a_utf8_character"
+                },
+                {
+                    "file": "tests/Integration/ReportersTest.php",
+                    "method": "test_the_stable_report_model_is_bounded_redacted_and_accounts_for_missing_participants"
+                },
+                {
+                    "file": "tests/Integration/ReportersTest.php",
+                    "method": "test_junit_report_is_valid_xml_with_honest_failure_error_and_timeout_counts"
+                }
+            ]
+        },
+        {
+            "id": "coordination-integrity",
+            "scope": "Atomic coordination files, concurrent timeline appends, malformed-line recovery, and cleanup boundaries.",
+            "mutation_hotspot": true,
+            "sources": [
+                "src/Coordination/FileCoordinatorStore.php"
+            ],
+            "tests": [
+                {
+                    "file": "tests/Unit/FileCoordinatorStoreTest.php",
+                    "method": "test_it_coordinates_a_complete_run_with_atomic_files"
+                },
+                {
+                    "file": "tests/Unit/FileCoordinatorTimelineTest.php",
+                    "method": "test_it_preserves_valid_events_when_a_partial_line_is_malformed"
+                },
+                {
+                    "file": "tests/Unit/FileCoordinatorTimelineTest.php",
+                    "method": "test_concurrent_writers_produce_complete_independent_json_lines"
+                }
+            ]
+        },
+        {
+            "id": "production-runtime-boundary",
+            "scope": "Capability-scoped activation and a framework-free, process-free production no-op runtime.",
+            "mutation_hotspot": true,
+            "sources": [
+                "runtime/src/Checkpoint.php",
+                "runtime/src/CheckpointActivation.php",
+                "runtime/src/helpers.php"
+            ],
+            "tests": [
+                {
+                    "file": "tests/Unit/RuntimePackageTest.php",
+                    "method": "test_checkpoint_is_inactive_by_default_and_requires_its_exact_capability_to_deactivate"
+                },
+                {
+                    "file": "tests/Unit/RuntimePackageTest.php",
+                    "method": "test_runtime_manifest_and_bare_php_smoke_test_have_no_framework_or_process_dependency"
+                }
+            ]
+        },
+        {
+            "id": "release-supply-chain",
+            "scope": "Reproducible consumer archives, pinned workflow actions, runtime-first publication, signatures, provenance, and clean artifact installation.",
+            "mutation_hotspot": true,
+            "sources": [
+                "tools/release/Release.php",
+                ".github/workflows/release.yml",
+                ".github/workflows/tests.yml"
+            ],
+            "tests": [
+                {
+                    "file": "tests/Unit/ReleaseEngineeringTest.php",
+                    "method": "test_release_archives_are_reproducible_aligned_and_installable_shapes"
+                },
+                {
+                    "file": "tests/Unit/ReleaseEngineeringTest.php",
+                    "method": "test_release_workflow_is_fail_closed_and_runtime_first"
+                }
+            ]
+        },
+        {
+            "id": "published-contracts",
+            "scope": "Frozen API signatures, documentation links, executable examples, public evidence status, and package-content boundaries.",
+            "mutation_hotspot": false,
+            "sources": [
+                "api/public-api.json",
+                "beta/evidence.json"
+            ],
+            "tests": [
+                {
+                    "file": "tests/Unit/DocumentationLinksTest.php",
+                    "method": "test_every_published_local_markdown_link_resolves"
+                },
+                {
+                    "file": "tests/Unit/PublishedExamplesTest.php",
+                    "method": "test_published_example_is_executable_and_wired_to_engine_evidence"
+                },
+                {
+                    "file": "tests/Unit/BetaEvidenceTest.php",
+                    "method": "test_committed_registry_is_valid_current_and_explicitly_incomplete"
+                }
+            ]
+        }
+    ],
+    "policies": {
+        "compatibility": "docs/compatibility.md",
+        "upgrade": "UPGRADING.md",
+        "security": "SECURITY.md",
+        "maintenance": "docs/maintenance.md",
+        "known_limitations": "docs/known-limitations.md"
+    },
+    "matrix": {
+        "php_ci": [
+            "8.2",
+            "8.5"
+        ],
+        "laravel_ci": [
+            "12",
+            "13"
+        ],
+        "database_ci": [
+            "mysql:8.4",
+            "pgsql:17"
+        ],
+        "platforms": [
+            {
+                "name": "Ubuntu Linux",
+                "level": "continuous"
+            },
+            {
+                "name": "WSL2",
+                "level": "development"
+            },
+            {
+                "name": "macOS",
+                "level": "best-effort"
+            },
+            {
+                "name": "Native Windows",
+                "level": "experimental"
+            }
+        ]
+    },
+    "artifacts": {
+        "fresh_install": "automated",
+        "upgrade_from_published_release": "blocked-no-published-baseline"
+    },
+    "external_gates": [
+        {
+            "id": "public-package-publication",
+            "issue": 18,
+            "status": "blocked"
+        },
+        {
+            "id": "beta-adoption-evidence",
+            "issue": 19,
+            "status": "blocked"
+        },
+        {
+            "id": "stable-release",
+            "issue": 20,
+            "status": "blocked"
+        }
+    ]
+}

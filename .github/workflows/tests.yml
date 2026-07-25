@@ -29,17 +29,16 @@ jobs:
             testbench: '^11.0'
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - uses: shivammathur/setup-php@v2
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
           php-version: ${{ matrix.php }}
           coverage: none
           tools: composer:v2
 
       - run: composer validate --strict
-      - run: composer require --no-update "illuminate/support:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}"
-      - run: composer update --prefer-dist --no-interaction --no-progress
+      - run: composer update --with "illuminate/support:${{ matrix.laravel }}" --with "orchestra/testbench:${{ matrix.testbench }}" --with-all-dependencies --prefer-dist --no-interaction --no-progress
       - run: composer audit --locked --no-interaction
       - name: Run PHPUnit, Pest, Pint, and PHPStan
         run: composer check
@@ -49,21 +48,20 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - uses: shivammathur/setup-php@v2
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
           php-version: '8.5'
           coverage: xdebug
           tools: composer:v2
 
-      - run: composer require --no-update "illuminate/support:^13.0" "orchestra/testbench:^11.0"
-      - run: composer update --prefer-dist --no-interaction --no-progress
+      - run: composer update --with "illuminate/support:^13.0" --with "orchestra/testbench:^11.0" --with-all-dependencies --prefer-dist --no-interaction --no-progress
       - run: composer test:coverage
 
       - name: Upload coverage evidence
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: coverage-clover
           path: build/coverage/clover.xml
@@ -75,9 +73,9 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - uses: shivammathur/setup-php@v2
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
           php-version: '8.5'
           coverage: none
@@ -138,9 +136,9 @@ jobs:
       RACEPROOF_EVIDENCE_OUTPUT: build/database-evidence/${{ matrix.engine }}.json
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - uses: shivammathur/setup-php@v2
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
           php-version: '8.5'
           coverage: none
@@ -152,9 +150,39 @@ jobs:
 
       - name: Upload database evidence
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: database-evidence-${{ matrix.engine }}
           path: build/database-evidence/${{ matrix.engine }}.json
           if-no-files-found: warn
+          retention-days: 30
+
+  release-audit:
+    needs:
+      - tests
+      - coverage
+      - release-dry-run
+      - database
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.5'
+          coverage: none
+          tools: composer:v2
+
+      - run: composer install --prefer-dist --no-interaction --no-progress
+      - run: composer release:audit
+
+      - name: Upload pre-release audit evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: release-audit-evidence
+          path: build/release-audit/evidence.json
+          if-no-files-found: error
           retention-days: 30

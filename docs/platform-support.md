@@ -14,6 +14,8 @@ reflect observed evidence, not assumptions about Symfony Process portability.
 The supported application matrix is PHP 8.2+ with Laravel 12 or 13. Database
 release evidence is specific to MySQL 8.4 and PostgreSQL 17 on Linux. Compatible
 engine releases may work, but are not release-gate evidence until added to CI.
+See [the compatibility policy](compatibility.md) for the distinction between
+Composer-resolvable combinations, continuously verified edges, and support scope.
 
 ## Platform verification
 

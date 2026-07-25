@@ -11,3 +11,9 @@ and include the evidence requested by the [platform support matrix](docs/platfor
 Ubuntu Linux is the continuously verified target. WSL2 is a primary development
 target, macOS is best-effort compatible, and native Windows remains experimental.
 Those levels do not imply support for an untested database or PHP/Laravel version.
+
+The [compatibility policy](docs/compatibility.md) defines the supported
+language/framework/database combinations. The [maintenance policy](docs/maintenance.md)
+defines supported lines, dependency handling, deprecation, and end of support.
+Review [known limitations](docs/known-limitations.md) before treating a request
+as a product defect.

@@ -68,11 +68,22 @@ final class ReleaseEngineeringTest extends TestCase
 
         try {
             self::assertNotFalse($laravelZip->locateName('docs/public-api.md'));
+            self::assertNotFalse($laravelZip->locateName('docs/release-audit.md'));
             self::assertNotFalse($laravelZip->locateName('docs/templates/private-beta-invitation.md'));
             self::assertNotFalse($laravelZip->locateName('api/public-api.json'));
+            self::assertNotFalse($laravelZip->locateName('audit/release-audit.json'));
             self::assertNotFalse($laravelZip->locateName('beta/evidence.schema.json'));
             self::assertNotFalse($laravelZip->locateName('beta/evidence.json'));
             self::assertNotFalse($laravelZip->locateName('examples/overselling/routes.php'));
+
+            for ($index = 0; $index < $laravelZip->numFiles; $index++) {
+                $filename = $laravelZip->getNameIndex($index);
+                self::assertIsString($filename);
+                self::assertDoesNotMatchRegularExpression(
+                    '#^(?:\\.git|\\.github|build|tests|tools|vendor)/#',
+                    $filename,
+                );
+            }
         } finally {
             $laravelZip->close();
         }
@@ -98,15 +109,28 @@ final class ReleaseEngineeringTest extends TestCase
     {
         $root = dirname(__DIR__, 2);
         $workflow = file_get_contents($root.'/.github/workflows/release.yml');
+        $testsWorkflow = file_get_contents($root.'/.github/workflows/tests.yml');
 
         self::assertIsString($workflow);
+        self::assertIsString($testsWorkflow);
         self::assertIsArray(Yaml::parse($workflow));
+        self::assertIsArray(Yaml::parse($testsWorkflow));
         self::assertStringContainsString('git verify-tag "$GITHUB_REF_NAME"', $workflow);
         self::assertGreaterThanOrEqual(2, substr_count($workflow, 'verify-tag "$GITHUB_REF_NAME"'));
         self::assertStringContainsString('config user.signingkey "${{ steps.gpg.outputs.fingerprint }}"', $workflow);
         self::assertStringContainsString('git merge-base --is-ancestor "$GITHUB_SHA" origin/main', $workflow);
         self::assertStringContainsString('composer api:check', $workflow);
         self::assertStringContainsString('Verify required CI on the exact release commit', $workflow);
+        self::assertStringContainsString("grep -Fx 'release-audit'", $workflow);
+        self::assertStringContainsString('composer release:audit', $workflow);
+        self::assertStringContainsString('composer release:gate', $workflow);
+        self::assertStringContainsString('if [[ "$version" != *-* ]]', $workflow);
+        self::assertStringContainsString('release-audit:', $testsWorkflow);
+        self::assertStringContainsString('- release-dry-run', $testsWorkflow);
+        self::assertStringContainsString('- database', $testsWorkflow);
+        self::assertStringContainsString('composer update --with', $testsWorkflow);
+        self::assertStringContainsString('--with-all-dependencies', $testsWorkflow);
+        self::assertStringNotContainsString('composer require --no-update', $testsWorkflow);
         self::assertStringContainsString('SHA256SUMS.asc', $workflow);
         self::assertStringContainsString('provenance.json.asc', $workflow);
 
@@ -123,11 +147,13 @@ final class ReleaseEngineeringTest extends TestCase
         self::assertLessThan($laravelRelease, $runtimePackagist);
         self::assertLessThan($laravelPackagist, $laravelRelease);
 
-        preg_match_all('/uses:\s+[^\\s]+@([^\\s#]+)/', $workflow, $matches);
-        self::assertNotSame([], $matches[1]);
+        foreach ([$workflow, $testsWorkflow] as $workflowContents) {
+            preg_match_all('/uses:\s+[^\\s]+@([^\\s#]+)/', $workflowContents, $matches);
+            self::assertNotSame([], $matches[1]);
 
-        foreach ($matches[1] as $reference) {
-            self::assertMatchesRegularExpression('/^[0-9a-f]{40}$/', $reference);
+            foreach ($matches[1] as $reference) {
+                self::assertMatchesRegularExpression('/^[0-9a-f]{40}$/', $reference);
+            }
         }
     }
 

@@ -42,17 +42,33 @@ The runtime repository is generated output. Never edit it directly.
    composer --working-dir=runtime validate --strict
    composer audit --locked --no-interaction
    composer check
+   composer release:audit
    composer release:dry-run
    php tools/release/validate.php X.Y.Z vX.Y.Z
    ```
 
 6. Open a focused draft PR, record correctness/security/package-content review,
    and merge only when the exact head passes the PHP/Laravel matrix, coverage,
-   release dry-run, MySQL, and PostgreSQL jobs.
+   release dry-run, MySQL, PostgreSQL, and dependent release-audit jobs.
 
 `release:dry-run` builds both deterministic ZIP artifacts twice, compares their
 SHA-256 hashes, installs them together through a Composer artifact repository,
 and verifies that the production runtime checkpoint remains a no-op.
+
+`release:audit` is a pre-release control audit, not permission to publish. It
+keeps the published policies, matrix, mutation-risk registry, package evidence,
+and open blockers synchronized. The dependent CI job runs only after every
+other required job succeeds.
+
+For a stable version, the release workflow also runs `composer release:gate`.
+That command fails unless the prior published-artifact upgrade is verified,
+the package-publication and beta gates in #18 and #19 are marked with audited
+evidence, and the beta registry itself satisfies its invitation, adopter,
+consent, and resulting-fix gates. Issue #20 tracks the workflow outcome itself
+and is closed only after publication, so it is reported but cannot be a
+pre-publication prerequisite.
+Prerelease tags do not run the stable gate because a real beta release is needed
+to collect that evidence.
 
 ## Publish
 
@@ -88,6 +104,9 @@ Laravel publication.
 - Confirm Packagist source/dist references and dependency constraints point at
   the signed commits.
 - Run the five-minute smoke scenario in a fresh supported Laravel application.
+- Exercise an upgrade from the immediately previous published artifact. This
+  remains blocked before the first real release; never simulate it by assigning
+  two versions to the same source tree.
 - Run `composer install --no-dev` in an instrumented fixture and confirm
   `race_point()` remains available and inactive.
 - Record release links, CI run, hashes, compatibility evidence, and accepted

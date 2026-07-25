@@ -17,5 +17,10 @@ index when the first beta is published.
   pre-release.
 
 Every future release section must list required code/configuration changes,
-deprecated paths, and safe rollback constraints. “No migration required” must be
-stated explicitly when true.
+deprecated paths, and safe rollback constraints. "No migration required" must
+be stated explicitly when true.
+
+An upgrade from a previously published artifact cannot be verified until the
+first real release exists. Repackaging the current source under two synthetic
+versions would not be upgrade evidence and is intentionally prohibited by the
+[pre-release audit](docs/release-audit.md).
