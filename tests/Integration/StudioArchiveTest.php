@@ -111,6 +111,16 @@ final class StudioArchiveTest extends TestCase
         self::assertDirectoryDoesNotExist($this->archivePath);
     }
 
+    public function test_disabled_studio_does_not_require_or_validate_environment_state(): void
+    {
+        $this->app['config']->set('raceproof.studio.enabled', false);
+        $this->app['config']->set('app.env');
+        $archive = $this->app->make(ReportArchive::class);
+
+        self::assertFalse($archive->available());
+        self::assertSame([], $archive->all());
+    }
+
     private function raceResult(string $runId): RaceResult
     {
         return new RaceResult(

@@ -23,10 +23,15 @@ final readonly class ReportArchive
 
     public function available(): bool
     {
-        $environment = ConfigValue::string($this->config, 'app.env');
+        if (! ConfigValue::boolean($this->config, 'raceproof.studio.enabled', false)) {
+            return false;
+        }
 
-        return ConfigValue::boolean($this->config, 'raceproof.studio.enabled', false)
-            && in_array($environment, ['local', 'testing'], true);
+        return in_array(
+            ConfigValue::string($this->config, 'app.env'),
+            ['local', 'testing'],
+            true,
+        );
     }
 
     public function store(RaceResult $result): void
