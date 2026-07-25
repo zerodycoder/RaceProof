@@ -117,6 +117,23 @@ Missing results are synthesized in the report model so automation does not silen
   "coordination_summary": "ready 2/2; after-read 2/2 released",
   "timeline": {
     "event_count": 14,
+    "events": [
+      {
+        "type": "participant.ready",
+        "occurred_at_ns": 3819204411000,
+        "participant_id": "p1",
+        "checkpoint": null,
+        "data": {}
+      },
+      {
+        "type": "checkpoint.released",
+        "occurred_at_ns": 3819204415000,
+        "participant_id": null,
+        "checkpoint": "after-read",
+        "data": {}
+      }
+    ],
+    "events_truncated": true,
     "warning_count": 0,
     "warnings": [],
     "warnings_truncated": false
@@ -124,7 +141,12 @@ Missing results are synthesized in the report model so automation does not silen
 }
 ```
 
-All keys shown above are part of schema version 1. Participant entries contain status/timing, outcome, bounded diagnostic/body/header evidence, truncation flags, and the exception class. A breaking key removal, type change, or semantic change requires a new `schema_version`.
+All keys shown above are part of schema version 1. Participant entries contain
+status/timing, outcome, bounded diagnostic/body/header evidence, truncation
+flags, and the exception class. Timeline entries are a bounded, redacted
+projection for automation and Studio; `timeline.jsonl` remains the
+authoritative retained event stream when scratch artifacts exist. A breaking
+key removal, type change, or semantic change requires a new `schema_version`.
 
 ## JUnit mapping
 
@@ -147,10 +169,15 @@ Report construction re-applies `SensitiveDataRedactor` even when executor diagno
     'diagnostic_text_bytes' => 4_096,
     'response_body_bytes' => 4_096,
     'header_limit' => 32,
+    'timeline_event_limit' => 500,
+    'timeline_event_data_limit' => 16,
     'timeline_warning_limit' => 100,
 ],
 ```
 
 Human output is capped as a whole. JSON and XML stay structurally valid: RaceProof bounds individual fields and collection counts instead of cutting the encoded document. Participant count remains bounded by the RaceProof plan limit.
 
-Configured credential keys, bearer tokens, and authorization/cookie headers are redacted. Pattern redaction cannot identify every application-specific secret; captured response bodies and artifact paths still require restricted access and short retention.
+Configured credential keys, bearer tokens, authorization/cookie headers, and
+timeline values under configured secret keys are redacted. Pattern redaction
+cannot identify every application-specific secret; captured response bodies
+and artifact paths still require restricted access and short retention.

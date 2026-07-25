@@ -17,6 +17,7 @@ does not replace them.
 | Use PHPUnit or Pest | [Testing workflows](testing-workflows.md) |
 | Diagnose a failed run | [Troubleshooting](troubleshooting.md) |
 | Export human, JSON, or JUnit evidence | [Reporters](reporters.md) |
+| Visualize retained runs locally | [RaceProof Studio](studio.md) |
 
 ## Safety and database behavior
 
