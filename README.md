@@ -196,6 +196,10 @@ Studio is an optional, local evidence viewer. It visualizes retained runs,
 participant outcomes, timing, checkpoint lanes, warnings, and bounded response
 evidence without moving execution or assertions out of Pest/PHPUnit.
 
+<p align="center">
+  <img src="docs/assets/raceproof-studio.png" alt="RaceProof Studio showing a passed three-participant run and its checkpoint execution lanes" width="100%">
+</p>
+
 Enable it explicitly in a local or testing environment:
 
 ```dotenv
