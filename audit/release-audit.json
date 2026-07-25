@@ -236,17 +236,17 @@
     "external_gates": [
         {
             "id": "public-package-publication",
-            "issue": 18,
+            "issue": 2,
             "status": "blocked"
         },
         {
             "id": "beta-adoption-evidence",
-            "issue": 19,
+            "issue": 3,
             "status": "blocked"
         },
         {
             "id": "stable-release",
-            "issue": 20,
+            "issue": 4,
             "status": "blocked"
         }
     ]

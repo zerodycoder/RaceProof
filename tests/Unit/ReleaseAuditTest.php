@@ -30,12 +30,12 @@ final class ReleaseAuditTest extends TestCase
         self::assertSame('automated', $evidence['fresh_install']);
         self::assertSame('blocked-no-published-baseline', $evidence['published_upgrade']);
         self::assertSame('blocked', $evidence['release_status']);
-        self::assertSame([18, 19, 20], $evidence['blocked_issues']);
+        self::assertSame([2, 3, 4], $evidence['blocked_issues']);
         self::assertSame(
             [
                 'The upgrade path from the previous published release is not verified.',
-                'External gate public-package-publication in issue #18 is not verified.',
-                'External gate beta-adoption-evidence in issue #19 is not verified.',
+                'External gate public-package-publication in issue #2 is not verified.',
+                'External gate beta-adoption-evidence in issue #3 is not verified.',
             ],
             ReleaseAudit::stableGateErrors($root, $audit),
         );
@@ -99,8 +99,10 @@ final class ReleaseAuditTest extends TestCase
         $first = $audit['external_gates'][0];
         /** @var array<string, mixed> $second */
         $second = $audit['external_gates'][1];
+        /** @var array<string, mixed> $third */
+        $third = $audit['external_gates'][2];
         $first['issue'] = 0;
-        $second['issue'] = 20;
+        $second['issue'] = $third['issue'];
         $audit['external_gates'][0] = $first;
         $audit['external_gates'][1] = $second;
 
@@ -120,9 +122,9 @@ final class ReleaseAuditTest extends TestCase
 
         self::assertStringContainsString('not stable-release approval', $report);
         self::assertStringContainsString('No prior tagged or Packagist release exists', $report);
-        self::assertStringContainsString('issues/18', $report);
-        self::assertStringContainsString('issues/19', $report);
-        self::assertStringContainsString('issues/20', $report);
+        self::assertStringContainsString('issues/2', $report);
+        self::assertStringContainsString('issues/3', $report);
+        self::assertStringContainsString('issues/4', $report);
         self::assertStringContainsString('do not claim a repository-wide mutation score', $report);
     }
 
@@ -133,8 +135,8 @@ final class ReleaseAuditTest extends TestCase
 
         self::assertSame(1, $process->run());
         self::assertStringContainsString('published release is not verified', $process->getErrorOutput());
-        self::assertStringContainsString('issue #18 is not verified', $process->getErrorOutput());
-        self::assertStringContainsString('issue #19 is not verified', $process->getErrorOutput());
+        self::assertStringContainsString('issue #2 is not verified', $process->getErrorOutput());
+        self::assertStringContainsString('issue #3 is not verified', $process->getErrorOutput());
         self::assertStringContainsString('0/10 projects', $process->getErrorOutput());
         self::assertStringContainsString('0/5 consented cases', $process->getErrorOutput());
     }

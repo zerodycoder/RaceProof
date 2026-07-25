@@ -59,8 +59,8 @@ final class BetaEvidenceTest extends TestCase
 
         self::assertStringContainsString('| Real projects invited | 10/10 | Met |', $report);
         self::assertStringContainsString('| Confirmed adopters with tested scenarios | 5/5 | Met |', $report);
-        self::assertStringContainsString('[#19](https://github.com/zerodycoder/RaceProof/issues/19)', $report);
-        self::assertStringContainsString('[#25](https://github.com/zerodycoder/RaceProof/pull/25)', $report);
+        self::assertStringContainsString('[#3](https://github.com/zerodycoder/RaceProof/issues/3)', $report);
+        self::assertStringContainsString('[#101](https://github.com/zerodycoder/RaceProof/pull/101)', $report);
     }
 
     public function test_public_records_reject_identity_secret_and_unconsented_fields(): void
@@ -170,7 +170,7 @@ final class BetaEvidenceTest extends TestCase
                         'iterations' => 100,
                     ],
                 ],
-                'feedback_issues' => $index === 1 ? [19] : [],
+                'feedback_issues' => $index === 1 ? [3] : [],
                 'consent' => [
                     'anonymized_publication' => true,
                     'recorded_on' => '2026-07-25',
@@ -193,8 +193,8 @@ final class BetaEvidenceTest extends TestCase
                     'received_month' => '2026-07',
                     'category' => 'dx',
                     'disposition' => 'resolved',
-                    'issue_number' => 19,
-                    'resolved_by_pr' => 25,
+                    'issue_number' => 3,
+                    'resolved_by_pr' => 101,
                     'consent' => [
                         'anonymized_publication' => true,
                         'recorded_on' => '2026-07-25',
