@@ -30,6 +30,18 @@
                 {
                     "file": "tests/Integration/SafetyGuardsTest.php",
                     "method": "test_it_rejects_a_database_outside_the_allowlist"
+                },
+                {
+                    "file": "tests/Integration/SafetyGuardEdgesTest.php",
+                    "method": "test_environment_guard_is_disabled_by_default_when_config_is_absent"
+                },
+                {
+                    "file": "tests/Integration/SafetyGuardEdgesTest.php",
+                    "method": "test_database_safety_defaults_reject_open_transactions_and_memory_sqlite"
+                },
+                {
+                    "file": "tests/Integration/SafetyGuardEdgesTest.php",
+                    "method": "test_database_safety_requires_an_explicit_allowlist_when_enabled"
                 }
             ]
         },
@@ -65,6 +77,14 @@
                 {
                     "file": "tests/Unit/SymfonyWorkerProcessStopTest.php",
                     "method": "test_stop_terminates_a_running_process_before_wait_returns"
+                },
+                {
+                    "file": "tests/Unit/SymfonyWorkerProcessStopTest.php",
+                    "method": "test_stop_is_a_no_op_before_start"
+                },
+                {
+                    "file": "tests/Unit/SymfonyWorkerProcessStopTest.php",
+                    "method": "test_wait_and_exit_code_are_cached_after_start"
                 }
             ]
         },
@@ -93,6 +113,18 @@
                 {
                     "file": "tests/Integration/SensitiveDataRedactorTest.php",
                     "method": "test_byte_limits_never_split_a_utf8_character"
+                },
+                {
+                    "file": "tests/Integration/SensitiveDataRedactorTest.php",
+                    "method": "test_default_and_configured_limits_are_exact"
+                },
+                {
+                    "file": "tests/Integration/SensitiveDataRedactorTest.php",
+                    "method": "test_configured_keys_are_trimmed_deduplicated_and_case_insensitive"
+                },
+                {
+                    "file": "tests/Integration/SensitiveDataRedactorTest.php",
+                    "method": "test_bounding_handles_every_marker_and_utf8_boundary"
                 },
                 {
                     "file": "tests/Integration/ReportersTest.php",

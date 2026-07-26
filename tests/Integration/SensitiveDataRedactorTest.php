@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace RaceProof\Laravel\Tests\Integration;
 
+use Illuminate\Config\Repository;
 use RaceProof\Laravel\Support\SensitiveDataRedactor;
 
 final class SensitiveDataRedactorTest extends TestCase
@@ -61,5 +62,54 @@ final class SensitiveDataRedactorTest extends TestCase
         self::assertTrue(mb_check_encoding($captured, 'UTF-8'));
         self::assertLessThanOrEqual(16, strlen($captured));
         self::assertStringNotContainsString("\x1B", $captured);
+    }
+
+    public function test_default_and_configured_limits_are_exact(): void
+    {
+        $config = new Repository;
+        $redactor = new SensitiveDataRedactor($config);
+
+        $defaultDiagnostic = $redactor->diagnostic(str_repeat('d', 5_000));
+        $defaultWorkerOutput = $redactor->workerOutput(str_repeat('e', 5_000), 'stdout');
+
+        self::assertSame(4_096, strlen($defaultDiagnostic));
+        self::assertSame(4_096, strlen($defaultWorkerOutput));
+        self::assertStringEndsWith(' [truncated]', $defaultDiagnostic);
+        self::assertStringEndsWith(' [truncated]', $defaultWorkerOutput);
+
+        $config->set('raceproof.capture.diagnostic_text_bytes', 16);
+        $config->set('raceproof.capture.worker_output_bytes', 64);
+
+        self::assertSame('dddd [truncated]', $redactor->diagnostic(str_repeat('d', 17)));
+        self::assertSame("stderr\nstdout", $redactor->workerOutput('stderr', 'stdout'));
+    }
+
+    public function test_configured_keys_are_trimmed_deduplicated_and_case_insensitive(): void
+    {
+        $this->app['config']->set('raceproof.capture.redact_keys', [
+            ' token ',
+            'token',
+            '',
+            'PASSWORD',
+        ]);
+        $redactor = $this->app->make(SensitiveDataRedactor::class);
+
+        self::assertSame(
+            'token=[REDACTED] TOKEN=[REDACTED] password=[REDACTED] safe=visible',
+            $redactor->redact('token=first TOKEN=second password=\'third\' safe=visible'),
+        );
+    }
+
+    public function test_bounding_handles_every_marker_and_utf8_boundary(): void
+    {
+        $redactor = $this->app->make(SensitiveDataRedactor::class);
+
+        self::assertSame('', $redactor->bounded('value', 0));
+        self::assertSame('', $redactor->bounded('', 20));
+        self::assertSame('exact', $redactor->bounded('exact', 5));
+        self::assertSame('abc', $redactor->bounded('abcdef', 3));
+        self::assertSame('abcdefghijkl', $redactor->bounded('abcdefghijklmnop', 12));
+        self::assertSame('a [truncated]', $redactor->bounded('abcdefghijklmnop', 13));
+        self::assertSame('é [truncated]', $redactor->bounded('éééééééé', 14));
     }
 }

@@ -16,8 +16,8 @@ Every pull request must pass:
 - isolated Laravel consumer installation and acceptance;
 - independent consumer smoke acceptance on GitHub-hosted macOS and Windows;
 - at least 90% executable-line coverage;
-- at least 80% covered-code mutation score across the selected
-  safety/lifecycle/redaction/reporting/coordination classes;
+- at least 80% covered-code mutation score across the selected fail-closed
+  environment, database, worker-process, and credential-redaction boundaries;
 - the pre-release policy, matrix, mutation-hotspot, artifact, and blocker audit.
 
 Coverage is a floor, not proof of correctness. Concurrency behavior also needs invariant assertions and repetition evidence.
@@ -29,12 +29,12 @@ file-backed SQLite, and Studio behavior; they do not constitute native
 MySQL/PostgreSQL release evidence or upgrade either platform's documented
 support level.
 
-`composer test:mutation` requires Xdebug or PCOV and mutates eight explicitly
-selected release-critical classes. It uses only covered lines, fails below 80%,
-and does not ignore an empty mutation set. CI retains its complete text report
-for 30 days. This is a targeted quality gate, not a repository-wide mutation
-score, and production code is never annotated merely to suppress surviving
-mutants.
+`composer test:mutation` requires Xdebug or PCOV and mutates four explicitly
+selected fail-closed boundary classes. It uses only covered lines, fails below
+80%, and does not ignore an empty mutation set. CI retains its complete text
+report for 30 days. This is a targeted quality gate, not a repository-wide
+mutation score, and production code is never annotated merely to suppress
+surviving mutants.
 
 ## Reliability evidence
 

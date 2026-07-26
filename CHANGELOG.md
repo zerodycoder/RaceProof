@@ -4,8 +4,8 @@
 
 - Added continuous independent-consumer smoke jobs on GitHub-hosted macOS and
   native Windows plus an artifact-backed 80% targeted mutation-quality gate for
-  release-critical safety, lifecycle, redaction, reporting, and coordination
-  code.
+  fail-closed environment, database, worker-process, and credential-redaction
+  boundaries.
 - Added an idempotent `raceproof:install` workflow and versioned JSON/child
   process modes for `raceproof:doctor`, without automatically changing
   application environment files.
