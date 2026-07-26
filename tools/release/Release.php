@@ -38,7 +38,7 @@ final class Release
         $parsed = self::version($version);
 
         if ($parsed['prerelease'] !== null) {
-            return $version.'@'.self::minimumStability($version);
+            return '^'.$version.'@'.self::minimumStability($version);
         }
 
         return '^'.$parsed['major'].'.'.$parsed['minor'];
@@ -64,6 +64,64 @@ final class Release
         }
 
         return $updated;
+    }
+
+    /**
+     * @param  array<string, mixed>  $manifest
+     * @return array<string, mixed>
+     */
+    public static function alignConsumerManifest(array $manifest, string $version): array
+    {
+        $constraint = self::runtimeConstraint($version);
+        $repositories = $manifest['repositories'] ?? null;
+        $runtimeRepository = is_array($repositories) ? ($repositories[0] ?? null) : null;
+        $laravelRepository = is_array($repositories) ? ($repositories[1] ?? null) : null;
+        $runtimeOptions = is_array($runtimeRepository) ? ($runtimeRepository['options'] ?? null) : null;
+        $laravelOptions = is_array($laravelRepository) ? ($laravelRepository['options'] ?? null) : null;
+        $runtimeVersions = is_array($runtimeOptions) ? ($runtimeOptions['versions'] ?? null) : null;
+        $laravelVersions = is_array($laravelOptions) ? ($laravelOptions['versions'] ?? null) : null;
+        $requirements = $manifest['require'] ?? null;
+        $devRequirements = $manifest['require-dev'] ?? null;
+
+        if (
+            ! is_array($repositories)
+            || ! is_array($runtimeRepository)
+            || ! is_array($laravelRepository)
+            || ! is_array($runtimeOptions)
+            || ! is_array($laravelOptions)
+            || ! is_array($runtimeVersions)
+            || ! is_array($laravelVersions)
+            || ! is_array($requirements)
+            || ! is_array($devRequirements)
+            || ($runtimeRepository['url'] ?? null) !== '../../runtime'
+            || ($laravelRepository['url'] ?? null) !== '../../'
+            || ! array_key_exists('raceproof/runtime', $runtimeVersions)
+            || ! array_key_exists('raceproof/laravel', $laravelVersions)
+            || ! array_key_exists('raceproof/runtime', $requirements)
+            || ! array_key_exists('raceproof/laravel', $devRequirements)
+        ) {
+            throw new RuntimeException(
+                'The consumer composer.json does not contain the expected path repository shape.',
+            );
+        }
+
+        $runtimeVersions['raceproof/runtime'] = $version;
+        $runtimeOptions['versions'] = $runtimeVersions;
+        $runtimeRepository['options'] = $runtimeOptions;
+        $repositories[0] = $runtimeRepository;
+
+        $laravelVersions['raceproof/laravel'] = $version;
+        $laravelOptions['versions'] = $laravelVersions;
+        $laravelRepository['options'] = $laravelOptions;
+        $repositories[1] = $laravelRepository;
+
+        $requirements['raceproof/runtime'] = $constraint;
+        $devRequirements['raceproof/laravel'] = $constraint;
+        $manifest['repositories'] = $repositories;
+        $manifest['require'] = $requirements;
+        $manifest['require-dev'] = $devRequirements;
+
+        return $manifest;
     }
 
     public static function minimumStability(string $version): string

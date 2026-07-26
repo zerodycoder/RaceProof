@@ -3,7 +3,9 @@
 Both `raceproof/laravel` and `raceproof/runtime` follow Semantic Versioning and
 share one release version. A release tag `vX.Y.Z` produces both package versions;
 the runtime is tagged and visible on Packagist before the Laravel package is
-published.
+published. The Laravel package requires the matching runtime as the minimum of a
+compatible major-version range, so applications can receive compatible runtime
+fixes without upgrading the orchestrator at the same time.
 
 ## Compatibility boundaries
 

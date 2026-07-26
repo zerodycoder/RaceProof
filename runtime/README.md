@@ -9,7 +9,7 @@ coordinator, or network behavior. Packagist currently exposes `dev-main`; the
 install command below becomes resolvable after the first tagged beta.
 
 ```bash
-composer require raceproof/runtime:^0.1
+composer require raceproof/runtime:^1.0.0-beta.1@beta
 ```
 
 ```php

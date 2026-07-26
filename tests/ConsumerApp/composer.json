@@ -11,7 +11,7 @@
             "options": {
                 "symlink": true,
                 "versions": {
-                    "raceproof/runtime": "0.1.0"
+                    "raceproof/runtime": "1.0.0-beta.1"
                 }
             }
         },
@@ -30,13 +30,13 @@
         "php": "^8.2",
         "laravel/framework": "^12.0",
         "laravel/sanctum": "^4.3",
-        "raceproof/runtime": "0.1.0"
+        "raceproof/runtime": "^1.0.0-beta.1@beta"
     },
     "require-dev": {
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.6",
         "phpunit/phpunit": "^11.5",
-        "raceproof/laravel": "1.0.0-beta.1"
+        "raceproof/laravel": "^1.0.0-beta.1@beta"
     },
     "autoload": {
         "psr-4": {

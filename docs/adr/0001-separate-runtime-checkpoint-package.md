@@ -32,7 +32,8 @@ The runtime manifest requires only PHP 8.2+. CI validates it independently, incl
 
 ## Compatibility and release ownership
 
-- Both packages use aligned minor versions (`raceproof/laravel:^0.1` with `raceproof/runtime:^0.1`).
+- Both packages share release versions; `raceproof/laravel` requires the matching
+  runtime release as the floor of a compatible major-version range.
 - Runtime is tagged and published before the matching main package.
 - The monorepo is the source of truth; the runtime release repository is generated, not edited directly.
 - Runtime API removals require a major version. Additive handler/runtime behavior follows the main package's release policy.

@@ -45,6 +45,17 @@ try {
     $composer['require'] = $requirements;
     Release::writeJson($composerPath, $composer);
 
+    $consumerPath = $root.'/tests/ConsumerApp/composer.json';
+    /** @var array<string, mixed> $consumer */
+    $consumer = json_decode(
+        (string) file_get_contents($consumerPath),
+        true,
+        512,
+        JSON_THROW_ON_ERROR,
+    );
+    $consumer = Release::alignConsumerManifest($consumer, $version);
+    Release::writeJson($consumerPath, $consumer);
+
     foreach ([
         'README.md',
         'docs/five-minute-guide.md',
@@ -67,7 +78,7 @@ try {
     }
 
     echo "Prepared package metadata for {$version}.\n";
-    echo "Next: add the dated changelog section and run composer update raceproof/runtime --with-dependencies.\n";
+    echo "Next: add the dated changelog section, refresh the root lock, and install the consumer fixture.\n";
 } catch (Throwable $exception) {
     fwrite(STDERR, $exception->getMessage()."\n");
     exit(1);
