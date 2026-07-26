@@ -44,9 +44,24 @@ final class MutationCheckerTest extends TestCase
             '81.00% (81/100 tested; 19 untested; 0 timeout)',
             0,
         ];
+        yield 'accepts omitted zero categories from Pest' => [
+            'Mutations: 123 tested',
+            '100.00% (123/123 tested; 0 untested; 0 timeout)',
+            0,
+        ];
+        yield 'accepts an omitted zero timeout category' => [
+            'Mutations: 20 untested, 80 tested',
+            '80.00% (80/100 tested; 20 untested; 0 timeout)',
+            0,
+        ];
         yield 'timeouts are not counted as tested' => [
             'Mutations: 19 untested, 2 timeout, 79 tested',
             '79.00% (79/100 tested; 19 untested; 2 timeout)',
+            1,
+        ];
+        yield 'an all-untested compact report fails' => [
+            'Mutations: 3 untested',
+            '0.00% (0/3 tested; 3 untested; 0 timeout)',
             1,
         ];
     }
@@ -80,12 +95,22 @@ final class MutationCheckerTest extends TestCase
 
     public function test_it_rejects_an_empty_mutation_set(): void
     {
-        file_put_contents($this->reportPath, 'Mutations: 0 untested, 0 timeout, 0 tested');
+        file_put_contents($this->reportPath, 'Mutations: 0 tested');
 
         $process = $this->runChecker($this->reportPath, '80');
 
         self::assertSame(2, $process->getExitCode());
         self::assertStringContainsString('contains no mutations', $process->getErrorOutput());
+    }
+
+    public function test_it_rejects_duplicate_categories(): void
+    {
+        file_put_contents($this->reportPath, 'Mutations: 80 tested, 20 untested, 1 tested');
+
+        $process = $this->runChecker($this->reportPath, '80');
+
+        self::assertSame(2, $process->getExitCode());
+        self::assertStringContainsString('duplicate mutation totals', $process->getErrorOutput());
     }
 
     public function test_it_rejects_an_unreadable_report(): void

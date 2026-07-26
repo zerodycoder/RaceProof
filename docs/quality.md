@@ -31,13 +31,16 @@ MySQL/PostgreSQL release evidence or upgrade either platform's documented
 support level.
 
 `composer test:mutation` requires Xdebug or PCOV and mutates four explicitly
-selected fail-closed boundary classes. It uses only covered lines, fails below
-80%, and does not ignore an empty mutation set. A second fail-closed checker
-parses the retained report and calculates `tested / (tested + untested +
-timeout)`, so a slow mutant cannot inflate the accepted score. CI retains the
-complete text report for 30 days. This is a targeted quality gate, not a
-repository-wide mutation score, and production code is never annotated merely
-to suppress surviving mutants.
+selected fail-closed boundary files. The command uses repository-relative paths
+so it selects the same files on Windows and POSIX shells. It uses only covered
+lines, fails below 80%, and does not ignore an empty mutation set. A second
+fail-closed checker parses the retained report and divides tested mutants by all
+tested, untested, and timed-out mutants, so a slow mutant cannot inflate the
+accepted score. It also handles Pest's compact output when zero-value categories
+are omitted, while still rejecting missing, duplicate, or empty totals. CI
+retains the complete text report for 30 days. This is a targeted quality gate,
+not a repository-wide mutation score, and production code is never annotated
+merely to suppress surviving mutants.
 
 ## Reliability evidence
 
