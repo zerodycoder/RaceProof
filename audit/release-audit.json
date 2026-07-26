@@ -42,6 +42,10 @@
                 {
                     "file": "tests/Integration/SafetyGuardEdgesTest.php",
                     "method": "test_database_safety_requires_an_explicit_allowlist_when_enabled"
+                },
+                {
+                    "file": "tests/Integration/SafetyGuardEdgesTest.php",
+                    "method": "test_database_safety_rejects_an_empty_sqlite_database_name"
                 }
             ]
         },

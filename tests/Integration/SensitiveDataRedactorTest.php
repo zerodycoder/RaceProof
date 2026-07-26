@@ -81,7 +81,7 @@ final class SensitiveDataRedactorTest extends TestCase
         $config->set('raceproof.capture.worker_output_bytes', 64);
 
         self::assertSame('dddd [truncated]', $redactor->diagnostic(str_repeat('d', 17)));
-        self::assertSame("stderr\nstdout", $redactor->workerOutput('stderr', 'stdout'));
+        self::assertSame("stderr\nstdout", $redactor->workerOutput(' stderr', 'stdout '));
     }
 
     public function test_configured_keys_are_trimmed_deduplicated_and_case_insensitive(): void
@@ -110,6 +110,7 @@ final class SensitiveDataRedactorTest extends TestCase
         self::assertSame('abc', $redactor->bounded('abcdef', 3));
         self::assertSame('abcdefghijkl', $redactor->bounded('abcdefghijklmnop', 12));
         self::assertSame('a [truncated]', $redactor->bounded('abcdefghijklmnop', 13));
+        self::assertSame(' [truncated]', $redactor->bounded('éééééééé', 13));
         self::assertSame('é [truncated]', $redactor->bounded('éééééééé', 14));
     }
 }

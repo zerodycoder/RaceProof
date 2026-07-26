@@ -35,6 +35,7 @@ final class SymfonyWorkerProcessStopTest extends TestCase
         $inner = $this->createMock(Process::class);
         $inner->expects(self::never())->method('isRunning');
         $inner->expects(self::never())->method('stop');
+        $inner->expects(self::never())->method('getExitCode');
 
         $process = new SymfonyWorkerProcess($inner);
         $process->stop(0.01);

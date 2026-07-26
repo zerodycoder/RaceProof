@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace RaceProof\Laravel\Tests\Integration;
 
 use Illuminate\Config\Repository;
+use Illuminate\Database\Connection;
+use Illuminate\Database\DatabaseManager;
 use RaceProof\Laravel\Exceptions\EnvironmentRejected;
 use RaceProof\Laravel\Support\DatabaseSafety;
 use RaceProof\Laravel\Support\EnvironmentGuard;
@@ -126,5 +128,20 @@ final class SafetyGuardEdgesTest extends TestCase
         ]);
 
         (new DatabaseSafety($this->app['db'], $config))->validate();
+    }
+
+    public function test_database_safety_rejects_an_empty_sqlite_database_name(): void
+    {
+        $connection = $this->createMock(Connection::class);
+        $connection->method('transactionLevel')->willReturn(0);
+        $connection->method('getDatabaseName')->willReturn('');
+        $connection->method('getDriverName')->willReturn('sqlite');
+        $database = $this->createMock(DatabaseManager::class);
+        $database->method('connection')->willReturn($connection);
+
+        $this->expectException(EnvironmentRejected::class);
+        $this->expectExceptionMessage('SQLite in-memory databases');
+
+        (new DatabaseSafety($database, new Repository))->validate();
     }
 }
