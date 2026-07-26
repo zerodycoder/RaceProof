@@ -188,8 +188,13 @@ final class ReleaseEngineeringTest extends TestCase
 
         self::assertIsString($workflow);
         self::assertIsString($testsWorkflow);
-        self::assertIsArray(Yaml::parse($workflow));
-        self::assertIsArray(Yaml::parse($testsWorkflow));
+        $releaseWorkflowConfig = Yaml::parse($workflow);
+        $testsWorkflowConfig = Yaml::parse($testsWorkflow);
+        self::assertIsArray($releaseWorkflowConfig);
+        self::assertIsArray($testsWorkflowConfig);
+        self::assertFalse(
+            $releaseWorkflowConfig['jobs']['release']['steps'][0]['with']['persist-credentials'] ?? null,
+        );
         self::assertStringContainsString('git verify-tag "$GITHUB_REF_NAME"', $workflow);
         self::assertGreaterThanOrEqual(2, substr_count($workflow, 'verify-tag "$GITHUB_REF_NAME"'));
         self::assertStringContainsString('config user.signingkey "${{ steps.gpg.outputs.fingerprint }}"', $workflow);
