@@ -1,6 +1,6 @@
 {
     "name": "raceproof/runtime",
-    "description": "Production-safe no-op checkpoint runtime for RaceProof instrumentation.",
+    "description": "Lightweight PHP checkpoints for applications tested with RaceProof.",
     "keywords": ["php", "testing", "concurrency", "race-condition"],
     "homepage": "https://github.com/zerodycoder/RaceProof",
     "license": "MIT",

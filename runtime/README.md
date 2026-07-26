@@ -1,9 +1,12 @@
 # RaceProof Runtime
 
-Production-safe, no-op checkpoint instrumentation for RaceProof. This package contains no Laravel integration, process runner, command, coordinator, or network behavior.
+Lightweight PHP checkpoints for applications tested with RaceProof. During
+normal application traffic they return immediately; a validated RaceProof
+worker activates them only for a controlled concurrency test.
 
-No Packagist release exists yet. The install command becomes resolvable after
-the first published beta.
+The package contains no Laravel integration, process runner, command,
+coordinator, or network behavior. Packagist currently exposes `dev-main`; the
+install command below becomes resolvable after the first tagged beta.
 
 ```bash
 composer require raceproof/runtime:^0.1

@@ -21,10 +21,10 @@ It is built for the failures that ordinary feature tests rarely reproduce:
 overselling the final unit, redeeming one coupon twice, losing wallet updates,
 accepting an expired quote, uniqueness races, deadlocks, and lock timeouts.
 
-> **Release status:** the v1 API candidate and release pipeline are implemented,
-> but no package has been published to Packagist yet. The install commands below
-> become available with the first beta. Contributors can use a source checkout
-> today.
+> **Release status:** both Composer packages are registered on Packagist and
+> currently expose `dev-main`, but no tagged beta is available yet. The install
+> commands below become available with the first beta. Contributors can use a
+> source checkout today.
 
 ## See the failure, then prove the fix
 

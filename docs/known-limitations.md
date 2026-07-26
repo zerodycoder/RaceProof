@@ -5,9 +5,10 @@ promises and must not be overstated in release material.
 
 ## Distribution and evidence status
 
-- No signed GitHub release or Packagist package exists yet.
-- The source repository is public, but the generated public runtime split
-  repository has not been provisioned yet.
+- Both packages are registered on Packagist and expose `dev-main`, but no signed,
+  tagged GitHub or Packagist release exists yet.
+- The generated runtime repository is a public subtree split. The main RaceProof
+  repository remains its only source of truth.
 - The published-artifact upgrade path cannot be tested because there is no prior
   published release.
 - Private-beta evidence currently records 0/10 invited projects and 0/5

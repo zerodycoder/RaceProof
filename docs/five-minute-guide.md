@@ -7,8 +7,9 @@ regular integration suite and by MySQL/PostgreSQL CI.
 
 ## 1. Install and enable
 
-No Packagist release exists yet. The commands below describe the post-beta
-contract; contributors currently run the workflow from a source checkout.
+Packagist currently exposes `dev-main`, but no tagged release exists yet. The
+commands below describe the post-beta contract; contributors currently run the
+workflow from a source checkout.
 
 Keep the orchestrator out of production dependencies. Install the tiny runtime
 only when application code contains `race_point()` calls:
