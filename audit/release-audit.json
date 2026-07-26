@@ -37,7 +37,11 @@
                 },
                 {
                     "file": "tests/Integration/SafetyGuardEdgesTest.php",
-                    "method": "test_database_safety_defaults_reject_open_transactions_and_memory_sqlite"
+                    "method": "test_database_safety_default_rejects_open_transactions"
+                },
+                {
+                    "file": "tests/Integration/SafetyGuardEdgesTest.php",
+                    "method": "test_database_safety_default_rejects_memory_sqlite_without_a_transaction"
                 },
                 {
                     "file": "tests/Integration/SafetyGuardEdgesTest.php",

@@ -71,7 +71,7 @@ final class SafetyGuardEdgesTest extends TestCase
         $guard->ensureEnabled();
     }
 
-    public function test_database_safety_defaults_reject_open_transactions_and_memory_sqlite(): void
+    public function test_database_safety_default_rejects_open_transactions(): void
     {
         $safety = new DatabaseSafety($this->app['db'], new Repository);
         $connection = $this->app['db']->connection();
