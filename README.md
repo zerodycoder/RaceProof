@@ -21,10 +21,10 @@ It is built for the failures that ordinary feature tests rarely reproduce:
 overselling the final unit, redeeming one coupon twice, losing wallet updates,
 accepting an expired quote, uniqueness races, deadlocks, and lock timeouts.
 
-> **Release status:** both Composer packages are registered on Packagist and
-> currently expose `dev-main`, but no tagged beta is available yet. The install
-> commands below become available with the first beta. Contributors can use a
-> source checkout today.
+> **Release status:** [`v1.0.0-beta.1`](https://github.com/zerodycoder/RaceProof/releases/tag/v1.0.0-beta.1)
+> is available for both Composer packages. It is a signed prerelease with
+> checksums, provenance, GitHub attestations, and a verified clean Packagist
+> install; stable `1.0.0` remains gated by public beta evidence.
 
 ## See the failure, then prove the fix
 
@@ -91,8 +91,6 @@ For a copy-ready broken-to-fixed walkthrough, use the
 
 ## Install
 
-Once the first beta is published:
-
 ```bash
 composer require raceproof/runtime:^1.0.0-beta.1@beta
 composer require raceproof/laravel:^1.0.0-beta.1@beta --dev
@@ -112,7 +110,7 @@ Laravel integration.
 `--self-test` mode boots a separate Laravel CLI process; `--json` emits a
 bounded schema-v1 result suitable for CI and support reports.
 
-Before the beta, develop from source:
+To contribute from source:
 
 ```bash
 git clone https://github.com/zerodycoder/RaceProof.git

@@ -1,9 +1,10 @@
 # Release runbook
 
-RaceProof is unreleased software. Do not create a public package or stable tag
-until its applicable roadmap gates have evidence. The workflow is intentionally
-fail-closed: missing secrets, an unsigned tag, a commit outside `main`, missing
-CI, version drift, or absent Packagist metadata stops publication.
+RaceProof is prerelease software. Signed beta packages are public, but no stable
+tag may be created until its applicable roadmap gates have evidence. The
+workflow is intentionally fail-closed: missing secrets, an unsigned tag, a
+commit outside `main`, missing CI, version drift, or absent Packagist metadata
+stops publication.
 
 ## One-time repository setup
 
@@ -130,9 +131,10 @@ Laravel publication.
 - Confirm Packagist source/dist references and dependency constraints point at
   the signed commits.
 - Run the five-minute smoke scenario in a fresh supported Laravel application.
-- Exercise an upgrade from the immediately previous published artifact. This
-  remains blocked before the first real release; never simulate it by assigning
-  two versions to the same source tree.
+- Exercise an upgrade from the immediately previous published artifact.
+  `v1.0.0-beta.1` is now the first real baseline; the upgrade gate remains
+  pending until a subsequent reviewed artifact can be installed over it. Never
+  simulate an upgrade by assigning two versions to the same source tree.
 - Run `composer install --no-dev` in an instrumented fixture and confirm
   `race_point()` remains available and inactive.
 - Record release links, CI run, hashes, compatibility evidence, and accepted

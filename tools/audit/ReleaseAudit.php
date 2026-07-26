@@ -147,9 +147,15 @@ final class ReleaseAudit
         $lines[] = '';
         $lines[] = '- Fresh install from deterministic Laravel/runtime ZIP artifacts: **'
             .self::stringField($artifacts, 'fresh_install').'** by `composer release:dry-run`.';
+        $upgradeStatus = self::stringField($artifacts, 'upgrade_from_published_release');
+        $upgradeExplanation = match ($upgradeStatus) {
+            'blocked-no-published-baseline' => 'No tagged or Packagist baseline exists, so an upgrade claim would be synthetic.',
+            'pending-from-published-beta' => '`v1.0.0-beta.1` is now the published baseline; a subsequent release must exercise the real upgrade.',
+            'verified-from-published-artifacts' => 'A real published-artifact upgrade has been verified.',
+            default => throw new RuntimeException('Validated upgrade status unexpectedly changed.'),
+        };
         $lines[] = '- Upgrade from a previously published artifact: **'
-            .self::stringField($artifacts, 'upgrade_from_published_release')
-            .'**. No prior tagged or Packagist release exists, so an upgrade claim would be synthetic.';
+            .$upgradeStatus.'**. '.$upgradeExplanation;
         $lines[] = '';
         $lines[] = '## External release gates and outcome';
         $lines[] = '';
@@ -157,6 +163,7 @@ final class ReleaseAudit
         $lines[] = '| --- | ---: | --- |';
 
         $gateIssues = [];
+        $gateStatuses = [];
 
         foreach ($gates as $gate) {
             if (! self::isObject($gate)) {
@@ -166,6 +173,7 @@ final class ReleaseAudit
             $issue = self::integerField($gate, 'issue');
             $identifier = self::stringField($gate, 'id');
             $gateIssues[$identifier] = $issue;
+            $gateStatuses[$identifier] = self::stringField($gate, 'status');
             $lines[] = sprintf(
                 '| `%s` | [#%d](https://github.com/zerodycoder/RaceProof/issues/%d) | %s |',
                 $identifier,
@@ -177,8 +185,9 @@ final class ReleaseAudit
 
         $lines[] = '';
         $lines[] = sprintf(
-            'Stable publication remains prohibited until the package-publication gate in #%d and beta-adoption gate in #%d are backed by real external evidence and the published-artifact upgrade path exists. Issue #%d records the stable workflow outcome and is closed only after publication succeeds; it is reported here but is not a circular pre-publication predicate.',
+            'Package publication gate #%d is **%s**. Stable publication remains prohibited until beta-adoption gate #%d is verified and the published-artifact upgrade path exists. Issue #%d records the stable workflow outcome and is closed only after publication succeeds; it is reported here but is not a circular pre-publication predicate.',
             $gateIssues['public-package-publication'],
+            $gateStatuses['public-package-publication'],
             $gateIssues['beta-adoption-evidence'],
             $gateIssues['stable-release'],
         );
@@ -549,7 +558,11 @@ final class ReleaseAudit
 
         if (! in_array(
             $artifacts['upgrade_from_published_release'] ?? null,
-            ['blocked-no-published-baseline', 'verified-from-published-artifacts'],
+            [
+                'blocked-no-published-baseline',
+                'pending-from-published-beta',
+                'verified-from-published-artifacts',
+            ],
             true,
         )) {
             $errors[] = '$.artifacts.upgrade_from_published_release has an unsupported status.';

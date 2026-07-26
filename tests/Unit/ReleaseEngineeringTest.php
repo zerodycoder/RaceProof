@@ -205,6 +205,9 @@ final class ReleaseEngineeringTest extends TestCase
         self::assertStringContainsString('composer release:audit', $workflow);
         self::assertStringContainsString('composer release:gate', $workflow);
         self::assertStringContainsString('if [[ "$version" != *-* ]]', $workflow);
+        self::assertSame(2, substr_count($workflow, 'RELEASE_PRERELEASE:'));
+        self::assertSame(2, substr_count($workflow, 'release_flags+=(--prerelease)'));
+        self::assertSame(2, substr_count($workflow, '"${release_flags[@]}"'));
         self::assertStringContainsString('release-audit:', $testsWorkflow);
         self::assertStringContainsString('secret-scan:', $testsWorkflow);
         self::assertStringContainsString('fetch-depth: 0', $testsWorkflow);

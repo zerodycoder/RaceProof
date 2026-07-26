@@ -51,14 +51,14 @@ The exact meaning and boundaries of these levels are in [the compatibility polic
 ## Artifact paths
 
 - Fresh install from deterministic Laravel/runtime ZIP artifacts: **automated** by `composer release:dry-run`.
-- Upgrade from a previously published artifact: **blocked-no-published-baseline**. No prior tagged or Packagist release exists, so an upgrade claim would be synthetic.
+- Upgrade from a previously published artifact: **pending-from-published-beta**. `v1.0.0-beta.1` is now the published baseline; a subsequent release must exercise the real upgrade.
 
 ## External release gates and outcome
 
 | Gate | Tracking issue | Status |
 | --- | ---: | --- |
-| `public-package-publication` | [#2](https://github.com/zerodycoder/RaceProof/issues/2) | blocked |
+| `public-package-publication` | [#2](https://github.com/zerodycoder/RaceProof/issues/2) | verified |
 | `beta-adoption-evidence` | [#3](https://github.com/zerodycoder/RaceProof/issues/3) | blocked |
 | `stable-release` | [#4](https://github.com/zerodycoder/RaceProof/issues/4) | blocked |
 
-Stable publication remains prohibited until the package-publication gate in #2 and beta-adoption gate in #3 are backed by real external evidence and the published-artifact upgrade path exists. Issue #4 records the stable workflow outcome and is closed only after publication succeeds; it is reported here but is not a circular pre-publication predicate.
+Package publication gate #2 is **verified**. Stable publication remains prohibited until beta-adoption gate #3 is verified and the published-artifact upgrade path exists. Issue #4 records the stable workflow outcome and is closed only after publication succeeds; it is reported here but is not a circular pre-publication predicate.
