@@ -13,6 +13,7 @@ Every pull request must pass:
 - Pint formatting;
 - PHPStan at level max;
 - strict Composer validation and locked dependency audit;
+- isolated Laravel consumer installation and acceptance;
 - at least 90% executable-line coverage;
 - the pre-release policy, matrix, mutation-hotspot, artifact, and blocker audit.
 
@@ -61,10 +62,11 @@ audited invitation, adoption, and resulting-fix thresholds in the
 [private-beta runbook](private-beta.md) are actually met.
 
 The final `release-audit` CI job depends on every PHP/Laravel, coverage,
-release-dry-run, MySQL, and PostgreSQL job. It validates pinned workflow actions,
-policy presence, the exact supported matrix, named tests for mutation-risk
-hotspots, package evidence, and honest external blockers, then uploads
-machine-readable evidence. See [the pre-release audit](release-audit.md).
+isolated-consumer, release-dry-run, MySQL, and PostgreSQL job. It validates
+pinned workflow actions, policy presence, the exact supported matrix, named
+tests for mutation-risk hotspots, package evidence, and honest external
+blockers, then uploads machine-readable evidence. See
+[the pre-release audit](release-audit.md).
 
 `composer release:gate` is stricter and is invoked automatically for stable
 tags. It cannot pass while the published upgrade, package publication, real beta

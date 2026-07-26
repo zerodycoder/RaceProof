@@ -15,12 +15,18 @@ Requirements:
 ```bash
 composer install
 composer check
+composer consumer:check
 ```
 
 `composer check` runs PHPUnit, the real-process Pest contract, Pint, and PHPStan
 at level max. The full CI matrix runs on the oldest and newest supported
 PHP/Laravel combinations. Coverage is measured separately and must remain at or
 above 90% line coverage.
+
+`composer consumer:check` installs a separate Laravel application and exercises
+package discovery, authentication, real workers, CLI commands, and Studio
+routes without relying on the package's own Testbench bootstrap or development
+autoloading.
 
 CI also runs `composer release:dry-run`, which builds each package twice,
 compares hashes, installs the artifact pair in a clean Composer project, and

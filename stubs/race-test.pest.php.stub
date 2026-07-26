@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-use function RaceProof\Laravel\race;
-
 it('finishes concurrent requests without infrastructure or server failures', function (): void {
     $result = race()
         ->participants({{ participants }})

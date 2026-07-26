@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Added an isolated Laravel 12 consumer application that verifies package
+  discovery, participant/authentication modes, a real multi-process database
+  invariant, CLI workflows, and Studio HTTP behavior in its own dependency
+  tree.
+- Fixed the PHPUnit and Pest scaffolds and README example to call the global
+  `race()` helper without an invalid namespaced function import.
 - Added the opt-in local/testing-only RaceProof Studio with bounded redacted
   report retention, responsive participant/checkpoint timelines, JSON export,
   report inspection commands, and PHPUnit/Pest test scaffolding that keeps

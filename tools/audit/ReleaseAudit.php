@@ -643,6 +643,8 @@ final class ReleaseAudit
             'gitleaks git . --no-banner --redact',
             "php: '8.2'",
             "php: '8.5'",
+            'consumer:',
+            'tests/ConsumerApp',
             'image: mysql:8.4',
             'image: postgres:17',
         ] as $needle) {

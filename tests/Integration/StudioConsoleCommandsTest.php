@@ -66,7 +66,9 @@ final class StudioConsoleCommandsTest extends TestCase
         self::assertStringContainsString("->postJson('/api/checkout')", $phpunit);
         self::assertStringContainsString('->assertNoServerErrors()', $phpunit);
         self::assertStringNotContainsString('assertTrue(true)', $phpunit);
+        self::assertStringNotContainsString('use function RaceProof\\Laravel\\race', $phpunit);
         self::assertStringContainsString("it('finishes concurrent requests", $pest);
+        self::assertStringNotContainsString('use function RaceProof\\Laravel\\race', $pest);
         self::assertSame(0, $this->lint($phpunitPath));
         self::assertSame(0, $this->lint($pestPath));
     }

@@ -67,8 +67,6 @@ The test starts real application processes, waits until all of them reach that
 point, and releases them together:
 
 ```php
-use function RaceProof\Laravel\race;
-
 $result = race()
     ->participants(3)
     ->postJson('/api/checkout', ['product_id' => $product->getKey()])
@@ -117,6 +115,12 @@ cd RaceProof
 composer install
 composer check
 ```
+
+Maintainers can also run `composer consumer:check` to install and exercise
+RaceProof inside an [isolated Laravel application](docs/consumer-acceptance.md).
+The consumer app verifies package discovery, participant/authentication modes,
+a real database race, CLI workflows, and Studio without relying on the
+package's Testbench bootstrap.
 
 See [runtime checkpoint deployment](docs/runtime-checkpoints.md) before adding
 instrumentation to production code.
