@@ -113,6 +113,7 @@ final class DoctorSelfTestTest extends TestCase
 
         $this->artisan(<<<'PHP'
             <?php
+            fwrite(STDERR, str_repeat('ignored-stderr', 131_072));
             echo str_repeat('x', 1025);
             PHP);
 

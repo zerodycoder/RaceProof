@@ -55,8 +55,33 @@ final readonly class DoctorSelfTest
             '--no-interaction',
         ], $this->app->basePath(), timeout: $timeoutMilliseconds / 1_000);
 
+        $output = '';
+        $outputExceeded = false;
+
         try {
-            $exitCode = $process->run();
+            $exitCode = $process->run(
+                function (string $type, string $chunk) use (
+                    $process,
+                    $outputBytes,
+                    &$output,
+                    &$outputExceeded,
+                ): void {
+                    if ($type === Process::OUT && ! $outputExceeded) {
+                        $remainingBytes = $outputBytes - strlen($output);
+
+                        if (strlen($chunk) > $remainingBytes) {
+                            $outputExceeded = true;
+                        } else {
+                            $output .= $chunk;
+                        }
+                    }
+
+                    // Symfony stores both streams before invoking this callback.
+                    // Clear them per chunk so untrusted child output stays bounded.
+                    $process->clearOutput();
+                    $process->clearErrorOutput();
+                },
+            );
         } catch (ProcessTimedOutException) {
             throw new RuntimeException("Laravel child process exceeded {$timeoutMilliseconds} milliseconds.");
         } catch (Throwable) {
@@ -67,9 +92,7 @@ final readonly class DoctorSelfTest
             throw new RuntimeException("Child Doctor exited with status {$exitCode}.");
         }
 
-        $output = $process->getOutput();
-
-        if (strlen($output) > $outputBytes) {
+        if ($outputExceeded) {
             throw new RuntimeException("Child Doctor output exceeded {$outputBytes} bytes.");
         }
 
