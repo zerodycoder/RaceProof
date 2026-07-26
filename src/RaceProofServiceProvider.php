@@ -9,6 +9,7 @@ use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
 use RaceProof\Laravel\Console\CleanCommand;
 use RaceProof\Laravel\Console\DoctorCommand;
+use RaceProof\Laravel\Console\InstallCommand;
 use RaceProof\Laravel\Console\MakeRaceTestCommand;
 use RaceProof\Laravel\Console\ReportsCommand;
 use RaceProof\Laravel\Console\StudioCommand;
@@ -56,6 +57,7 @@ final class RaceProofServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 WorkerCommand::class,
+                InstallCommand::class,
                 DoctorCommand::class,
                 CleanCommand::class,
                 MakeRaceTestCommand::class,

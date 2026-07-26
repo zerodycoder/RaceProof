@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Added an idempotent `raceproof:install` workflow and versioned JSON/child
+  process modes for `raceproof:doctor`, without automatically changing
+  application environment files.
+- Made release preparation align copy-ready Laravel and runtime installation
+  constraints for beta, release-candidate, and stable versions.
 - Added an isolated Laravel 12 consumer application that verifies package
   discovery, participant/authentication modes, a real multi-process database
   invariant, CLI workflows, and Studio HTTP behavior in its own dependency

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace RaceProof\Laravel\Tests\Integration;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 use RaceProof\Laravel\Contracts\ParticipantBootstrap;
 use RaceProof\Laravel\Contracts\RequestExecutor;
@@ -54,6 +55,108 @@ final class ConsoleCommandsTest extends TestCase
         $this->artisan('raceproof:doctor')
             ->expectsOutputToContain('RaceProof is disabled')
             ->assertExitCode(Command::FAILURE);
+    }
+
+    public function test_doctor_emits_versioned_json_without_raw_environment_values(): void
+    {
+        self::assertSame(Command::SUCCESS, Artisan::call('raceproof:doctor', ['--json' => true]));
+
+        $output = Artisan::output();
+        $payload = json_decode($output, true, 32, JSON_THROW_ON_ERROR);
+
+        self::assertSame(1, $payload['schema_version']);
+        self::assertTrue($payload['ok']);
+        self::assertCount(5, $payload['checks']);
+        self::assertSame(
+            [
+                'environment-safety',
+                'database-safety',
+                'proc-open',
+                'php-binary',
+                'coordinator-writable',
+            ],
+            array_column($payload['checks'], 'id'),
+        );
+        self::assertStringNotContainsString('APP_ENV', $output);
+        self::assertStringNotContainsString('DB_PASSWORD', $output);
+    }
+
+    public function test_doctor_json_keeps_failed_checks_structured_and_actionable(): void
+    {
+        $this->app['config']->set('raceproof.enabled', false);
+
+        self::assertSame(Command::FAILURE, Artisan::call('raceproof:doctor', ['--json' => true]));
+
+        $payload = json_decode(Artisan::output(), true, 32, JSON_THROW_ON_ERROR);
+
+        self::assertFalse($payload['ok']);
+        self::assertSame('environment-safety', $payload['checks'][0]['id']);
+        self::assertSame('fail', $payload['checks'][0]['status']);
+        self::assertStringContainsString('RaceProof is disabled', $payload['checks'][0]['message']);
+    }
+
+    public function test_doctor_self_test_uses_a_separate_bounded_child_process(): void
+    {
+        $basePath = $this->app->basePath();
+        $directory = dirname(__DIR__, 2).'/build/doctor-command-child/'.bin2hex(random_bytes(8));
+        mkdir($directory, 0700, true);
+        file_put_contents($directory.'/artisan', <<<'PHP'
+            <?php
+            echo json_encode(['schema_version' => 1, 'ok' => true, 'checks' => []]);
+            PHP, LOCK_EX);
+        $this->app->setBasePath($directory);
+
+        try {
+            self::assertSame(Command::SUCCESS, Artisan::call('raceproof:doctor', [
+                '--json' => true,
+                '--self-test' => true,
+            ]));
+            $payload = json_decode(Artisan::output(), true, 32, JSON_THROW_ON_ERROR);
+
+            self::assertTrue($payload['ok']);
+            self::assertSame('laravel-child-process', $payload['checks'][5]['id']);
+            self::assertSame('pass', $payload['checks'][5]['status']);
+        } finally {
+            $this->app->setBasePath($basePath);
+            $this->removeDirectory($directory);
+        }
+    }
+
+    public function test_installer_is_idempotent_and_never_mutates_environment_files(): void
+    {
+        $configPath = $this->app->configPath();
+        $directory = dirname(__DIR__, 2).'/build/install-command/'.bin2hex(random_bytes(8));
+        $environment = $directory.'/.env.testing';
+        mkdir($directory, 0700, true);
+        file_put_contents($environment, "EXISTING_VALUE=preserved\n", LOCK_EX);
+        $this->app->useConfigPath($directory);
+
+        try {
+            $this->artisan('raceproof:install')
+                ->expectsOutputToContain('Published RaceProof configuration')
+                ->expectsOutputToContain('RaceProof did not modify any environment file.')
+                ->assertExitCode(Command::SUCCESS);
+
+            $target = $directory.'/raceproof.php';
+            self::assertFileExists($target);
+            self::assertSame("EXISTING_VALUE=preserved\n", file_get_contents($environment));
+
+            file_put_contents($target, "<?php return ['preserved' => true];\n", LOCK_EX);
+            $this->artisan('raceproof:install')
+                ->expectsOutputToContain('left unchanged')
+                ->assertExitCode(Command::SUCCESS);
+            self::assertStringContainsString('preserved', (string) file_get_contents($target));
+
+            $this->artisan('raceproof:install', ['--force' => true])
+                ->expectsOutputToContain('Published RaceProof configuration')
+                ->assertExitCode(Command::SUCCESS);
+            self::assertStringContainsString("'self_test_timeout_ms' => 15_000", (string) file_get_contents($target));
+            self::assertStringContainsString("'self_test_output_bytes' => 65_536", (string) file_get_contents($target));
+            self::assertSame("EXISTING_VALUE=preserved\n", file_get_contents($environment));
+        } finally {
+            $this->app->useConfigPath($configPath);
+            $this->removeDirectory($directory);
+        }
     }
 
     public function test_clean_removes_only_valid_run_directories(): void

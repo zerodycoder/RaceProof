@@ -59,13 +59,9 @@ try {
             throw new RuntimeException("Unable to read {$path}.");
         }
 
-        $updated = preg_replace(
-            '/raceproof\/runtime:(?:\^)?[0-9][0-9A-Za-z.@-]*/',
-            'raceproof/runtime:'.$constraint,
-            $contents,
-        );
+        $updated = Release::updateInstallationConstraints($contents, $version);
 
-        if (! is_string($updated) || file_put_contents($path, $updated, LOCK_EX) === false) {
+        if (file_put_contents($path, $updated, LOCK_EX) === false) {
             throw new RuntimeException("Unable to update {$path}.");
         }
     }

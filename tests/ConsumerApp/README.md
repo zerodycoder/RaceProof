@@ -16,13 +16,14 @@ From the repository root:
 composer consumer:check
 ```
 
-The command creates a clean consumer dependency tree, runs
-`raceproof:doctor`, and verifies:
+The command creates a clean consumer dependency tree, runs Doctor in both normal
+and JSON child-process modes, and verifies:
 
 - session, legacy bearer-token, and Sanctum authentication in real workers;
 - per-participant payload, header, cookie, token, identity, and bootstrap
   overrides;
 - a three-process coupon redemption race with a database invariant;
+- a separate Laravel CLI bootstrap through `raceproof:doctor --self-test`;
 - report listing, JSON inspection, Studio URL, scaffold generation, and Studio
   cleanup commands;
 - Studio index, detail, JSON export, response security headers, and retained

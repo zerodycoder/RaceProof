@@ -10,6 +10,7 @@ use Illuminate\Contracts\Encryption\Encrypter;
 use Illuminate\Cookie\CookieValuePrefix;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Session\SessionManager;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
@@ -22,6 +23,15 @@ final class ConsumerAcceptanceTest extends TestCase
     public function test_real_consumer_install_auth_cli_race_and_studio_workflow(): void
     {
         self::assertTrue($this->app->providerIsLoaded(RaceProofServiceProvider::class));
+
+        self::assertSame(0, Artisan::call('raceproof:doctor', [
+            '--json' => true,
+            '--self-test' => true,
+        ]));
+        $doctor = json_decode(Artisan::output(), true, 32, JSON_THROW_ON_ERROR);
+        self::assertSame(1, $doctor['schema_version']);
+        self::assertTrue($doctor['ok']);
+        self::assertContains('laravel-child-process', array_column($doctor['checks'], 'id'));
 
         $users = $this->createUsers();
 

@@ -112,6 +112,8 @@ jobs:
       - run: composer audit --working-dir=tests/ConsumerApp --locked --no-interaction
       - name: Exercise package discovery, auth, CLI, races, and Studio
         run: composer --working-dir=tests/ConsumerApp check
+      - name: Verify consumer cleanup preserves tracked fixtures
+        run: git diff --exit-code -- tests/ConsumerApp
 
   release-dry-run:
     runs-on: ubuntu-latest

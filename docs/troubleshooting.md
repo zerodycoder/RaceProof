@@ -3,7 +3,7 @@
 Start with the earliest failing phase. Later symptoms are often consequences of
 an earlier setup problem.
 
-## 1. Does `raceproof:doctor` pass?
+## 1. Does `raceproof:doctor --self-test` pass?
 
 - **No — environment rejected:** confirm `APP_ENV=testing`,
   `RACEPROOF_ENABLED=true`, and that the package is not running in production.
@@ -11,6 +11,29 @@ an earlier setup problem.
   one-name allowlist, close any parent transaction, and replace SQLite
   `:memory:` with the production engine or a file-backed smoke database.
 - **Yes:** continue to worker startup.
+
+`--self-test` launches a separate Laravel CLI process, so it also catches PHP
+binary, application bootstrap, package discovery, and child-process
+configuration failures. Add `--json` for a schema-v1 diagnostic that contains
+check identifiers and redacted failure messages without dumping environment
+variables.
+
+The JSON shape is intentionally small and versioned:
+
+```json
+{
+  "schema_version": 1,
+  "ok": true,
+  "checks": [
+    {
+      "id": "laravel-child-process",
+      "label": "Laravel child process",
+      "status": "pass",
+      "message": null
+    }
+  ]
+}
+```
 
 ## 2. Do all workers become ready?
 
