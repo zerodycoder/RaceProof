@@ -23,6 +23,13 @@ abstract class TestCase extends BaseTestCase
             File::ensureDirectoryExists($directory);
         }
 
+        foreach ([
+            storage_path('framework/consumer-generated/.gitignore'),
+            storage_path('framework/sessions/.gitignore'),
+        ] as $placeholder) {
+            File::put($placeholder, "*\n!.gitignore\n");
+        }
+
         $this->artisan('migrate:fresh', ['--force' => true])->run();
     }
 }

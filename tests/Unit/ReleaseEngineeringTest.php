@@ -38,6 +38,28 @@ final class ReleaseEngineeringTest extends TestCase
         Release::version('v1.0.0');
     }
 
+    public function test_installation_commands_are_aligned_for_beta_and_stable_releases(): void
+    {
+        $contents = <<<'MD'
+            composer require raceproof/runtime:^0.1
+            composer require raceproof/laravel --dev
+            MD;
+
+        $beta = Release::updateInstallationConstraints($contents, '1.0.0-beta.1');
+        self::assertStringContainsString(
+            'composer require raceproof/runtime:1.0.0-beta.1@beta',
+            $beta,
+        );
+        self::assertStringContainsString(
+            'composer require raceproof/laravel:1.0.0-beta.1@beta --dev',
+            $beta,
+        );
+
+        $stable = Release::updateInstallationConstraints($beta, '1.0.0');
+        self::assertStringContainsString('composer require raceproof/runtime:^1.0', $stable);
+        self::assertStringContainsString('composer require raceproof/laravel:^1.0 --dev', $stable);
+    }
+
     public function test_release_archives_are_reproducible_aligned_and_installable_shapes(): void
     {
         $root = dirname(__DIR__, 2);

@@ -44,6 +44,28 @@ final class Release
         return '^'.$parsed['major'].'.'.$parsed['minor'];
     }
 
+    public static function updateInstallationConstraints(string $contents, string $version): string
+    {
+        $constraint = self::runtimeConstraint($version);
+        $updated = preg_replace(
+            [
+                '/raceproof\/runtime:(?:\^)?[0-9][0-9A-Za-z.@-]*/',
+                '/raceproof\/laravel(?::[^\s]+)?(?=\s+--dev)/',
+            ],
+            [
+                'raceproof/runtime:'.$constraint,
+                'raceproof/laravel:'.$constraint,
+            ],
+            $contents,
+        );
+
+        if (! is_string($updated)) {
+            throw new RuntimeException('Unable to update installation constraints.');
+        }
+
+        return $updated;
+    }
+
     public static function minimumStability(string $version): string
     {
         $prerelease = self::version($version)['prerelease'];

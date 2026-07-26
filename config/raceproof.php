@@ -27,6 +27,11 @@ return [
         'require_allowlist' => (bool) env('RACEPROOF_REQUIRE_DATABASE_ALLOWLIST', false),
     ],
 
+    'doctor' => [
+        'self_test_timeout_ms' => 15_000,
+        'self_test_output_bytes' => 65_536,
+    ],
+
     'capture' => [
         'response_body_bytes' => 16_384,
         'diagnostic_text_bytes' => 4_096,

@@ -61,6 +61,10 @@ the human evidence gate pass. `composer beta:gate` remains fail-closed until the
 audited invitation, adoption, and resulting-fix thresholds in the
 [private-beta runbook](private-beta.md) are actually met.
 
+The isolated consumer job also requires a clean tracked fixture after its real
+worker, scaffold, session, and Studio cleanup paths run. Generated consumer
+state may not be hidden by accepting a dirty worktree.
+
 The final `release-audit` CI job depends on every PHP/Laravel, coverage,
 isolated-consumer, release-dry-run, MySQL, and PostgreSQL job. It validates
 pinned workflow actions, policy presence, the exact supported matrix, named

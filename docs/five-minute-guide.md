@@ -16,7 +16,7 @@ only when application code contains `race_point()` calls:
 ```bash
 composer require raceproof/runtime:^0.1
 composer require raceproof/laravel --dev
-php artisan vendor:publish --tag=raceproof-config
+php artisan raceproof:install
 ```
 
 Use a disposable test database:
@@ -28,7 +28,10 @@ RACEPROOF_REQUIRE_DATABASE_ALLOWLIST=true
 RACEPROOF_ALLOWED_DATABASES=my_app_raceproof_test
 ```
 
-Run `php artisan raceproof:doctor` before debugging a test failure.
+The installer prints these values but never writes an environment file. Run
+`php artisan raceproof:doctor --self-test` before debugging a test failure.
+Use `--json` when CI or a support issue needs a bounded machine-readable
+diagnostic.
 
 ## 2. Expose the stale read
 

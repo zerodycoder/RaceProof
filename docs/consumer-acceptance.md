@@ -20,7 +20,8 @@ The feature test drives real worker processes through session, legacy token,
 Sanctum, and explicit participant identity modes. It also exercises participant
 request overrides and bootstrap state, proves a coupon can be claimed only
 once by three simultaneous participants, runs the report/Studio/scaffolding
-commands, and requests the Studio HTML and JSON endpoints.
+commands, boots Doctor through a separate Laravel CLI process, and requests the
+Studio HTML and JSON endpoints.
 
 CI installs the consumer before installing the root package's development
 dependencies. That ordering prevents the package's own `vendor` directory or

@@ -50,6 +50,7 @@ A stable v1 requires all of the following:
 - [x] PHPUnit and Pest documentation
 - [x] Human, JSON, and JUnit-compatible reports
 - [x] Five-minute guides and troubleshooting playbook
+- [x] Idempotent installer and machine-readable child-process diagnostics
 
 ### v0.5 — visual evidence
 

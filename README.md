@@ -97,8 +97,8 @@ Once the first beta is published:
 composer require raceproof/runtime:^0.1
 composer require raceproof/laravel --dev
 
-php artisan vendor:publish --tag=raceproof-config
-php artisan raceproof:doctor
+php artisan raceproof:install
+php artisan raceproof:doctor --self-test
 ```
 
 Install `raceproof/runtime` only when application code contains
@@ -106,6 +106,11 @@ Install `raceproof/runtime` only when application code contains
 checkpoint calls are no-ops unless a validated RaceProof worker activates an
 in-memory handler. It has no process runner, filesystem, network, command, or
 Laravel integration.
+
+`raceproof:install` publishes configuration and prints a safe
+`.env.testing` checklist. It never edits an environment file. Doctor's
+`--self-test` mode boots a separate Laravel CLI process; `--json` emits a
+bounded schema-v1 result suitable for CI and support reports.
 
 Before the beta, develop from source:
 
