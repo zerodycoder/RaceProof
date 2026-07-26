@@ -59,7 +59,9 @@ php artisan make:race-test InventoryOversell /api/checkout --participants=3 --pe
 The generator requires a real URI, validates the participant range, refuses
 path traversal, and will not replace a file without `--force`. It produces
 infrastructure, timeout, and server-error assertions rather than a fake passing
-assertion. Add the domain invariant that defines correctness for the
+assertion. PHPUnit scaffolds register those executed checks with PHPUnit, so
+strict suites do not report them as risky. Pest scaffolding is only written when
+Pest is installed. Add the domain invariant that defines correctness for the
 application.
 
 Run the generated test through the project's normal runner:

@@ -22,6 +22,8 @@ final class {{ class }} extends TestCase
             ->assertNoTimeouts()
             ->assertNoServerErrors();
 
+        $this->addToAssertionCount(4);
+
         // Add a domain invariant here, such as a final balance, stock, or row count.
     }
 }

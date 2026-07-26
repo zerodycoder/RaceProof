@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Support\ConsumerParticipantBootstrap;
+use Illuminate\Console\Command;
 use Illuminate\Contracts\Encryption\Encrypter;
 use Illuminate\Cookie\CookieValuePrefix;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use RaceProof\Laravel\ParticipantBuilder;
 use RaceProof\Laravel\RaceProofServiceProvider;
+use Symfony\Component\Process\Process;
 use Tests\TestCase;
 
 final class ConsumerAcceptanceTest extends TestCase
@@ -201,6 +203,46 @@ final class ConsumerAcceptanceTest extends TestCase
         self::assertStringContainsString("->postJson('/api/coupons/1/redeem')", $contents);
         self::assertStringNotContainsString('assertTrue(true)', $contents);
         self::assertStringNotContainsString('use function RaceProof\\Laravel\\race', $contents);
+
+        self::assertFalse(class_exists('Pest\\TestSuite'));
+
+        $this->artisan('make:race-test', [
+            'name' => 'UnavailablePestRace',
+            'uri' => '/api/participant-context',
+            '--pest' => true,
+        ])
+            ->expectsOutputToContain('Pest is not installed.')
+            ->expectsOutputToContain('composer require pestphp/pest --dev')
+            ->assertExitCode(Command::FAILURE);
+
+        self::assertFileDoesNotExist($directory.'/UnavailablePestRaceTest.php');
+
+        $executablePath = base_path('tests/Feature/GeneratedAssertionCountRaceTest.php');
+        config()->set('raceproof.scaffolding.test_path', dirname($executablePath));
+        File::delete($executablePath);
+
+        try {
+            $this->artisan('make:race-test', [
+                'name' => 'GeneratedAssertionCountRace',
+                'uri' => '/api/participant-context',
+                '--participants' => '2',
+            ])->assertExitCode(Command::SUCCESS);
+
+            DB::purge();
+
+            $process = new Process(
+                [PHP_BINARY, 'artisan', 'test', '--filter=GeneratedAssertionCountRaceTest'],
+                base_path(),
+                timeout: 60,
+            );
+            $process->run();
+
+            self::assertSame(0, $process->getExitCode(), $process->getErrorOutput().$process->getOutput());
+            self::assertStringNotContainsString('risky', strtolower($process->getOutput()));
+            self::assertStringContainsString('4 assertions', $process->getOutput());
+        } finally {
+            File::delete($executablePath);
+        }
     }
 
     /** @return array<int, User> */

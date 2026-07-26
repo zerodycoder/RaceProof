@@ -59,7 +59,9 @@ vendor/bin/phpunit --filter OversellingRaceTest
 
 Install the Pest major compatible with the application's PHP version. RaceProof
 itself does not require Pest. This repository uses Pest 3 because its supported
-matrix includes PHP 8.2 and PHPUnit 11.
+matrix includes PHP 8.2 and PHPUnit 11. The generator fails without writing a
+test file when Pest is unavailable and prints the Composer command needed to
+install it.
 
 ```bash
 php artisan make:race-test OversellingRace /api/oversell/fixed --participants=2 --pest
