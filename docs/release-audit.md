@@ -17,7 +17,7 @@ Audit definition prepared: 2026-07-26
 | `published-contracts` | no | Frozen API signatures, documentation links, executable examples, public evidence status, and package-content boundaries. | 3 |
 | `consumer-acceptance` | no | Clean Laravel installation, idempotent setup, child-process diagnostics, package discovery, participant identity, authentication, CLI workflows, a real database race, and Studio HTTP behavior. | 4 |
 
-These entries identify mutation-sensitive branch, timeout, cleanup, redaction, serialization, and packaging decisions and bind each one to named tests. They do not claim a repository-wide mutation score.
+These entries identify mutation-sensitive branch, timeout, cleanup, redaction, serialization, and packaging decisions and bind each one to named tests. CI additionally enforces an 80% covered-code mutation score for selected safety, lifecycle, redaction, reporting, and coordination classes through `composer test:mutation`; this remains targeted evidence, so do not claim a repository-wide mutation score.
 
 ## Compatibility evidence
 
@@ -33,6 +33,8 @@ Platform levels:
 - WSL2: development.
 - macOS: best-effort.
 - Native Windows: experimental.
+
+GitHub-hosted macOS and native Windows runners continuously execute the independent PHP 8.4 consumer smoke. Database release evidence remains specific to Ubuntu.
 
 The exact meaning and boundaries of these levels are in [the compatibility policy](compatibility.md).
 

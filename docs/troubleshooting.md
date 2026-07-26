@@ -42,8 +42,9 @@ The JSON shape is intentionally small and versioned:
 - **Spawn timeout with no worker output:** verify `proc_open`, the PHP executable,
   file permissions, antivirus/process policy, and that Composer dependencies are
   installed for the worker process.
-- **Only Windows fails:** use an absolute PHP path, avoid shell-only quoting, and
-  reproduce with `composer test:pest`; native Windows is experimental.
+- **Only Windows fails:** use an absolute PHP path, avoid shell-only quoting,
+  reproduce with `composer consumer:check`, and compare the public
+  `platform-smoke (windows-latest)` job; native Windows remains experimental.
 
 ## 3. Do all workers reach the checkpoint?
 

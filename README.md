@@ -257,10 +257,10 @@ records. The [production safety guide](docs/production-safety.md) and
 | PHP | 8.2+ |
 | Laravel | 12 and 13 |
 | Databases | MySQL 8.4 and PostgreSQL 17 continuously verified |
-| Linux | CI reference platform |
+| Linux | Full CI and database release-evidence platform |
 | WSL2 | Primary development target |
-| macOS | Best-effort |
-| Native Windows | Experimental |
+| macOS | Best-effort; continuous independent-consumer smoke |
+| Native Windows | Experimental; continuous independent-consumer smoke |
 | SQLite | File-backed smoke tests only; not production lock evidence |
 
 The exact compatibility promise is maintained in

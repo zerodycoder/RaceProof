@@ -102,7 +102,7 @@ final class ReleaseAudit
         }
 
         $lines[] = '';
-        $lines[] = 'These entries identify mutation-sensitive branch, timeout, cleanup, redaction, serialization, and packaging decisions and bind each one to named tests. They do not claim a repository-wide mutation score.';
+        $lines[] = 'These entries identify mutation-sensitive branch, timeout, cleanup, redaction, serialization, and packaging decisions and bind each one to named tests. CI additionally enforces an 80% covered-code mutation score for selected safety, lifecycle, redaction, reporting, and coordination classes through `composer test:mutation`; this remains targeted evidence, so do not claim a repository-wide mutation score.';
         $lines[] = '';
         $lines[] = '## Compatibility evidence';
         $lines[] = '';
@@ -123,6 +123,8 @@ final class ReleaseAudit
             $lines[] = '- '.self::stringField($platform, 'name').': '.self::stringField($platform, 'level').'.';
         }
 
+        $lines[] = '';
+        $lines[] = 'GitHub-hosted macOS and native Windows runners continuously execute the independent PHP 8.4 consumer smoke. Database release evidence remains specific to Ubuntu.';
         $lines[] = '';
         $lines[] = 'The exact meaning and boundaries of these levels are in [the compatibility policy](compatibility.md).';
         $lines[] = '';
@@ -643,8 +645,15 @@ final class ReleaseAudit
             'gitleaks git . --no-banner --redact',
             "php: '8.2'",
             "php: '8.5'",
+            'mutation:',
+            'composer test:mutation',
             'consumer:',
             'tests/ConsumerApp',
+            'platform-smoke:',
+            'macos-latest',
+            'windows-latest',
+            '- mutation',
+            '- platform-smoke',
             'image: mysql:8.4',
             'image: postgres:17',
         ] as $needle) {

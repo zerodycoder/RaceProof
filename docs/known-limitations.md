@@ -67,10 +67,13 @@ access and short retention.
 
 ## Platform boundaries
 
-Ubuntu Linux is continuously verified. WSL2 is a development target, macOS is
-best-effort, and native Windows is experimental. Disabled `proc_open`, read-only
-storage, antivirus interference, path translation, Docker networking, and slow
-mounted volumes can prevent or distort a run.
+Ubuntu Linux receives the complete CI and database evidence. WSL2 is a
+development target; macOS is best-effort and native Windows is experimental,
+although both now run continuous independent-consumer smoke tests. Those smoke
+jobs use file-backed SQLite and do not verify native MySQL/PostgreSQL behavior.
+Disabled `proc_open`, read-only storage, antivirus interference, path
+translation, Docker networking, and slow mounted volumes can prevent or distort
+a run.
 
 See [the compatibility policy](compatibility.md), [production safety](production-safety.md),
 and [troubleshooting guide](troubleshooting.md) for the evidence required when a

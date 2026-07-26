@@ -6,10 +6,10 @@ reflect observed evidence, not assumptions about Symfony Process portability.
 
 | Platform | Level | Evidence and boundary |
 | --- | --- | --- |
-| Ubuntu Linux | Primary, continuously verified | Every pull request runs the full PHPUnit suite, the real-process Pest contract, PHP 8.2/Laravel 12, PHP 8.5/Laravel 13, coverage, MySQL 8.4, and PostgreSQL 17 on GitHub-hosted Ubuntu runners. |
+| Ubuntu Linux | Primary, continuously verified | Every pull request runs the full PHPUnit suite, the real-process Pest contract, targeted mutation testing, PHP 8.2/Laravel 12, PHP 8.5/Laravel 13, coverage, MySQL 8.4, and PostgreSQL 17 on GitHub-hosted Ubuntu runners. |
 | WSL2 | Primary development target | Uses the Linux process model, but is not a separate CI target. Docker networking, mounted-drive performance, and Windows-host antivirus remain environment-specific. |
-| macOS | Best-effort compatible | Symfony Process and PHP filesystem primitives are expected to work, but RaceProof has no continuous macOS runner or database evidence. Run the verification commands below before relying on it. |
-| Native Windows | Experimental | A maintainer smoke run on Windows 10 build 19045 with PHP 8.4 exercises the non-engine PHPUnit suite and real multi-process Pest contract; the database suite remains explicitly gated. Windows is not a continuous CI target and has no native MySQL/PostgreSQL evidence. |
+| macOS | Best-effort compatible, continuous smoke | A GitHub-hosted macOS runner installs the independent PHP 8.4 consumer app and continuously exercises discovery, installer/Doctor, authentication, CLI, a real multi-process file-backed SQLite invariant, and Studio HTTP behavior. It provides no native MySQL/PostgreSQL evidence. |
+| Native Windows | Experimental, continuous smoke | A GitHub-hosted Windows runner executes the same independent PHP 8.4 consumer acceptance flow and fixture-cleanliness check. Windows process mechanics are continuously observed, but native MySQL/PostgreSQL behavior, antivirus policies, and user-specific path restrictions remain unverified. |
 
 The supported application matrix is PHP 8.2+ with Laravel 12 or 13. Database
 release evidence is specific to MySQL 8.4 and PostgreSQL 17 on Linux. Compatible
@@ -26,7 +26,8 @@ application:
 php -r "exit(function_exists('proc_open') ? 0 : 1);"
 composer validate --strict
 composer check
-php artisan raceproof:doctor
+composer consumer:check
+php artisan raceproof:doctor --self-test
 ```
 
 Then run one application race against a disposable database matching production.
