@@ -1,8 +1,9 @@
 # Public API
 
-The v1 API candidate is frozen on `main`. Compatibility guarantees begin with
-the first `1.x` tag; until that tag exists, the repository remains unreleased
-software and no Packagist availability is implied.
+The v1 API candidate is frozen on `main` and published as `v1.0.0-beta.1`.
+Packagist availability is verified, but the stable compatibility guarantee
+begins at `1.0.0`; beta changes still require an explicit reviewed contract
+update.
 
 The machine-readable contract is [api/public-api.json](../api/public-api.json).
 `composer api:check` reflects the installed code and fails when any frozen

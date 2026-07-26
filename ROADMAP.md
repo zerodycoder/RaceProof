@@ -64,7 +64,7 @@ A stable v1 requires all of the following:
 ### v1.0 — trusted stable release
 
 - [x] Stable public API and semantic-versioning policy
-- [ ] Automated tagged releases and Packagist publication
+- [x] Automated tagged releases and Packagist publication
 - [x] Four polished end-to-end demonstrations
 - [ ] Public beta evidence and adoption gates
 - [ ] Final security, compatibility, reliability, and documentation audit

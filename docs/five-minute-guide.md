@@ -7,9 +7,8 @@ regular integration suite and by MySQL/PostgreSQL CI.
 
 ## 1. Install and enable
 
-Packagist currently exposes `dev-main`, but no tagged release exists yet. The
-commands below describe the post-beta contract; contributors currently run the
-workflow from a source checkout.
+Signed prerelease `v1.0.0-beta.1` is available from Packagist. The commands
+below install the published runtime and Laravel packages.
 
 Keep the orchestrator out of production dependencies. Install the tiny runtime
 only when application code contains `race_point()` calls:

@@ -5,8 +5,8 @@ normal application traffic they return immediately; a validated RaceProof
 worker activates them only for a controlled concurrency test.
 
 The package contains no Laravel integration, process runner, command,
-coordinator, or network behavior. Packagist currently exposes `dev-main`; the
-install command below becomes resolvable after the first tagged beta.
+coordinator, or network behavior. Signed prerelease `v1.0.0-beta.1` is available
+from [Packagist](https://packagist.org/packages/raceproof/runtime).
 
 ```bash
 composer require raceproof/runtime:^1.0.0-beta.1@beta

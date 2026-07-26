@@ -28,13 +28,12 @@ final class ReleaseAuditTest extends TestCase
         self::assertSame(8, $evidence['automated_controls']);
         self::assertSame(6, $evidence['mutation_risk_hotspots']);
         self::assertSame('automated', $evidence['fresh_install']);
-        self::assertSame('blocked-no-published-baseline', $evidence['published_upgrade']);
+        self::assertSame('pending-from-published-beta', $evidence['published_upgrade']);
         self::assertSame('blocked', $evidence['release_status']);
-        self::assertSame([2, 3, 4], $evidence['blocked_issues']);
+        self::assertSame([3, 4], $evidence['blocked_issues']);
         self::assertSame(
             [
                 'The upgrade path from the previous published release is not verified.',
-                'External gate public-package-publication in issue #2 is not verified.',
                 'External gate beta-adoption-evidence in issue #3 is not verified.',
             ],
             ReleaseAudit::stableGateErrors($root, $audit),
@@ -85,10 +84,11 @@ final class ReleaseAuditTest extends TestCase
 
         self::assertSame([], ReleaseAudit::validationErrors($root, $audit));
         self::assertStringContainsString(
-            'package-publication gate in #2 and beta-adoption gate in #3',
+            'Package publication gate #2 is **verified**',
             ReleaseAudit::render($audit),
         );
-        self::assertSame([2, 3, 4], ReleaseAudit::machineEvidence($audit)['blocked_issues']);
+        self::assertStringContainsString('beta-adoption gate #3', ReleaseAudit::render($audit));
+        self::assertSame([3, 4], ReleaseAudit::machineEvidence($audit)['blocked_issues']);
     }
 
     public function test_external_gate_issue_numbers_must_be_positive_and_unique(): void
@@ -121,7 +121,7 @@ final class ReleaseAuditTest extends TestCase
         $report = ReleaseAudit::render(ReleaseAudit::load($root.'/audit/release-audit.json'));
 
         self::assertStringContainsString('not stable-release approval', $report);
-        self::assertStringContainsString('No prior tagged or Packagist release exists', $report);
+        self::assertStringContainsString('v1.0.0-beta.1` is now the published baseline', $report);
         self::assertStringContainsString('issues/2', $report);
         self::assertStringContainsString('issues/3', $report);
         self::assertStringContainsString('issues/4', $report);
@@ -136,7 +136,7 @@ final class ReleaseAuditTest extends TestCase
 
         self::assertSame(1, $process->run());
         self::assertStringContainsString('published release is not verified', $process->getErrorOutput());
-        self::assertStringContainsString('issue #2 is not verified', $process->getErrorOutput());
+        self::assertStringNotContainsString('issue #2 is not verified', $process->getErrorOutput());
         self::assertStringContainsString('issue #3 is not verified', $process->getErrorOutput());
         self::assertStringContainsString('0/10 projects', $process->getErrorOutput());
         self::assertStringContainsString('0/5 consented cases', $process->getErrorOutput());

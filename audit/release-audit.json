@@ -302,13 +302,13 @@
     },
     "artifacts": {
         "fresh_install": "automated",
-        "upgrade_from_published_release": "blocked-no-published-baseline"
+        "upgrade_from_published_release": "pending-from-published-beta"
     },
     "external_gates": [
         {
             "id": "public-package-publication",
             "issue": 2,
-            "status": "blocked"
+            "status": "verified"
         },
         {
             "id": "beta-adoption-evidence",

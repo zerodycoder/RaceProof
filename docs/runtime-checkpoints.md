@@ -1,7 +1,6 @@
 # Runtime checkpoint deployment
 
-Packagist currently exposes `dev-main`, but no tagged release exists yet. The
-constraints below become resolvable after the first published beta.
+Signed prerelease `v1.0.0-beta.1` is available from Packagist.
 
 Applications that call `race_point()` or `RaceProof\Runtime\Checkpoint::sync()` must install the tiny runtime as a production dependency and the orchestration package as a development dependency:
 

@@ -5,17 +5,19 @@ promises and must not be overstated in release material.
 
 ## Distribution and evidence status
 
-- Both packages are registered on Packagist and expose `dev-main`, but no signed,
-  tagged GitHub or Packagist release exists yet.
+- Signed `v1.0.0-beta.1` releases exist for both packages on GitHub and
+  Packagist, with verified checksums, provenance, attestations, source
+  references, and clean installation.
 - The generated runtime repository is a public subtree split. The main RaceProof
   repository remains its only source of truth.
-- The published-artifact upgrade path cannot be tested because there is no prior
-  published release.
+- `v1.0.0-beta.1` is the first published upgrade baseline. A real upgrade cannot
+  be verified until a subsequent version exists.
 - Private-beta evidence currently records 0/10 invited projects and 0/5
   confirmed adopters.
-- Stable publication is blocked by the package-publication and beta-adoption
-  gates in [`audit/release-audit.json`](../audit/release-audit.json) and the
-  missing published-upgrade baseline; the `stable-release` gate tracks the
+- Stable publication is still blocked by beta-adoption evidence and a real
+  upgrade from the published beta in
+  [`audit/release-audit.json`](../audit/release-audit.json); the package
+  publication gate is verified and the `stable-release` gate tracks the
   eventual workflow outcome.
 
 The stable release workflow enforces the evidence and upgrade boundaries with
@@ -23,9 +25,9 @@ The stable release workflow enforces the evidence and upgrade boundaries with
 named by `stable-release` is closed only after that workflow publishes
 successfully.
 
-The deterministic artifact dry-run proves a clean local Composer artifact
-installation. It is not evidence of GitHub/Packagist publication or an upgrade
-from a real prior version.
+The deterministic artifact dry-run and public verification prove clean local
+artifact and Packagist installations. They do not prove an upgrade from a real
+prior version.
 
 ## Concurrency model
 
