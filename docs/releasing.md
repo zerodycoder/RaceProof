@@ -52,11 +52,12 @@ support links, and authoritative history remain in the source monorepo.
 ## Prepare the release PR
 
 1. Choose a SemVer version using [the versioning policy](versioning.md).
-2. Run `php tools/release/prepare.php X.Y.Z`. This aligns the local runtime path
-   version, the Laravel-to-runtime constraint, and install documentation from one
-   input.
-3. Run `composer update raceproof/runtime --with-dependencies` and review the
-   lock diff.
+2. Run `php tools/release/prepare.php X.Y.Z`. This aligns the package and
+   independent-consumer path versions, compatible package constraints, and
+   install documentation from one input.
+3. Run `composer update raceproof/runtime --with-dependencies` and
+   `composer consumer:install`; review the root lock diff and the consumer's
+   resolved package versions.
 4. Move applicable `Unreleased` entries into
    `## [X.Y.Z] - YYYY-MM-DD`; add explicit upgrade/known-limitation notes.
 5. Run:

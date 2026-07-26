@@ -6,8 +6,8 @@ constraints below become resolvable after the first published beta.
 Applications that call `race_point()` or `RaceProof\Runtime\Checkpoint::sync()` must install the tiny runtime as a production dependency and the orchestration package as a development dependency:
 
 ```bash
-composer require raceproof/runtime:^0.1
-composer require raceproof/laravel:^0.1 --dev
+composer require raceproof/runtime:^1.0.0-beta.1@beta
+composer require raceproof/laravel:^1.0.0-beta.1@beta --dev
 ```
 
 Do not rely on the main package's transitive runtime dependency: Composer removes transitive dependencies that are needed only by a root dev dependency during `composer install --no-dev`. Declare `raceproof/runtime` directly in the application's `require` section.

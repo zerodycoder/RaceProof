@@ -1,7 +1,12 @@
 {
     "name": "raceproof/laravel",
     "description": "Controlled and reproducible concurrency testing for Laravel applications.",
-    "keywords": ["laravel", "testing", "concurrency", "race-condition"],
+    "keywords": [
+        "laravel",
+        "testing",
+        "concurrency",
+        "race-condition"
+    ],
     "homepage": "https://github.com/zerodycoder/RaceProof",
     "license": "MIT",
     "type": "library",
@@ -16,14 +21,14 @@
             "options": {
                 "symlink": true,
                 "versions": {
-                    "raceproof/runtime": "0.1.0"
+                    "raceproof/runtime": "1.0.0-beta.1"
                 }
             }
         }
     ],
     "require": {
         "php": "^8.2",
-        "raceproof/runtime": "^0.1",
+        "raceproof/runtime": "^1.0.0-beta.1@beta",
         "illuminate/auth": "^12.0 || ^13.0",
         "illuminate/console": "^12.0 || ^13.0",
         "illuminate/database": "^12.0 || ^13.0",

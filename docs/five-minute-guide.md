@@ -15,8 +15,8 @@ Keep the orchestrator out of production dependencies. Install the tiny runtime
 only when application code contains `race_point()` calls:
 
 ```bash
-composer require raceproof/runtime:^0.1
-composer require raceproof/laravel --dev
+composer require raceproof/runtime:^1.0.0-beta.1@beta
+composer require raceproof/laravel:^1.0.0-beta.1@beta --dev
 php artisan raceproof:install
 ```
 

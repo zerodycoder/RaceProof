@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## [1.0.0-beta.1] - 2026-07-26
+
+- Made the targeted mutation command select the same four release-critical
+  files on Windows and POSIX shells, and taught the strict checker to accept
+  Pest's compact output without ignoring timeouts or malformed totals.
+- Prepared the first shared Laravel/runtime beta metadata with compatible
+  prerelease constraints and automatic independent-consumer alignment.
 - Added continuous independent-consumer smoke jobs on GitHub-hosted macOS and
   native Windows plus an artifact-backed 80% targeted mutation-quality gate for
   fail-closed environment, database, worker-process, and credential-redaction

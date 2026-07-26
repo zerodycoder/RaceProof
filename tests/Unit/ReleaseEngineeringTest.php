@@ -20,8 +20,8 @@ final class ReleaseEngineeringTest extends TestCase
     {
         yield 'stable v1' => ['1.0.0', '^1.0'];
         yield 'stable minor' => ['1.4.2', '^1.4'];
-        yield 'beta' => ['1.0.0-beta.3', '1.0.0-beta.3@beta'];
-        yield 'release candidate' => ['2.1.0-rc.1', '2.1.0-rc.1@RC'];
+        yield 'beta' => ['1.0.0-beta.3', '^1.0.0-beta.3@beta'];
+        yield 'release candidate' => ['2.1.0-rc.1', '^2.1.0-rc.1@RC'];
     }
 
     #[DataProvider('constraints')]
@@ -47,17 +47,66 @@ final class ReleaseEngineeringTest extends TestCase
 
         $beta = Release::updateInstallationConstraints($contents, '1.0.0-beta.1');
         self::assertStringContainsString(
-            'composer require raceproof/runtime:1.0.0-beta.1@beta',
+            'composer require raceproof/runtime:^1.0.0-beta.1@beta',
             $beta,
         );
         self::assertStringContainsString(
-            'composer require raceproof/laravel:1.0.0-beta.1@beta --dev',
+            'composer require raceproof/laravel:^1.0.0-beta.1@beta --dev',
             $beta,
         );
 
         $stable = Release::updateInstallationConstraints($beta, '1.0.0');
         self::assertStringContainsString('composer require raceproof/runtime:^1.0', $stable);
         self::assertStringContainsString('composer require raceproof/laravel:^1.0 --dev', $stable);
+    }
+
+    public function test_consumer_manifest_is_aligned_from_the_release_version(): void
+    {
+        $manifest = [
+            'repositories' => [
+                [
+                    'url' => '../../runtime',
+                    'options' => ['versions' => ['raceproof/runtime' => '0.1.0']],
+                ],
+                [
+                    'url' => '../../',
+                    'options' => ['versions' => ['raceproof/laravel' => '0.1.0']],
+                ],
+            ],
+            'require' => ['raceproof/runtime' => '^0.1'],
+            'require-dev' => ['raceproof/laravel' => '^0.1'],
+        ];
+
+        $aligned = Release::alignConsumerManifest($manifest, '1.0.0-beta.1');
+
+        self::assertSame(
+            '1.0.0-beta.1',
+            $aligned['repositories'][0]['options']['versions']['raceproof/runtime'] ?? null,
+        );
+        self::assertSame(
+            '1.0.0-beta.1',
+            $aligned['repositories'][1]['options']['versions']['raceproof/laravel'] ?? null,
+        );
+        self::assertSame(
+            '^1.0.0-beta.1@beta',
+            $aligned['require']['raceproof/runtime'] ?? null,
+        );
+        self::assertSame(
+            '^1.0.0-beta.1@beta',
+            $aligned['require-dev']['raceproof/laravel'] ?? null,
+        );
+    }
+
+    public function test_consumer_manifest_alignment_rejects_an_unexpected_shape(): void
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('expected path repository shape');
+
+        Release::alignConsumerManifest([
+            'repositories' => [],
+            'require' => [],
+            'require-dev' => [],
+        ], '1.0.0-beta.1');
     }
 
     public function test_release_archives_are_reproducible_aligned_and_installable_shapes(): void
@@ -78,7 +127,7 @@ final class ReleaseEngineeringTest extends TestCase
         self::assertSame('1.0.0-beta.1', $runtime['version']);
         self::assertIsArray($laravel['require']);
         self::assertIsArray($runtime['require']);
-        self::assertSame('1.0.0-beta.1@beta', $laravel['require']['raceproof/runtime'] ?? null);
+        self::assertSame('^1.0.0-beta.1@beta', $laravel['require']['raceproof/runtime'] ?? null);
         self::assertArrayNotHasKey('repositories', $laravel);
         self::assertArrayNotHasKey('require-dev', $laravel);
         self::assertArrayNotHasKey('autoload-dev', $laravel);
