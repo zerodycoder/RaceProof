@@ -19,14 +19,20 @@ Composer-resolvable combinations, continuously verified edges, and support scope
 
 ## Platform verification
 
-Run these commands with the same PHP binary and database environment used by the
-application:
+In a RaceProof source checkout, verify the package and its isolated consumer:
+
+```bash
+composer validate --strict
+composer check
+composer consumer:check
+```
+
+In the target application, use the same PHP binary and database environment
+that its workers will use:
 
 ```bash
 php -r "exit(function_exists('proc_open') ? 0 : 1);"
 composer validate --strict
-composer check
-composer consumer:check
 php artisan raceproof:doctor --self-test
 ```
 
