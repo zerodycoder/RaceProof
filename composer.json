@@ -38,6 +38,7 @@
         "laravel/sanctum": "^4.3",
         "orchestra/testbench": "^10.0 || ^11.0",
         "pestphp/pest": "^3.8",
+        "pestphp/pest-plugin-mutate": "^3.0.5",
         "phpunit/phpunit": "^11.5"
     },
     "autoload": {
@@ -59,6 +60,7 @@
         "test:unit": "phpunit --testsuite Unit",
         "test:integration": "phpunit --testsuite Integration",
         "test:database": "phpunit --testsuite Database",
+        "test:mutation": "pest --mutate --covered-only --min=80 --class=RaceProof\\\\Laravel\\\\Support\\\\EnvironmentGuard,RaceProof\\\\Laravel\\\\Support\\\\DatabaseSafety,RaceProof\\\\Laravel\\\\Support\\\\SensitiveDataRedactor,RaceProof\\\\Laravel\\\\Execution\\\\SymfonyWorkerProcess tests/Integration/SafetyGuardEdgesTest.php tests/Integration/SafetyGuardsTest.php tests/Integration/SensitiveDataRedactorTest.php tests/Unit/SymfonyWorkerProcessStopTest.php",
         "test:coverage": [
             "@php -r \"is_dir('build/coverage') || mkdir('build/coverage', 0777, true);\"",
             "phpunit --coverage-clover build/coverage/clover.xml",

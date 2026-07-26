@@ -59,6 +59,7 @@ A stable v1 requires all of the following:
 - [x] Safe PHPUnit/Pest test scaffolding and report inspection commands
 - [x] Production route, read, and write rejection with redacted JSON export
 - [x] Isolated Laravel consumer acceptance for installation, auth, CLI, and Studio DX
+- [x] Continuous macOS/Windows consumer smoke and targeted mutation-quality gates
 
 ### v1.0 — trusted stable release
 

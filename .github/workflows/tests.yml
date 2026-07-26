@@ -94,6 +94,36 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  mutation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.5'
+          coverage: xdebug
+          tools: composer:v2
+
+      - run: composer update --with "illuminate/support:^13.0" --with "orchestra/testbench:^11.0" --with-all-dependencies --prefer-dist --no-interaction --no-progress
+      - name: Mutate release-critical safety classes
+        run: |
+          mkdir -p build/mutation
+          set -o pipefail
+          composer test:mutation 2>&1 | tee build/mutation/report.txt
+          php tools/check-mutation.php build/mutation/report.txt 80
+
+      - name: Upload mutation evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: mutation-evidence
+          path: build/mutation/report.txt
+          if-no-files-found: error
+          retention-days: 30
+
   consumer:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -105,6 +135,35 @@ jobs:
         with:
           php-version: '8.4'
           coverage: none
+          tools: composer:v2
+
+      - name: Install only the consumer application's dependencies
+        run: composer consumer:install
+      - run: composer audit --working-dir=tests/ConsumerApp --locked --no-interaction
+      - name: Exercise package discovery, auth, CLI, races, and Studio
+        run: composer --working-dir=tests/ConsumerApp check
+      - name: Verify consumer cleanup preserves tracked fixtures
+        run: git diff --exit-code -- tests/ConsumerApp
+
+  platform-smoke:
+    name: platform-smoke (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-latest
+          - windows-latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          extensions: fileinfo, pdo_sqlite
           tools: composer:v2
 
       - name: Install only the consumer application's dependencies
@@ -209,7 +268,9 @@ jobs:
       - secret-scan
       - tests
       - coverage
+      - mutation
       - consumer
+      - platform-smoke
       - release-dry-run
       - database
     runs-on: ubuntu-latest

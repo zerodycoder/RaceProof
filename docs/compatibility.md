@@ -38,13 +38,17 @@ The detailed levels live in [the platform matrix](platform-support.md):
 
 - Ubuntu Linux is continuously verified;
 - WSL2 is a primary development target but has no separate CI job;
-- macOS is best-effort compatible;
-- native Windows is experimental.
+- macOS is best-effort compatible with continuous consumer smoke evidence;
+- native Windows is experimental with continuous consumer smoke evidence.
 
 All platforms require `proc_open`, a usable CLI PHP binary, local writable
 coordination storage, and one disposable database reachable by every worker.
 Network filesystems, containers, antivirus, and database networking can change
 timing and are environment-specific.
+
+The macOS and Windows jobs use PHP 8.4, Laravel 12, and file-backed SQLite to
+verify installation and process mechanics. They do not expand the database
+release matrix: MySQL 8.4 and PostgreSQL 17 evidence remains Ubuntu-only.
 
 ## Compatibility promise
 

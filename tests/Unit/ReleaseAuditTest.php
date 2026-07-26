@@ -125,6 +125,7 @@ final class ReleaseAuditTest extends TestCase
         self::assertStringContainsString('issues/2', $report);
         self::assertStringContainsString('issues/3', $report);
         self::assertStringContainsString('issues/4', $report);
+        self::assertStringContainsString('timeouts remain in its denominator', $report);
         self::assertStringContainsString('do not claim a repository-wide mutation score', $report);
     }
 
