@@ -39,7 +39,7 @@ $plainReport = preg_replace('/\x1B(?:[@-Z\\\\-_]|\[[0-?]*[ -\/]*[@-~])/', '', $r
 
 if (! is_string($plainReport)
     || preg_match(
-        '/Mutations:\s*(\d+)\s+untested,\s*(\d+)\s+timeout,\s*(\d+)\s+tested/i',
+        '/^\s*Mutations:\s*(\d+\s+(?:untested|timeout|tested)(?:,\s*\d+\s+(?:untested|timeout|tested))*)\s*$/im',
         $plainReport,
         $matches,
     ) !== 1
@@ -49,9 +49,40 @@ if (! is_string($plainReport)
     exit(2);
 }
 
-$untested = (int) $matches[1];
-$timeouts = (int) $matches[2];
-$tested = (int) $matches[3];
+$totals = [
+    'untested' => 0,
+    'timeout' => 0,
+    'tested' => 0,
+];
+$seen = [];
+
+if (preg_match_all(
+    '/(\d+)\s+(untested|timeout|tested)/i',
+    $matches[1],
+    $categoryMatches,
+    PREG_SET_ORDER,
+) === false) {
+    fwrite(STDERR, "Mutation report does not contain the expected mutation totals.\n");
+
+    exit(2);
+}
+
+foreach ($categoryMatches as $categoryMatch) {
+    $category = strtolower($categoryMatch[2]);
+
+    if (isset($seen[$category])) {
+        fwrite(STDERR, "Mutation report contains duplicate mutation totals.\n");
+
+        exit(2);
+    }
+
+    $seen[$category] = true;
+    $totals[$category] = (int) $categoryMatch[1];
+}
+
+$untested = $totals['untested'];
+$timeouts = $totals['timeout'];
+$tested = $totals['tested'];
 $total = $untested + $timeouts + $tested;
 
 if ($total === 0) {
