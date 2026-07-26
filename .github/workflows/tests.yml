@@ -113,6 +113,7 @@ jobs:
           mkdir -p build/mutation
           set -o pipefail
           composer test:mutation 2>&1 | tee build/mutation/report.txt
+          php tools/check-mutation.php build/mutation/report.txt 80
 
       - name: Upload mutation evidence
         if: always()

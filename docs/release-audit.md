@@ -17,7 +17,7 @@ Audit definition prepared: 2026-07-26
 | `published-contracts` | no | Frozen API signatures, documentation links, executable examples, public evidence status, and package-content boundaries. | 3 |
 | `consumer-acceptance` | no | Clean Laravel installation, idempotent setup, child-process diagnostics, package discovery, participant identity, authentication, CLI workflows, a real database race, and Studio HTTP behavior. | 4 |
 
-These entries identify mutation-sensitive branch, timeout, cleanup, redaction, serialization, and packaging decisions and bind each one to named tests. CI additionally enforces an 80% covered-code mutation score for the fail-closed environment, database, worker-process, and credential-redaction boundaries through `composer test:mutation`; this remains targeted evidence, so do not claim a repository-wide mutation score.
+These entries identify mutation-sensitive branch, timeout, cleanup, redaction, serialization, and packaging decisions and bind each one to named tests. CI additionally enforces an 80% strict covered-code mutation score for the fail-closed environment, database, worker-process, and credential-redaction boundaries through `composer test:mutation`; timeouts remain in its denominator and are never accepted as tested mutants. This remains targeted evidence, so do not claim a repository-wide mutation score.
 
 ## Compatibility evidence
 

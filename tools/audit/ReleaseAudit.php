@@ -102,7 +102,7 @@ final class ReleaseAudit
         }
 
         $lines[] = '';
-        $lines[] = 'These entries identify mutation-sensitive branch, timeout, cleanup, redaction, serialization, and packaging decisions and bind each one to named tests. CI additionally enforces an 80% covered-code mutation score for the fail-closed environment, database, worker-process, and credential-redaction boundaries through `composer test:mutation`; this remains targeted evidence, so do not claim a repository-wide mutation score.';
+        $lines[] = 'These entries identify mutation-sensitive branch, timeout, cleanup, redaction, serialization, and packaging decisions and bind each one to named tests. CI additionally enforces an 80% strict covered-code mutation score for the fail-closed environment, database, worker-process, and credential-redaction boundaries through `composer test:mutation`; timeouts remain in its denominator and are never accepted as tested mutants. This remains targeted evidence, so do not claim a repository-wide mutation score.';
         $lines[] = '';
         $lines[] = '## Compatibility evidence';
         $lines[] = '';
@@ -647,6 +647,7 @@ final class ReleaseAudit
             "php: '8.5'",
             'mutation:',
             'composer test:mutation',
+            'tools/check-mutation.php',
             'consumer:',
             'tests/ConsumerApp',
             'platform-smoke:',
