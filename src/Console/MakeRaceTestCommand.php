@@ -59,6 +59,13 @@ final class MakeRaceTestCommand extends Command
             return self::INVALID;
         }
 
+        if ((bool) $this->option('pest') && ! class_exists('Pest\\TestSuite')) {
+            $this->components->error('Pest is not installed.');
+            $this->line('Install a compatible version with: composer require pestphp/pest --dev');
+
+            return self::FAILURE;
+        }
+
         $class = Str::studly($name);
 
         if (! str_ends_with($class, 'Test')) {
