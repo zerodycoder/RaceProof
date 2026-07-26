@@ -11,19 +11,43 @@ Public Packagist requires public VCS repositories. Before the first beta:
 
 1. make the reviewed source repository public;
 2. create an empty generated runtime repository and set the `release`
-   environment variable `RUNTIME_SPLIT_REPOSITORY` to its `owner/name`;
-3. register both public repository URLs on Packagist;
-4. configure `RUNTIME_SPLIT_TOKEN` with contents write access only to the
+   environment variable `RUNTIME_SPLIT_REPOSITORY` to its `owner/name`; restrict
+   that environment to release tags matching `v[0-9]*.[0-9]*.[0-9]*`;
+3. from a clean, exact-green `main`, seed the public runtime repository with the
+   generated subtree procedure below;
+4. register both public repository URLs on Packagist after each exposes its
+   package `composer.json`;
+5. configure `RUNTIME_SPLIT_TOKEN` with contents write access only to the
    generated runtime repository;
-5. configure Packagist `PACKAGIST_USERNAME` and a safe update
+6. configure Packagist `PACKAGIST_USERNAME` and a safe update
    `PACKAGIST_API_TOKEN`;
-6. configure `RELEASE_GPG_PRIVATE_KEY` and `RELEASE_GPG_PASSPHRASE`, publish the
+7. configure `RELEASE_GPG_PRIVATE_KEY` and `RELEASE_GPG_PASSPHRASE`, publish the
    corresponding public key on the maintainer GitHub account, and protect the
    `release` environment;
-7. enable `ENABLE_GITHUB_ATTESTATIONS=true` only when the repository visibility
+8. enable `ENABLE_GITHUB_ATTESTATIONS=true` only when the repository visibility
    and GitHub plan support artifact attestations.
 
-The runtime repository is generated output. Never edit it directly.
+Packagist cannot register an empty runtime repository because no root
+`composer.json` is visible. Bootstrap `main` from the authoritative monorepo;
+never add a handwritten placeholder commit:
+
+```bash
+runtime_repository=zerodycoder/raceproof-runtime
+runtime_commit="$(git subtree split --prefix=runtime HEAD | tail -n 1)"
+test "$(git rev-parse "${runtime_commit}^{tree}")" = "$(git rev-parse HEAD:runtime)"
+git push "https://github.com/${runtime_repository}.git" \
+  "${runtime_commit}:refs/heads/main"
+test "$(git ls-remote "https://github.com/${runtime_repository}.git" \
+  refs/heads/main | cut -f1)" = "$runtime_commit"
+```
+
+This requires maintainer authentication for the one-time push, but the
+credential must not be embedded in the remote URL or committed. The first
+release either reuses this exact generated commit or fast-forwards it to the
+release commit's generated subtree before creating the signed tag.
+
+The runtime repository is generated output. Never edit it directly. Its issues,
+support links, and authoritative history remain in the source monorepo.
 
 ## Prepare the release PR
 

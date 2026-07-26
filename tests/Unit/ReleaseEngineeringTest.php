@@ -188,6 +188,40 @@ final class ReleaseEngineeringTest extends TestCase
         }
     }
 
+    public function test_release_runbook_bootstraps_runtime_before_packagist_registration(): void
+    {
+        $runbook = file_get_contents(dirname(__DIR__, 2).'/docs/releasing.md');
+
+        self::assertIsString($runbook);
+        self::assertStringContainsString(
+            'git subtree split --prefix=runtime HEAD',
+            $runbook,
+        );
+        self::assertStringContainsString(
+            'git rev-parse "${runtime_commit}^{tree}"',
+            $runbook,
+        );
+        self::assertStringContainsString(
+            'git rev-parse HEAD:runtime',
+            $runbook,
+        );
+        self::assertStringContainsString(
+            '"${runtime_commit}:refs/heads/main"',
+            $runbook,
+        );
+        self::assertStringContainsString(
+            'credential must not be embedded in the remote URL or committed',
+            $runbook,
+        );
+
+        $bootstrap = strpos($runbook, 'seed the public runtime repository');
+        $registration = strpos($runbook, 'register both public repository URLs on Packagist');
+
+        self::assertIsInt($bootstrap);
+        self::assertIsInt($registration);
+        self::assertLessThan($registration, $bootstrap);
+    }
+
     /** @return array<string, mixed> */
     private function archiveManifest(string $archive): array
     {
