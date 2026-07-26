@@ -2,7 +2,7 @@
 
 This is a reproducible pre-release audit, not stable-release approval. It inventories executable controls, supported evidence, policies, artifact checks, and unresolved external gates from [`audit/release-audit.json`](../audit/release-audit.json).
 
-Audit definition prepared: 2026-07-25
+Audit definition prepared: 2026-07-26
 
 ## Automated controls and mutation-risk hotspots
 
@@ -15,6 +15,7 @@ Audit definition prepared: 2026-07-25
 | `production-runtime-boundary` | yes | Capability-scoped activation and a framework-free, process-free production no-op runtime. | 2 |
 | `release-supply-chain` | yes | Reproducible consumer archives, pinned workflow actions, runtime-first publication, signatures, provenance, and clean artifact installation. | 2 |
 | `published-contracts` | no | Frozen API signatures, documentation links, executable examples, public evidence status, and package-content boundaries. | 3 |
+| `consumer-acceptance` | no | Clean Laravel installation, package discovery, participant identity, authentication, CLI workflows, a real database race, and Studio HTTP behavior. | 1 |
 
 These entries identify mutation-sensitive branch, timeout, cleanup, redaction, serialization, and packaging decisions and bind each one to named tests. They do not claim a repository-wide mutation score.
 

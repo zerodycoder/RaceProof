@@ -57,6 +57,7 @@ A stable v1 requires all of the following:
 - [x] Browser-validated responsive Studio dashboard and participant/checkpoint lanes
 - [x] Safe PHPUnit/Pest test scaffolding and report inspection commands
 - [x] Production route, read, and write rejection with redacted JSON export
+- [x] Isolated Laravel consumer acceptance for installation, auth, CLI, and Studio DX
 
 ### v1.0 — trusted stable release
 

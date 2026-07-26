@@ -1,0 +1,44 @@
+<?php
+
+declare(strict_types=1);
+
+use App\Models\User;
+
+return [
+    'defaults' => [
+        'guard' => 'web',
+        'passwords' => 'users',
+    ],
+    'guards' => [
+        'web' => [
+            'driver' => 'session',
+            'provider' => 'users',
+        ],
+        'token' => [
+            'driver' => 'token',
+            'provider' => 'users',
+            'input_key' => 'api_token',
+            'storage_key' => 'api_token',
+            'hash' => false,
+        ],
+        'sanctum' => [
+            'driver' => 'sanctum',
+            'provider' => 'users',
+        ],
+    ],
+    'providers' => [
+        'users' => [
+            'driver' => 'eloquent',
+            'model' => User::class,
+        ],
+    ],
+    'passwords' => [
+        'users' => [
+            'provider' => 'users',
+            'table' => 'password_reset_tokens',
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+    ],
+    'password_timeout' => 10_800,
+];

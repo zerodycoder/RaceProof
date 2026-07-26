@@ -73,6 +73,11 @@
         "release:audit-report": "@php tools/audit/report.php",
         "release:dry-run": "@php tools/release/dry-run.php",
         "release:gate": "@php tools/audit/gate.php",
+        "consumer:install": "composer update --working-dir=tests/ConsumerApp --prefer-dist --no-interaction --no-progress",
+        "consumer:check": [
+            "@consumer:install",
+            "composer --working-dir=tests/ConsumerApp check"
+        ],
         "validate:runtime": "composer --working-dir=runtime validate --strict",
         "format": "pint",
         "format:test": "pint --test",

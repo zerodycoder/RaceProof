@@ -35,6 +35,7 @@ does not replace them.
 | Frozen symbols and signatures | [Public API contract](public-api.md) |
 | Compatibility and deprecation rules | [Versioning policy](versioning.md) and [upgrade guide](../UPGRADING.md) |
 | Required local and CI checks | [Quality policy](quality.md) |
+| Test RaceProof as an installed Laravel dependency | [Consumer acceptance app](consumer-acceptance.md) |
 | Release sequence and fail-closed gates | [Release runbook](releasing.md) |
 | Current automated and external evidence | [Pre-release audit](release-audit.md) |
 | Beta recruitment and consent boundaries | [Private beta runbook](private-beta.md) |
