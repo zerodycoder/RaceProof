@@ -5,7 +5,7 @@ request, participants, authentication, checkpoints, and assertions in committed
 PHP. Studio makes the resulting concurrency evidence easier to understand; it
 does not create a second execution model.
 
-![RaceProof Studio showing a passed three-participant run and its checkpoint execution lanes](assets/raceproof-studio.png)
+![Animated RaceProof Studio tour showing the run overview, execution lanes, and participant outcomes](assets/raceproof-studio-tour.gif)
 
 ## Enable Studio
 

@@ -203,9 +203,36 @@ Studio is an optional, local evidence viewer. It visualizes retained runs,
 participant outcomes, timing, checkpoint lanes, warnings, and bounded response
 evidence without moving execution or assertions out of Pest/PHPUnit.
 
+The tour below was captured from a real local Laravel fixture. It moves from
+the run overview to the execution timeline and then to the complete participant
+outcomes.
+
 <p align="center">
-  <img src="docs/assets/raceproof-studio.png" alt="RaceProof Studio showing a passed three-participant run and its checkpoint execution lanes" width="100%">
+  <a href="docs/assets/raceproof-studio-overview.png">
+    <img src="docs/assets/raceproof-studio-tour.gif" alt="Animated RaceProof Studio tour showing the run overview, execution lanes, and participant outcomes" width="100%">
+  </a>
 </p>
+
+<p align="center">
+  <sub>Overview → execution lanes → participant outcomes · Click the tour to open a full-resolution frame.</sub>
+</p>
+
+<details>
+<summary><strong>Open the static, full-resolution gallery</strong></summary>
+
+#### 1. Run history at a glance
+
+<img src="docs/assets/raceproof-studio-overview.png" alt="RaceProof Studio overview with retained, passed, and attention-needed run metrics" width="100%">
+
+#### 2. Checkpoint execution timeline
+
+<img src="docs/assets/raceproof-studio-timeline.png" alt="RaceProof Studio execution lanes for the system and two participants" width="100%">
+
+#### 3. Per-participant outcomes
+
+<img src="docs/assets/raceproof-studio-participant-outcomes.png" alt="RaceProof Studio participant outcomes with HTTP status and duration evidence" width="100%">
+
+</details>
 
 Enable it explicitly in a local or testing environment:
 
