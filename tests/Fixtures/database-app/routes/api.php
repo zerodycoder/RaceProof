@@ -26,6 +26,67 @@ require dirname(__DIR__, 4).'/examples/coupon-redemption/routes.php';
 require dirname(__DIR__, 4).'/examples/wallet-debit/routes.php';
 require dirname(__DIR__, 4).'/examples/quote-acceptance/routes.php';
 
+Route::post('/exchange/market-buy', function (): JsonResponse {
+    $participant = raceproofEvidenceParticipant();
+
+    race_point('exchange-before-match');
+
+    $fill = DB::transaction(function () use ($participant): ?array {
+        $order = DB::table('exchange_orders')->where('id', 1)->lockForUpdate()->first();
+
+        if ($order === null || (int) $order->remaining_quantity === 0) {
+            return null;
+        }
+
+        DB::table('exchange_accounts')
+            ->whereIn('participant_id', ['seller', $participant])
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+
+        $quantity = min(3, (int) $order->remaining_quantity);
+        $quoteAmount = $quantity * (int) $order->price;
+        $remaining = (int) $order->remaining_quantity - $quantity;
+        $reference = "fill-{$participant}";
+
+        DB::table('exchange_orders')->where('id', 1)->update([
+            'remaining_quantity' => $remaining,
+            'status' => $remaining === 0 ? 'filled' : 'open',
+        ]);
+
+        DB::table('exchange_accounts')->where('participant_id', $participant)->decrement('quote_balance', $quoteAmount);
+        DB::table('exchange_accounts')->where('participant_id', $participant)->increment('base_balance', $quantity);
+        DB::table('exchange_accounts')->where('participant_id', 'seller')->decrement('base_balance', $quantity);
+        DB::table('exchange_accounts')->where('participant_id', 'seller')->increment('quote_balance', $quoteAmount);
+
+        DB::table('exchange_fills')->insert([
+            'order_id' => 1,
+            'participant_id' => $participant,
+            'quantity' => $quantity,
+            'price' => (int) $order->price,
+            'quote_amount' => $quoteAmount,
+        ]);
+
+        DB::table('exchange_ledger_entries')->insert([
+            ['reference' => $reference, 'participant_id' => $participant, 'asset' => 'BTC', 'amount' => $quantity],
+            ['reference' => $reference, 'participant_id' => $participant, 'asset' => 'USDT', 'amount' => -$quoteAmount],
+            ['reference' => $reference, 'participant_id' => 'seller', 'asset' => 'BTC', 'amount' => -$quantity],
+            ['reference' => $reference, 'participant_id' => 'seller', 'asset' => 'USDT', 'amount' => $quoteAmount],
+        ]);
+
+        return [
+            'quantity' => $quantity,
+            'quote_amount' => $quoteAmount,
+            'remaining_quantity' => $remaining,
+        ];
+    });
+
+    return response()->json(
+        ['filled' => $fill !== null, 'fill' => $fill],
+        $fill === null ? 409 : 201,
+    );
+});
+
 Route::post('/unique/broken', function (): JsonResponse {
     $exists = DB::table('claims_broken')->where('claim_key', 'alpha')->exists();
 

@@ -40,6 +40,12 @@ correctness proof.
 It is a regression-test tool, not a production traffic generator, benchmark,
 load tester, queue fuzzer, or distributed test coordinator.
 
+The required database matrix exercises 10- and 25-participant exchange
+contention. Scheduled evidence extends that bounded cohort to 50 and 100
+participants. These runs prove the recorded invariants for one same-host cohort;
+they do not establish production throughput, latency, capacity, or behavior
+under hundreds of distributed clients.
+
 ## Storage and process boundaries
 
 The coordinator uses local files and independent CLI PHP processes. Every worker

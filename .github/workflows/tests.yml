@@ -239,6 +239,7 @@ jobs:
       RACEPROOF_REQUIRE_DATABASE_ALLOWLIST: 'true'
       RACEPROOF_ALLOWED_DATABASES: raceproof_test
       RACEPROOF_EVIDENCE_ITERATIONS: 100
+      RACEPROOF_EXCHANGE_PARTICIPANTS: '10,25'
       RACEPROOF_EVIDENCE_OUTPUT: build/database-evidence/${{ matrix.engine }}.json
 
     steps:
