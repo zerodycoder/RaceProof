@@ -8,15 +8,37 @@ use Illuminate\Support\Facades\DB;
 use RaceProof\Laravel\Support\DatabaseSafety;
 
 $iterations = 1;
+$exchangeParticipants = [10, 25];
 
 foreach (array_slice($argv, 1) as $argument) {
     if (str_starts_with($argument, '--iterations=')) {
         $iterations = (int) substr($argument, strlen('--iterations='));
     }
+
+    if (str_starts_with($argument, '--exchange-participants=')) {
+        $exchangeParticipants = [];
+
+        foreach (explode(',', substr($argument, strlen('--exchange-participants='))) as $participantCount) {
+            $participantCount = trim($participantCount);
+
+            if (! ctype_digit($participantCount)) {
+                throw new InvalidArgumentException('Exchange participants must be comma-separated integers.');
+            }
+
+            $exchangeParticipants[] = (int) $participantCount;
+        }
+
+        $exchangeParticipants = array_values(array_unique($exchangeParticipants));
+        sort($exchangeParticipants);
+    }
 }
 
 if ($iterations < 1 || $iterations > 100) {
     throw new InvalidArgumentException('Evidence iterations must be between 1 and 100.');
+}
+
+if ($exchangeParticipants === [] || min($exchangeParticipants) < 2 || max($exchangeParticipants) > 100) {
+    throw new InvalidArgumentException('Exchange participants must contain values from 2 through 100.');
 }
 
 foreach (['DB_CONNECTION', 'DB_DATABASE', 'DB_USERNAME', 'RACEPROOF_ALLOWED_DATABASES'] as $required) {
@@ -70,10 +92,10 @@ if ($migrationStatus !== 0) {
 }
 
 /** @return array<int, int> */
-function evidenceRun(string $uri, string $checkpoint): array
+function evidenceRun(string $uri, string $checkpoint, int $participants = 2): array
 {
     $result = race()
-        ->participants(2)
+        ->participants($participants)
         ->postJson($uri)
         ->releaseWhenAllReach($checkpoint)
         ->run();
@@ -131,6 +153,102 @@ function resetCommerceState(): void
 
     DB::table('lock_counters')->delete();
     DB::table('lock_counters')->insert(['id' => 1, 'version' => 0]);
+}
+
+function resetExchangeState(int $participants): void
+{
+    DB::table('exchange_ledger_entries')->delete();
+    DB::table('exchange_fills')->delete();
+    DB::table('exchange_orders')->delete();
+    DB::table('exchange_accounts')->delete();
+
+    DB::table('exchange_orders')->insert([
+        'id' => 1,
+        'symbol' => 'BTC-USDT',
+        'side' => 'sell',
+        'price' => 100,
+        'original_quantity' => 100,
+        'remaining_quantity' => 100,
+        'status' => 'open',
+    ]);
+
+    $accounts = [[
+        'id' => 1,
+        'participant_id' => 'seller',
+        'base_balance' => 100,
+        'quote_balance' => 0,
+    ]];
+
+    for ($participant = 1; $participant <= $participants; $participant++) {
+        $accounts[] = [
+            'id' => $participant + 1,
+            'participant_id' => "p{$participant}",
+            'base_balance' => 0,
+            'quote_balance' => 300,
+        ];
+    }
+
+    DB::table('exchange_accounts')->insert($accounts);
+}
+
+/** @return array<string, int|string> */
+function exchangeState(): array
+{
+    $order = DB::table('exchange_orders')->where('id', 1)->first();
+
+    if ($order === null) {
+        throw new RuntimeException('The exchange order disappeared.');
+    }
+
+    return [
+        'original_quantity' => (int) $order->original_quantity,
+        'remaining_quantity' => (int) $order->remaining_quantity,
+        'order_status' => (string) $order->status,
+        'fill_count' => DB::table('exchange_fills')->count(),
+        'fill_quantity' => (int) DB::table('exchange_fills')->sum('quantity'),
+        'fill_quote_amount' => (int) DB::table('exchange_fills')->sum('quote_amount'),
+        'unique_fill_participants' => DB::table('exchange_fills')->distinct()->count('participant_id'),
+        'invalid_fill_quantities' => DB::table('exchange_fills')
+            ->where('quantity', '<', 1)
+            ->orWhere('quantity', '>', 3)
+            ->count(),
+        'account_base_total' => (int) DB::table('exchange_accounts')->sum('base_balance'),
+        'account_quote_total' => (int) DB::table('exchange_accounts')->sum('quote_balance'),
+        'negative_accounts' => DB::table('exchange_accounts')
+            ->where('base_balance', '<', 0)
+            ->orWhere('quote_balance', '<', 0)
+            ->count(),
+        'seller_base' => (int) DB::table('exchange_accounts')->where('participant_id', 'seller')->value('base_balance'),
+        'seller_quote' => (int) DB::table('exchange_accounts')->where('participant_id', 'seller')->value('quote_balance'),
+        'ledger_count' => DB::table('exchange_ledger_entries')->count(),
+        'ledger_base_total' => (int) DB::table('exchange_ledger_entries')->where('asset', 'BTC')->sum('amount'),
+        'ledger_quote_total' => (int) DB::table('exchange_ledger_entries')->where('asset', 'USDT')->sum('amount'),
+    ];
+}
+
+/** @return array{run_id: string, statuses: array<int, int>, start_spread_ms: float, duration_ms: float} */
+function exchangeRun(int $participants): array
+{
+    config()->set('raceproof.runner.spawn_timeout_ms', 60_000);
+    config()->set('raceproof.runner.run_timeout_ms', 120_000);
+
+    $result = race()
+        ->participants($participants)
+        ->postJson('/api/exchange/market-buy')
+        ->releaseWhenAllReach('exchange-before-match')
+        ->run();
+
+    $result->assertAllFinished()
+        ->assertNoTimeouts()
+        ->assertNoWorkerFailures()
+        ->assertNoServerErrors();
+
+    return [
+        'run_id' => $result->runId,
+        'statuses' => $result->statuses(),
+        'start_spread_ms' => $result->startSpreadMs(),
+        'duration_ms' => $result->durationMs(),
+    ];
 }
 
 /** @return array<string, int|string> */
@@ -297,6 +415,48 @@ for ($iteration = 1; $iteration <= $iterations; $iteration++) {
     $critical['fixed_passed']++;
 }
 
+$exchangeContention = [];
+
+foreach ($exchangeParticipants as $participants) {
+    resetExchangeState($participants);
+
+    $run = exchangeRun($participants);
+    $state = exchangeState();
+    $expectedFillQuantity = min(100, $participants * 3);
+    $expectedFillCount = (int) ceil($expectedFillQuantity / 3);
+    $expectedStatuses = [201 => $expectedFillCount];
+
+    if ($participants > $expectedFillCount) {
+        $expectedStatuses[409] = $participants - $expectedFillCount;
+    }
+
+    evidenceStatuses($run['statuses'], $expectedStatuses, "exchange/contention/{$participants}");
+    evidenceAssert($state['original_quantity'] === 100, "exchange/{$participants}: original quantity changed.");
+    evidenceAssert($state['fill_quantity'] === $expectedFillQuantity, "exchange/{$participants}: filled quantity is incorrect.");
+    evidenceAssert($state['remaining_quantity'] === 100 - $expectedFillQuantity, "exchange/{$participants}: remaining quantity is incorrect.");
+    evidenceAssert($state['fill_count'] === $expectedFillCount, "exchange/{$participants}: fill count is incorrect.");
+    evidenceAssert($state['unique_fill_participants'] === $expectedFillCount, "exchange/{$participants}: a participant filled twice.");
+    evidenceAssert($state['invalid_fill_quantities'] === 0, "exchange/{$participants}: invalid partial fill quantity.");
+    evidenceAssert($state['order_status'] === ($expectedFillQuantity === 100 ? 'filled' : 'open'), "exchange/{$participants}: order status is incorrect.");
+    evidenceAssert($state['account_base_total'] === 100, "exchange/{$participants}: BTC conservation failed.");
+    evidenceAssert($state['account_quote_total'] === $participants * 300, "exchange/{$participants}: USDT conservation failed.");
+    evidenceAssert($state['negative_accounts'] === 0, "exchange/{$participants}: an account became negative.");
+    evidenceAssert($state['seller_base'] === 100 - $expectedFillQuantity, "exchange/{$participants}: seller BTC balance is incorrect.");
+    evidenceAssert($state['seller_quote'] === $expectedFillQuantity * 100, "exchange/{$participants}: seller USDT balance is incorrect.");
+    evidenceAssert($state['fill_quote_amount'] === $expectedFillQuantity * 100, "exchange/{$participants}: fill notional is incorrect.");
+    evidenceAssert($state['ledger_count'] === $expectedFillCount * 4, "exchange/{$participants}: ledger entry count is incorrect.");
+    evidenceAssert($state['ledger_base_total'] === 0, "exchange/{$participants}: BTC ledger is not balanced.");
+    evidenceAssert($state['ledger_quote_total'] === 0, "exchange/{$participants}: USDT ledger is not balanced.");
+
+    $exchangeContention[] = [
+        'participants' => $participants,
+        'expected_fill_count' => $expectedFillCount,
+        'expected_fill_quantity' => $expectedFillQuantity,
+        'run' => $run,
+        'state' => $state,
+    ];
+}
+
 echo json_encode([
     'engine' => $engine,
     'database' => $database,
@@ -304,4 +464,5 @@ echo json_encode([
     'isolated_migration' => true,
     'scenarios' => $scenarios,
     'critical_evidence' => $critical,
+    'exchange_contention' => $exchangeContention,
 ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT).PHP_EOL;

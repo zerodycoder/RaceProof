@@ -76,6 +76,42 @@ return new class extends Migration
             $table->integer('value');
         });
 
+        Schema::create('exchange_accounts', function (Blueprint $table): void {
+            $table->id();
+            $table->string('participant_id')->unique();
+            $table->integer('base_balance');
+            $table->integer('quote_balance');
+        });
+
+        Schema::create('exchange_orders', function (Blueprint $table): void {
+            $table->id();
+            $table->string('symbol');
+            $table->string('side');
+            $table->integer('price');
+            $table->integer('original_quantity');
+            $table->integer('remaining_quantity');
+            $table->string('status');
+        });
+
+        Schema::create('exchange_fills', function (Blueprint $table): void {
+            $table->id();
+            $table->unsignedBigInteger('order_id');
+            $table->string('participant_id');
+            $table->integer('quantity');
+            $table->integer('price');
+            $table->integer('quote_amount');
+            $table->unique(['order_id', 'participant_id']);
+        });
+
+        Schema::create('exchange_ledger_entries', function (Blueprint $table): void {
+            $table->id();
+            $table->string('reference');
+            $table->string('participant_id');
+            $table->string('asset');
+            $table->integer('amount');
+            $table->unique(['reference', 'participant_id', 'asset']);
+        });
+
         Schema::create('scenario_metrics', function (Blueprint $table): void {
             $table->string('metric')->primary();
             $table->integer('value');
@@ -85,6 +121,10 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('scenario_metrics');
+        Schema::dropIfExists('exchange_ledger_entries');
+        Schema::dropIfExists('exchange_fills');
+        Schema::dropIfExists('exchange_orders');
+        Schema::dropIfExists('exchange_accounts');
         Schema::dropIfExists('timeout_rows');
         Schema::dropIfExists('deadlock_rows');
         Schema::dropIfExists('lock_counters');

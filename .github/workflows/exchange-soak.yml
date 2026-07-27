@@ -1,0 +1,111 @@
+name: exchange-soak
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * 0'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: exchange-soak-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  exchange:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        participants:
+          - 50
+          - 100
+        database:
+          - engine: mysql
+            image: mysql:8.4
+            port: 3306
+            username: root
+            health: mysqladmin ping -h 127.0.0.1 -praceproof
+          - engine: pgsql
+            image: postgres:17
+            port: 5432
+            username: postgres
+            health: pg_isready -U postgres -d raceproof_test
+
+    services:
+      database:
+        image: ${{ matrix.database.image }}
+        env:
+          MYSQL_DATABASE: raceproof_test
+          MYSQL_ROOT_PASSWORD: raceproof
+          POSTGRES_DB: raceproof_test
+          POSTGRES_PASSWORD: raceproof
+        ports:
+          - "${{ matrix.database.port }}:${{ matrix.database.port }}"
+        options: >-
+          --health-cmd "${{ matrix.database.health }}"
+          --health-interval 2s
+          --health-timeout 2s
+          --health-retries 30
+
+    env:
+      DB_CONNECTION: ${{ matrix.database.engine }}
+      DB_HOST: 127.0.0.1
+      DB_PORT: ${{ matrix.database.port }}
+      DB_DATABASE: raceproof_test
+      DB_USERNAME: ${{ matrix.database.username }}
+      DB_PASSWORD: raceproof
+      RACEPROOF_REQUIRE_DATABASE_ALLOWLIST: 'true'
+      RACEPROOF_ALLOWED_DATABASES: raceproof_test
+      RACEPROOF_EVIDENCE_ITERATIONS: 1
+      RACEPROOF_EXCHANGE_PARTICIPANTS: ${{ matrix.participants }}
+      RACEPROOF_EVIDENCE_OUTPUT: build/exchange-evidence/${{ matrix.database.engine }}-${{ matrix.participants }}.json
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.5'
+          coverage: none
+          extensions: pdo_mysql, pdo_pgsql
+          tools: composer:v2
+
+      - name: Raise the database connection budget
+        env:
+          SERVICE_CONTAINER: ${{ job.services.database.id }}
+        run: |
+          if [[ "${DB_CONNECTION}" == "pgsql" ]]; then
+            docker exec "${SERVICE_CONTAINER}" \
+              psql -U postgres -d postgres \
+              -c "ALTER SYSTEM SET max_connections = 150"
+            docker restart "${SERVICE_CONTAINER}"
+
+            for attempt in {1..30}; do
+              if docker exec "${SERVICE_CONTAINER}" pg_isready -U postgres -d raceproof_test; then
+                exit 0
+              fi
+
+              sleep 2
+            done
+
+            exit 1
+          fi
+
+          docker exec "${SERVICE_CONTAINER}" \
+            mysql -uroot -praceproof \
+            -e "SET GLOBAL max_connections = 200"
+
+      - run: composer install --prefer-dist --no-interaction --no-progress
+      - run: composer test:database
+
+      - name: Upload exchange contention evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: exchange-evidence-${{ matrix.database.engine }}-${{ matrix.participants }}
+          path: build/exchange-evidence/${{ matrix.database.engine }}-${{ matrix.participants }}.json
+          if-no-files-found: warn
+          retention-days: 30

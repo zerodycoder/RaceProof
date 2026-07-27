@@ -19,9 +19,18 @@ final class EngineFidelityTest extends TestCase
 
         $iterations = getenv('RACEPROOF_EVIDENCE_ITERATIONS');
         $iterations = is_string($iterations) && ctype_digit($iterations) ? (int) $iterations : 1;
+        $exchangeParticipants = getenv('RACEPROOF_EXCHANGE_PARTICIPANTS');
+        $exchangeParticipants = is_string($exchangeParticipants) && $exchangeParticipants !== ''
+            ? $exchangeParticipants
+            : '10,25';
         $script = dirname(__DIR__).'/Fixtures/database-app/run-evidence.php';
         $process = new Process(
-            [PHP_BINARY, $script, '--iterations='.$iterations],
+            [
+                PHP_BINARY,
+                $script,
+                '--iterations='.$iterations,
+                '--exchange-participants='.$exchangeParticipants,
+            ],
             dirname(__DIR__, 2),
             timeout: 1_800,
         );
@@ -50,5 +59,23 @@ final class EngineFidelityTest extends TestCase
         self::assertSame($iterations, $evidence['critical_evidence']['expected']);
         self::assertSame($iterations, $evidence['critical_evidence']['broken_passed']);
         self::assertSame($iterations, $evidence['critical_evidence']['fixed_passed']);
+
+        $expectedParticipants = array_map('intval', explode(',', $exchangeParticipants));
+        sort($expectedParticipants);
+        self::assertSame(
+            $expectedParticipants,
+            array_column($evidence['exchange_contention'], 'participants'),
+        );
+
+        foreach ($evidence['exchange_contention'] as $exchangeEvidence) {
+            self::assertSame(100, $exchangeEvidence['state']['original_quantity']);
+            self::assertSame(
+                100,
+                $exchangeEvidence['state']['fill_quantity'] + $exchangeEvidence['state']['remaining_quantity'],
+            );
+            self::assertSame(0, $exchangeEvidence['state']['ledger_base_total']);
+            self::assertSame(0, $exchangeEvidence['state']['ledger_quote_total']);
+            self::assertSame(0, $exchangeEvidence['state']['negative_accounts']);
+        }
     }
 }

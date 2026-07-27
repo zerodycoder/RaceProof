@@ -53,8 +53,18 @@ The `Database` test suite runs against disposable MySQL 8.4 and PostgreSQL 17 se
 | Lock misuse | `lockForUpdate` outside a transaction loses an update | ordered transactional lock preserves both updates |
 | Deadlock | opposite lock order aborts one operation | consistent lock order commits both |
 | Lock timeout | the wait budget is shorter than lock ownership | a bounded, sufficient wait commits both |
+| Exchange matching | market buyers contend for one finite BTC-USDT limit order | fills never exceed the order; BTC, USDT, and the double-entry ledger remain balanced |
 
 The six business invariants are also combined into one critical evidence race. CI repeats its broken and fixed forms 100 times per engine and uploads the JSON result as `database-evidence-mysql` and `database-evidence-pgsql`. This is repeatability evidence for the controlled scenarios, not a claim that arbitrary schedules are proven safe.
+
+Every pull request additionally releases cohorts of 10 and 25 market orders at
+the same pre-match checkpoint. A weekly and manually dispatchable
+`exchange-soak` workflow runs 50- and 100-participant cohorts on both engines
+with an explicit database connection budget. Evidence includes status
+distribution, start spread, duration, fills, remaining quantity, account
+conservation, non-negative balances, unique fill ownership, and zero-sum BTC
+and USDT ledger totals. This is bounded high-contention regression evidence,
+not production throughput or latency evidence.
 
 The first four business scenarios are published as executable demonstrations:
 [overselling](../examples/overselling/README.md),
@@ -86,7 +96,7 @@ RACEPROOF_ALLOWED_DATABASES=raceproof_test \
 composer test:database
 ```
 
-PostgreSQL uses host port `54320`; use `DB_CONNECTION=pgsql` and `DB_USERNAME=postgres`. Set `RACEPROOF_EVIDENCE_ITERATIONS=100` to reproduce the release-level evidence run. The default is one iteration for fast local feedback.
+PostgreSQL uses host port `54320`; use `DB_CONNECTION=pgsql` and `DB_USERNAME=postgres`. Set `RACEPROOF_EVIDENCE_ITERATIONS=100` to reproduce the release-level evidence run. Set `RACEPROOF_EXCHANGE_PARTICIPANTS=50,100` to reproduce the larger exchange cohorts after raising the database connection limit above 100. The defaults are one critical iteration and exchange cohorts of 10 and 25 for fast local feedback.
 
 The Compose services use temporary filesystems, so `docker compose down` discards their data.
 
