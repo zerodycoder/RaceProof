@@ -32,6 +32,13 @@ final class RedisCoordinatorStoreTest extends TestCase
         $store->createRun($plan);
         self::assertEquals($plan, $store->plan($plan->runId));
         self::assertSame([$plan->runId], $store->retainedRunIds());
+        $stateKey = "raceproof-test:run:{{$plan->runId}}";
+        self::assertStringContainsString('"/checkout"', $client->hashes[$stateKey]['plan']);
+        self::assertSame([
+            'participants' => 2,
+            'checkpoint_count' => 1,
+            'participant_override_count' => 0,
+        ], $store->timeline($plan->runId)->events[0]->data);
 
         $store->markReady($plan->runId, 'p2');
         $store->markReady($plan->runId, 'p1');
@@ -52,9 +59,12 @@ final class RedisCoordinatorStoreTest extends TestCase
 
         $second = new ParticipantResult($plan->runId, 'p2', 409, 20, 40, 'second');
         $first = new ParticipantResult($plan->runId, 'p1', 201, 10, 30, 'first');
+        $hgetCount = $this->commandCount($client, 'hget');
         $store->storeResult($second);
         $store->storeResult($first);
+        self::assertSame($hgetCount, $this->commandCount($client, 'hget'));
         $store->storeResult($first);
+        self::assertSame($hgetCount + 1, $this->commandCount($client, 'hget'));
         self::assertEquals([$first, $second], $store->results($plan->runId));
 
         $custom = TimelineEvent::make($plan->runId, 'run.custom');
@@ -200,6 +210,15 @@ final class RedisCoordinatorStoreTest extends TestCase
     {
         $client = new InMemoryRedisClient;
         $secret = 'redis://user:super-secret@example.test';
+        $boundary = new RedisCoordinatorStore(
+            $client,
+            'default',
+            'raceproof',
+            604_800,
+            1_000,
+        );
+
+        self::assertSame('redis', $boundary->driver());
 
         foreach ([
             [$secret, 'raceproof', 60, 5],
@@ -215,6 +234,207 @@ final class RedisCoordinatorStoreTest extends TestCase
             } catch (RaceProofException $exception) {
                 self::assertStringNotContainsString($secret, $exception->getMessage());
                 self::assertStringNotContainsString('super-secret', $exception->getMessage());
+            }
+        }
+    }
+
+    public function test_health_check_validates_client_responses_and_probe_shape(): void
+    {
+        foreach ([false, null] as $ping) {
+            $client = new InMemoryRedisClient;
+            $client->commandOverrides['ping'] = $ping;
+
+            try {
+                $this->store($client)->healthCheck();
+                self::fail('Expected an invalid Redis ping response to fail.');
+            } catch (RaceProofException $exception) {
+                self::assertSame(
+                    'RaceProof Redis coordinator health check failed.',
+                    $exception->getMessage(),
+                );
+                self::assertSame([], $client->evaluations);
+            }
+        }
+
+        $client = new InMemoryRedisClient;
+        $client->commandOverride = true;
+        $this->store($client)->healthCheck();
+        self::assertSame(['health'], $client->scripts);
+        self::assertCount(1, $client->evaluations);
+        $probe = $client->evaluations[0];
+        self::assertSame('health', $probe['operation']);
+        self::assertCount(1, $probe['keys']);
+        self::assertMatchesRegularExpression(
+            '/^raceproof-test:health:[a-f0-9]{16}$/D',
+            $probe['keys'][0],
+        );
+        self::assertCount(2, $probe['arguments']);
+        self::assertIsString($probe['arguments'][0]);
+        self::assertMatchesRegularExpression('/^[a-f0-9]{32}$/D', $probe['arguments'][0]);
+        self::assertSame(10, $probe['arguments'][1]);
+    }
+
+    public function test_retained_results_are_filtered_sorted_and_shape_checked(): void
+    {
+        $first = str_repeat('a', 32);
+        $second = str_repeat('b', 32);
+        $client = new InMemoryRedisClient;
+        $client->evaluationOverride = [$second, 'foreign', $first];
+
+        self::assertSame([$first, $second], $this->store($client)->retainedRunIds());
+
+        foreach ([
+            ['run' => $first],
+            [$first, 123],
+        ] as $invalid) {
+            $client = new InMemoryRedisClient;
+            $client->evaluationOverride = $invalid;
+
+            try {
+                $this->store($client)->retainedRunIds();
+                self::fail('Expected malformed retained-run state to fail.');
+            } catch (RaceProofException $exception) {
+                self::assertSame(
+                    'RaceProof Redis coordinator returned invalid state.',
+                    $exception->getMessage(),
+                );
+            }
+        }
+    }
+
+    public function test_result_events_preserve_exact_outcome_projection(): void
+    {
+        $client = new InMemoryRedisClient;
+        $store = $this->store($client);
+        $runId = str_repeat('a', 32);
+        $store->createRun($this->plan($runId));
+        $store->storeResult(new ParticipantResult($runId, 'p1', 201, 10, 30));
+        $store->storeResult(new ParticipantResult(
+            $runId,
+            'p2',
+            null,
+            20,
+            50,
+            exceptionClass: RuntimeException::class,
+            exceptionMessage: 'failed',
+        ));
+        $store->storeResult(new ParticipantResult(
+            $runId,
+            'p3',
+            null,
+            30,
+            70,
+            workerError: 'worker exited',
+        ));
+        $finished = array_values(array_filter(
+            $store->timeline($runId)->events,
+            static fn (TimelineEvent $event): bool => $event->type === 'participant.finished',
+        ));
+
+        self::assertSame([
+            [
+                'outcome' => 'response',
+                'status' => 201,
+                'duration_ms' => 0.00002,
+                'exception_class' => null,
+            ],
+            [
+                'outcome' => 'exception',
+                'status' => null,
+                'duration_ms' => 0.00003,
+                'exception_class' => RuntimeException::class,
+            ],
+            [
+                'outcome' => 'worker_error',
+                'status' => null,
+                'duration_ms' => 0.00004,
+                'exception_class' => null,
+            ],
+        ], array_map(
+            static fn (TimelineEvent $event): array => $event->data,
+            $finished,
+        ));
+    }
+
+    public function test_record_event_rejects_a_missing_run(): void
+    {
+        $store = $this->store(new InMemoryRedisClient);
+
+        $this->expectException(RaceProofException::class);
+        $this->expectExceptionMessage('Cannot record timeline event for missing run');
+
+        $store->recordEvent(TimelineEvent::make(str_repeat('a', 32), 'run.custom'));
+    }
+
+    public function test_timeline_events_are_sorted_by_numeric_sequence(): void
+    {
+        $client = new InMemoryRedisClient;
+        $store = $this->store($client);
+        $runId = str_repeat('a', 32);
+        $store->createRun($this->plan($runId));
+        $key = "raceproof-test:run:{{$runId}}";
+        $client->hashes[$key]['event:10'] = json_encode(
+            TimelineEvent::make($runId, 'run.tenth'),
+            JSON_THROW_ON_ERROR,
+        );
+        $client->hashes[$key]['event:2'] = json_encode(
+            TimelineEvent::make($runId, 'run.second'),
+            JSON_THROW_ON_ERROR,
+        );
+
+        self::assertSame([
+            'run.created',
+            'run.second',
+            'run.tenth',
+        ], array_map(
+            static fn (TimelineEvent $event): string => $event->type,
+            $store->timeline($runId)->events,
+        ));
+    }
+
+    public function test_flat_hash_responses_are_normalized_and_malformed_shapes_fail_closed(): void
+    {
+        $runId = str_repeat('a', 32);
+        $result = new ParticipantResult($runId, 'p1', 200, 10, 20);
+        $client = new InMemoryRedisClient;
+        $client->commandOverrides['hgetall'] = [
+            'result:p1',
+            json_encode($result, JSON_THROW_ON_ERROR),
+        ];
+
+        self::assertEquals([$result], $this->store($client)->results($runId));
+
+        foreach ([
+            ['result:p1'],
+            ['result:p1', 123],
+            ['result:p1' => 123],
+        ] as $invalid) {
+            $client = new InMemoryRedisClient;
+            $client->commandOverrides['hgetall'] = $invalid;
+
+            try {
+                $this->store($client)->results($runId);
+                self::fail('Expected malformed Redis hash state to fail.');
+            } catch (RaceProofException $exception) {
+                self::assertSame(
+                    'RaceProof Redis coordinator returned invalid state.',
+                    $exception->getMessage(),
+                );
+            }
+        }
+    }
+
+    public function test_false_and_null_hash_values_both_mean_missing(): void
+    {
+        foreach ([false, null] as $missing) {
+            $client = new InMemoryRedisClient;
+            $client->commandOverrides['hget'] = $missing;
+
+            try {
+                $this->store($client)->plan(str_repeat('a', 32));
+                self::fail('Expected a missing plan.');
+            } catch (RaceProofException $exception) {
+                self::assertStringContainsString('does not exist', $exception->getMessage());
             }
         }
     }
@@ -299,5 +519,13 @@ final class RedisCoordinatorStoreTest extends TestCase
             new RequestSpec('POST', '/checkout'),
             checkpoints: ['after-read'],
         );
+    }
+
+    private function commandCount(InMemoryRedisClient $client, string $command): int
+    {
+        return count(array_filter(
+            $client->commands,
+            static fn (array $record): bool => $record['command'] === $command,
+        ));
     }
 }

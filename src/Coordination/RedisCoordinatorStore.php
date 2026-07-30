@@ -174,10 +174,10 @@ LUA;
             [time(), $this->stateKeyPrefix()],
         ));
         $runIds = $this->stringList($value);
-        $runIds = array_values(array_filter(
+        $runIds = array_filter(
             $runIds,
             static fn (string $runId): bool => preg_match('/^[a-f0-9]{32}$/D', $runId) === 1,
-        ));
+        );
         sort($runIds, SORT_STRING);
 
         return $runIds;

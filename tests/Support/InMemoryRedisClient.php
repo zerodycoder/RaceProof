@@ -22,15 +22,33 @@ final class InMemoryRedisClient implements RedisClient
     /** @var list<string> */
     public array $scripts = [];
 
+    /**
+     * @var list<array{
+     *     operation: string,
+     *     keys: list<string>,
+     *     arguments: list<int|string>
+     * }>
+     */
+    public array $evaluations = [];
+
     public ?Throwable $failure = null;
 
     public mixed $commandOverride = null;
+
+    /** @var array<string, mixed> */
+    public array $commandOverrides = [];
+
+    public mixed $evaluationOverride = null;
 
     public function command(string $command, array $arguments = []): mixed
     {
         $this->failIfConfigured();
         $command = strtolower($command);
         $this->commands[] = compact('command', 'arguments');
+
+        if (array_key_exists($command, $this->commandOverrides)) {
+            return $this->commandOverrides[$command];
+        }
 
         if ($this->commandOverride !== null) {
             return $this->commandOverride;
@@ -51,6 +69,11 @@ final class InMemoryRedisClient implements RedisClient
         $this->failIfConfigured();
         $operation = $this->operation($script);
         $this->scripts[] = $operation;
+        $this->evaluations[] = compact('operation', 'keys', 'arguments');
+
+        if ($this->evaluationOverride !== null) {
+            return $this->evaluationOverride;
+        }
 
         return match ($operation) {
             'create-run' => $this->createRun($keys, $arguments),
