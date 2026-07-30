@@ -50,6 +50,10 @@
                 {
                     "file": "tests/Integration/SafetyGuardEdgesTest.php",
                     "method": "test_database_safety_rejects_an_empty_sqlite_database_name"
+                },
+                {
+                    "file": "tests/Integration/SafetyGuardEdgesTest.php",
+                    "method": "test_database_safety_normalizes_driver_database_names_before_exact_allowlist_checks"
                 }
             ]
         },
@@ -68,6 +72,10 @@
                 },
                 {
                     "file": "tests/Integration/RaceOrchestratorLifecycleTest.php",
+                    "method": "test_checkpoint_is_not_released_before_the_complete_cohort_arrives"
+                },
+                {
+                    "file": "tests/Integration/RaceOrchestratorLifecycleTest.php",
                     "method": "test_early_exit_is_bounded_and_all_other_workers_are_stopped_and_waited"
                 },
                 {
@@ -77,6 +85,22 @@
                 {
                     "file": "tests/Integration/RaceOrchestratorLifecycleTest.php",
                     "method": "test_run_timeout_stops_and_reaps_workers_and_returns_structured_failures"
+                },
+                {
+                    "file": "tests/Integration/RaceOrchestratorLifecycleTest.php",
+                    "method": "test_missing_result_is_distinct_from_timeout_and_retains_artifacts"
+                },
+                {
+                    "file": "tests/Integration/RaceOrchestratorLifecycleTest.php",
+                    "method": "test_missing_result_without_an_exit_code_has_no_invented_status_or_output"
+                },
+                {
+                    "file": "tests/Integration/RaceOrchestratorLifecycleTest.php",
+                    "method": "test_environment_refusal_prevents_run_creation_and_worker_start"
+                },
+                {
+                    "file": "tests/Integration/RaceOrchestratorLifecycleTest.php",
+                    "method": "test_database_refusal_prevents_run_creation_and_worker_start"
                 },
                 {
                     "file": "tests/Integration/RaceOrchestratorLifecycleTest.php",
@@ -135,8 +159,20 @@
                     "method": "test_bounding_handles_every_marker_and_utf8_boundary"
                 },
                 {
+                    "file": "tests/Integration/SensitiveDataRedactorTest.php",
+                    "method": "test_negative_limits_and_header_credentials_have_exact_safe_output"
+                },
+                {
                     "file": "tests/Integration/ReportersTest.php",
                     "method": "test_the_stable_report_model_is_bounded_redacted_and_accounts_for_missing_participants"
+                },
+                {
+                    "file": "tests/Integration/ReportersTest.php",
+                    "method": "test_report_projection_preserves_outcomes_natural_order_and_coordination_state"
+                },
+                {
+                    "file": "tests/Integration/ReportersTest.php",
+                    "method": "test_negative_reporting_limits_are_clamped_without_hiding_source_totals"
                 },
                 {
                     "file": "tests/Integration/ReportersTest.php",
@@ -155,6 +191,18 @@
                 {
                     "file": "tests/Unit/FileCoordinatorStoreTest.php",
                     "method": "test_it_coordinates_a_complete_run_with_atomic_files"
+                },
+                {
+                    "file": "tests/Unit/FileCoordinatorStoreTest.php",
+                    "method": "test_result_evidence_distinguishes_all_outcomes_and_sorts_participants"
+                },
+                {
+                    "file": "tests/Unit/FileCoordinatorStoreTest.php",
+                    "method": "test_missing_malformed_and_cross_run_evidence_fails_closed"
+                },
+                {
+                    "file": "tests/Unit/FileCoordinatorStoreTest.php",
+                    "method": "test_barrier_timeouts_and_identifier_validation_are_actionable"
                 },
                 {
                     "file": "tests/Unit/FileCoordinatorTimelineTest.php",

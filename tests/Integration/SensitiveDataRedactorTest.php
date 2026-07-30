@@ -113,4 +113,33 @@ final class SensitiveDataRedactorTest extends TestCase
         self::assertSame(' [truncated]', $redactor->bounded('éééééééé', 13));
         self::assertSame('é [truncated]', $redactor->bounded('éééééééé', 14));
     }
+
+    public function test_negative_limits_and_header_credentials_have_exact_safe_output(): void
+    {
+        $config = new Repository([
+            'raceproof' => [
+                'capture' => [
+                    'diagnostic_text_bytes' => -1,
+                    'worker_output_bytes' => -1,
+                    'redact_keys' => [],
+                ],
+            ],
+        ]);
+        $redactor = new SensitiveDataRedactor($config);
+
+        self::assertSame('', $redactor->diagnostic('diagnostic'));
+        self::assertSame('', $redactor->workerOutput('stderr', 'stdout'));
+        self::assertSame('', $redactor->bounded('bounded', -1));
+        self::assertSame(
+            "Proxy-Authorization: [REDACTED]\nCookie: [REDACTED]\nSet-Cookie: [REDACTED]",
+            $redactor->redact(
+                "Proxy-Authorization: Bearer proxy-secret\n".
+                "Cookie: session=cookie-secret\n".
+                'Set-Cookie: session=set-cookie-secret',
+            ),
+        );
+        self::assertSame("safe\u{FFFD}text", $redactor->redact("safe\x01text"));
+        self::assertSame('', $redactor->bounded("\u{00E9}", 1));
+        self::assertSame("\u{00C3}", $redactor->bounded("\u{00C3}\u{00A9}", 2));
+    }
 }

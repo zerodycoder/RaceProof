@@ -32,6 +32,21 @@ final class MutationCommandTest extends TestCase
             'src/Support/DatabaseSafety.php',
             'src/Support/SensitiveDataRedactor.php',
             'src/Execution/SymfonyWorkerProcess.php',
+            'src/Execution/RaceOrchestrator.php',
+            'src/Coordination/FileCoordinatorStore.php',
+            'src/Reports/RaceReportFactory.php',
+        ];
+        $tests = [
+            'tests/Integration/SafetyGuardEdgesTest.php',
+            'tests/Integration/SafetyGuardsTest.php',
+            'tests/Integration/SensitiveDataRedactorTest.php',
+            'tests/Unit/SymfonyWorkerProcessStopTest.php',
+            'tests/Integration/RaceOrchestratorLifecycleTest.php',
+            'tests/Unit/FileCoordinatorStoreTest.php',
+            'tests/Unit/FileCoordinatorTimelineTest.php',
+            'tests/Unit/RaceResultReportTest.php',
+            'tests/Unit/ReportModelTest.php',
+            'tests/Integration/ReportersTest.php',
         ];
 
         self::assertStringContainsString('--path='.implode(',', $paths), $command);
@@ -39,6 +54,11 @@ final class MutationCommandTest extends TestCase
 
         foreach ($paths as $path) {
             self::assertFileExists($root.'/'.$path);
+        }
+
+        foreach ($tests as $test) {
+            self::assertStringContainsString(' '.$test, $command);
+            self::assertFileExists($root.'/'.$test);
         }
     }
 }
