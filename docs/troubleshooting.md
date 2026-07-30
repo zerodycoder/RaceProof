@@ -88,6 +88,23 @@ The JSON shape is intentionally small and versioned:
   `composer consumer:check` from a RaceProof source checkout; native Windows
   remains experimental.
 
+For queue races, READY means the worker has reserved its exact run-scoped job:
+
+- **Connection rejected before the factory runs:** select an explicitly
+  configured clearable `database` or `redis` queue connection; `sync`, `null`,
+  custom, and unavailable drivers are unsupported.
+- **Job shape rejected:** return one new plain `ShouldQueue` object per
+  participant and remove job-owned connection, queue, delay, uniqueness,
+  encryption, chain/batch, after-commit, and retry/timeout policy.
+- **No queued job available:** verify the queue table/broker is shared with
+  worker CLI processes, the jobs migration is committed, and no external worker
+  consumes the random `raceproof:<run-id>:pN` queues.
+- **Unexpected class or retry policy:** clear stale configuration/autoload
+  caches and ensure every local or remote worker runs the same reviewed code.
+- **Cleanup failed:** retain the result, resolve only its exact run-scoped queue
+  names, fix backend connectivity, and clear those names without flushing the
+  connection. See [queue races](queue-races.md).
+
 ## 3. Do all workers reach the checkpoint?
 
 - **No:** the route may return, throw, authorize, or branch before

@@ -116,10 +116,33 @@ return new class extends Migration
             $table->string('metric')->primary();
             $table->integer('value');
         });
+
+        Schema::create('jobs', function (Blueprint $table): void {
+            $table->id();
+            $table->string('queue')->index();
+            $table->longText('payload');
+            $table->unsignedTinyInteger('attempts');
+            $table->unsignedInteger('reserved_at')->nullable();
+            $table->unsignedInteger('available_at');
+            $table->unsignedInteger('created_at');
+        });
+
+        Schema::create('queue_claims_broken', function (Blueprint $table): void {
+            $table->id();
+            $table->string('claim_key');
+        });
+
+        Schema::create('queue_claims_fixed', function (Blueprint $table): void {
+            $table->id();
+            $table->string('claim_key')->unique();
+        });
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('queue_claims_fixed');
+        Schema::dropIfExists('queue_claims_broken');
+        Schema::dropIfExists('jobs');
         Schema::dropIfExists('scenario_metrics');
         Schema::dropIfExists('exchange_ledger_entries');
         Schema::dropIfExists('exchange_fills');

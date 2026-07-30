@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Added bounded Laravel database/Redis queue race orchestration with one
+  run-scoped queue and distinct `ShouldQueue` job per participant, native worker
+  execution and retries, fail-closed job/connection validation, exact cleanup,
+  queue-aware redacted evidence, real consumer/Redis CI, and
+  MySQL/PostgreSQL invariants.
 - Added an opt-in authenticated remote worker transport with static agent
   routing, HMAC-signed expiring controls, atomic replay protection, bounded
   capacity/liveness/shutdown/output state, Redis-aligned participant timing,

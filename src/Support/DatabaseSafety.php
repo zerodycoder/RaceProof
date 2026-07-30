@@ -14,7 +14,12 @@ final readonly class DatabaseSafety
 
     public function validate(): void
     {
-        $connection = $this->database->connection();
+        $this->validateConnection();
+    }
+
+    public function validateConnection(?string $name = null): void
+    {
+        $connection = $this->database->connection($name);
 
         if (
             ConfigValue::boolean($this->config, 'raceproof.database.reject_open_transactions', true)

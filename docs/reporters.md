@@ -148,6 +148,21 @@ projection for automation and Studio; `timeline.jsonl` remains the
 authoritative retained event stream when scratch artifacts exist. A breaking
 key removal, type change, or semantic change requires a new `schema_version`.
 
+Queue participants add five optional fields without changing HTTP entries:
+
+```json
+{
+  "execution": "queue",
+  "attempts": 2,
+  "job_class": "App\\Jobs\\RedeemCoupon",
+  "queue_connection": "raceproof_redis",
+  "queue_name": "raceproof:5df8e3efb8eb49d19e26a6423f7d57e7:p1"
+}
+```
+
+These values identify execution policy and the isolated queue only. Serialized
+job payloads and properties are never projected into the stable report.
+
 ## JUnit mapping
 
 `JUnitReporter` emits a UTF-8 `<testsuites>` document with one testcase per expected participant:
@@ -156,6 +171,9 @@ key removal, type change, or semantic change requires a new `schema_version`.
 - application exceptions, worker failures, and missing results become `<error>`;
 - a timed-out run adds a `RaceProof.Run` timeout testcase with an `<error>`;
 - bounded redacted headers and response bodies are included in `<system-out>`.
+
+Queue testcases also include execution, attempts, expected job class,
+connection, and run-scoped queue name in `<system-out>`, without job payloads.
 
 The `tests`, `failures`, and `errors` attributes exactly match the emitted testcase elements. XML 1.0-invalid control characters are replaced, and all text/attributes are escaped. A business response such as HTTP 409 is still a JUnit failure because the report model does not know the test's expected status distribution.
 

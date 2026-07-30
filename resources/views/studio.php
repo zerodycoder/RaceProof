@@ -491,6 +491,10 @@ $title = match ($page) {
             gap: 12px;
         }
 
+        .queue-meta { margin-top: 12px; }
+        .queue-meta .wide { grid-column: 1 / -1; }
+        .queue-meta .data-value { overflow-wrap: anywhere; }
+
         .diagnostic {
             margin: 15px 0 0;
             padding: 11px 12px;
@@ -757,7 +761,7 @@ $title = match ($page) {
         <div class="panel-head">
             <div>
                 <h2>Participant outcomes</h2>
-                <p>A non-2xx/3xx response is flagged here even when the test intentionally expects it.</p>
+                <p>HTTP response failures and queued-job execution failures are flagged even when the test expects them.</p>
             </div>
         </div>
 
@@ -777,7 +781,7 @@ $title = match ($page) {
                 </div>
                 <div class="participant-meta">
                     <div>
-                        <span class="data-label">HTTP status</span>
+                        <span class="data-label"><?= $participant->execution === 'queue' ? 'Queue status' : 'HTTP status' ?></span>
                         <span class="data-value"><?= $participant->status === null ? '—' : $escape($participant->status) ?></span>
                     </div>
                     <div>
@@ -785,6 +789,27 @@ $title = match ($page) {
                         <span class="data-value"><?= $escape(number_format($participant->durationMs, 2)) ?> ms</span>
                     </div>
                 </div>
+
+                <?php if ($participant->execution === 'queue') { ?>
+                    <div class="participant-meta queue-meta">
+                        <div>
+                            <span class="data-label">Attempts</span>
+                            <span class="data-value"><?= $escape($participant->attempts) ?></span>
+                        </div>
+                        <div>
+                            <span class="data-label">Connection</span>
+                            <span class="data-value mono"><?= $escape($participant->queueConnection ?? '—') ?></span>
+                        </div>
+                        <div class="wide">
+                            <span class="data-label">Job</span>
+                            <span class="data-value mono"><?= $escape($participant->jobClass ?? '—') ?></span>
+                        </div>
+                        <div class="wide">
+                            <span class="data-label">Run-scoped queue</span>
+                            <span class="data-value mono"><?= $escape($participant->queueName ?? '—') ?></span>
+                        </div>
+                    </div>
+                <?php } ?>
 
                 <?php if ($participant->diagnostic !== '') { ?>
                     <p class="diagnostic"><?= $escape($participant->diagnostic) ?></p>

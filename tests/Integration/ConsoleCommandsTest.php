@@ -313,6 +313,8 @@ final class ConsoleCommandsTest extends TestCase
         $store->releaseStart($plan->runId);
         $this->app->bind(RequestExecutor::class, fn (): RequestExecutor => new class implements RequestExecutor
         {
+            public function prepare(RacePlan $plan, ParticipantContext $context): void {}
+
             public function execute(RacePlan $plan, ParticipantContext $context): ParticipantResult
             {
                 throw new RuntimeException('executor exploded password=hunter2');

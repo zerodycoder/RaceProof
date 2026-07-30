@@ -171,6 +171,11 @@ final readonly class RaceReportFactory
             exceptionClass: $participant->exceptionClass === null
                 ? null
                 : $this->diagnostic($participant->exceptionClass),
+            execution: $participant->execution,
+            attempts: $participant->attempts,
+            jobClass: $participant->jobClass,
+            queueConnection: $participant->queueConnection,
+            queueName: $participant->queueName,
         );
     }
 

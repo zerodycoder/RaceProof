@@ -13,12 +13,13 @@ Audit definition prepared: 2026-07-30
 | `redaction-reporting` | yes | Credential patterns, invalid UTF-8, byte bounds, response/report projection, and valid JSON/XML after redaction. | 12 |
 | `coordination-integrity` | yes | Fail-closed backend selection, parent/worker parity, credential-safe process arguments, atomic file and Redis transitions, bounded Redis retention, ordered timeline recovery, and backend-neutral cleanup boundaries. | 18 |
 | `remote-worker-transport` | yes | Fail-closed transport selection, authenticated expiring controls, atomic replay protection, bounded routing/capacity/liveness/shutdown/output, Redis-aligned timing, and independent-agent evidence. | 13 |
+| `queue-race-orchestration` | yes | Fail-closed database/Redis queue selection, distinct job cardinality, native bounded retries, reservation-before-release, exact run-scoped cleanup, redacted evidence, and real engine/consumer CI. | 30 |
 | `production-runtime-boundary` | yes | Capability-scoped activation and a framework-free, process-free production no-op runtime. | 2 |
 | `release-supply-chain` | yes | Reproducible consumer archives, a real published-beta upgrade rehearsal, pinned workflow actions, runtime-first publication, signatures, provenance, and clean artifact installation. | 4 |
 | `published-contracts` | no | Frozen API signatures, documentation links, executable examples, public evidence status, and package-content boundaries. | 3 |
-| `consumer-acceptance` | no | Clean Laravel installation, idempotent setup, child-process diagnostics, package discovery, participant identity, authentication, CLI workflows, a real database race, and Studio HTTP behavior. | 4 |
+| `consumer-acceptance` | no | Clean Laravel installation, idempotent setup, child-process diagnostics, package discovery, participant identity, authentication, CLI workflows, real HTTP/database/Redis queue races, and Studio HTTP behavior. | 4 |
 
-These entries identify mutation-sensitive branch, timeout, cleanup, redaction, serialization, and packaging decisions and bind each one to named tests. CI additionally enforces an 80% strict covered-code mutation score for fourteen selected safety, redaction, worker-lifecycle, orchestration, coordinator-selection, file/Redis-coordination, authenticated-remote-transport, and report-projection classes through `composer test:mutation`; timeouts remain in its denominator and are never accepted as tested mutants. This remains targeted evidence, so do not claim a repository-wide mutation score.
+These entries identify mutation-sensitive branch, timeout, cleanup, redaction, serialization, and packaging decisions and bind each one to named tests. CI additionally enforces an 80% strict covered-code mutation score for nineteen selected safety, redaction, worker-lifecycle, orchestration, coordinator-selection, file/Redis-coordination, authenticated-remote-transport, queue-lifecycle, and report-projection classes through `composer test:mutation`; timeouts remain in its denominator and are never accepted as tested mutants. This remains targeted evidence, so do not claim a repository-wide mutation score.
 
 ## Compatibility evidence
 

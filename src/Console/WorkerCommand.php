@@ -6,7 +6,7 @@ namespace RaceProof\Laravel\Console;
 
 use Illuminate\Console\Command;
 use RaceProof\Laravel\Contracts\CoordinatorStore;
-use RaceProof\Laravel\Contracts\RequestExecutor;
+use RaceProof\Laravel\Contracts\ParticipantExecutor;
 use RaceProof\Laravel\Coordination\CoordinatorResolver;
 use RaceProof\Laravel\Data\ParticipantContext;
 use RaceProof\Laravel\Data\ParticipantResult;
@@ -30,7 +30,7 @@ final class WorkerCommand extends Command
     protected $description = 'Internal RaceProof worker process';
 
     public function __construct(
-        private readonly RequestExecutor $executor,
+        private readonly ParticipantExecutor $executor,
         private readonly RaceContext $context,
         private readonly EnvironmentGuard $environment,
         private readonly SensitiveDataRedactor $redactor,
@@ -99,6 +99,7 @@ final class WorkerCommand extends Command
             }
 
             $this->context->activate($plan, $participantId, $store);
+            $this->executor->prepare($plan, $participantContext);
             $store->markReady($runId, $participantId);
             $store->waitForStart($runId, $plan->spawnTimeoutMs);
             $activation = Checkpoint::activate($this->checkpointHandler);
@@ -115,6 +116,7 @@ final class WorkerCommand extends Command
                         $runId,
                         $participantId,
                         $exception::class.': '.$message,
+                        plan: $plan,
                     ));
                 } catch (Throwable) {
                     // The parent process also captures STDERR and the exit code.

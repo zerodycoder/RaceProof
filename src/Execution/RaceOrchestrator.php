@@ -7,6 +7,7 @@ namespace RaceProof\Laravel\Execution;
 use Illuminate\Contracts\Config\Repository as Config;
 use RaceProof\Laravel\Contracts\CoordinatorStore;
 use RaceProof\Laravel\Contracts\RaceClock;
+use RaceProof\Laravel\Contracts\RaceRunner;
 use RaceProof\Laravel\Contracts\WorkerProcess;
 use RaceProof\Laravel\Contracts\WorkerProcessFactory;
 use RaceProof\Laravel\Data\ParticipantResult;
@@ -22,7 +23,7 @@ use RaceProof\Laravel\Support\EnvironmentGuard;
 use RaceProof\Laravel\Support\SensitiveDataRedactor;
 use Throwable;
 
-final readonly class RaceOrchestrator
+final readonly class RaceOrchestrator implements RaceRunner
 {
     public function __construct(
         private Config $config,
@@ -44,6 +45,7 @@ final readonly class RaceOrchestrator
         /** @var array<string, WorkerProcess> $processes */
         $processes = [];
         $timedOut = false;
+        $spawnDeadline = $this->clock->nowNs() + ($plan->spawnTimeoutMs * 1_000_000);
 
         try {
             for ($number = 1; $number <= $plan->participants; $number++) {
@@ -56,9 +58,13 @@ final readonly class RaceOrchestrator
                     'participant.spawned',
                     $participantId,
                 ));
+
+                if ($plan->queue !== null) {
+                    $this->waitUntilReady($plan, $processes, $number, $spawnDeadline);
+                }
             }
 
-            $this->waitUntilReady($plan, $processes);
+            $this->waitUntilReady($plan, $processes, $plan->participants, $spawnDeadline);
             $this->store->releaseStart($plan->runId);
 
             $deadline = $this->clock->nowNs() + ($plan->runTimeoutMs * 1_000_000);
@@ -92,7 +98,11 @@ final readonly class RaceOrchestrator
             $results = $this->collectResults($plan, $processes, $timedOut);
             $clean = ! $timedOut
                 && count($results) === $plan->participants
-                && array_filter($results, fn (ParticipantResult $result): bool => $result->workerError !== null) === [];
+                && array_filter(
+                    $results,
+                    fn (ParticipantResult $result): bool => $result->workerError !== null
+                        || $result->exceptionClass !== null,
+                ) === [];
             $cleanupRequested = $clean && ConfigValue::boolean($this->config, 'raceproof.runner.cleanup_successful_runs', true);
             $this->store->recordEvent(TimelineEvent::make($plan->runId, 'run.completed', data: [
                 'timed_out' => $timedOut,
@@ -200,11 +210,13 @@ final readonly class RaceOrchestrator
     }
 
     /** @param array<string, WorkerProcess> $processes */
-    private function waitUntilReady(RacePlan $plan, array $processes): void
-    {
-        $deadline = $this->clock->nowNs() + ($plan->spawnTimeoutMs * 1_000_000);
-
-        while ($this->store->readyCount($plan->runId) < $plan->participants) {
+    private function waitUntilReady(
+        RacePlan $plan,
+        array $processes,
+        int $expectedReady,
+        int $deadline,
+    ): void {
+        while ($this->store->readyCount($plan->runId) < $expectedReady) {
             foreach ($processes as $participantId => $process) {
                 if (! $process->isRunning()) {
                     $output = $this->workerOutput($process);
@@ -327,7 +339,12 @@ final readonly class RaceOrchestrator
                 $message .= ' '.$output;
             }
 
-            $byParticipant[$participantId] = ParticipantResult::workerFailure($plan->runId, $participantId, $message);
+            $byParticipant[$participantId] = ParticipantResult::workerFailure(
+                $plan->runId,
+                $participantId,
+                $message,
+                plan: $plan,
+            );
         }
 
         ksort($byParticipant, SORT_NATURAL);

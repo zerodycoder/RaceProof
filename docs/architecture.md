@@ -11,9 +11,9 @@ Test -> RaceBuilder -> RaceOrchestrator
                          |
                          +-> plan.json
                          +-> local Symfony process or signed Redis control
-                               +-> worker p1 -> HTTP Kernel -> result
-                               +-> worker p2 -> HTTP Kernel -> result
-                               +-> worker pN -> HTTP Kernel -> result
+                               +-> worker p1 -> HTTP Kernel or Queue Worker -> result
+                               +-> worker p2 -> HTTP Kernel or Queue Worker -> result
+                               +-> worker pN -> HTTP Kernel or Queue Worker -> result
                          +-> checkpoint releases
                          +-> timeline.jsonl
 ```
@@ -55,10 +55,29 @@ claim them once, enforce capacity, and launch the same local worker command.
 Secrets and arbitrary commands never enter the message. See
 [remote worker transport](remote-workers.md).
 
+## Queue execution
+
+An HTTP plan contains one request specification. A queue plan instead contains
+the selected connection, bounded retry policy, and exact participant-to-job
+class manifest; the parent-local factory and serialized job payloads never
+enter the plan.
+
+The dispatcher accepts only clearable database or Redis connections, creates
+one random run-scoped queue per participant, verifies it empty, and pushes
+exactly one distinct validated `ShouldQueue` object. Each participant worker
+reserves its own job before READY, waits at START, and invokes it through
+Laravel's native `Worker::process()` lifecycle. Retries remain bounded by both
+the RaceProof attempt policy and the overall run deadline.
+
+Run-scoped queues are cleared on success and every failure path without purging
+unrelated work. Unsupported cardinality, dispatch, timing, encryption,
+uniqueness, chain/batch, or job-owned retry semantics fail closed. See
+[queue races](queue-races.md).
+
 ## Timing semantics
 
 Local workers record `hrtime(true)` immediately before invoking the HTTP
-kernel. Remote workers bracket one Redis `TIME` sample with their local
+kernel or queued job. Remote workers bracket one Redis `TIME` sample with their local
 monotonic clock, reject an excessive synchronization RTT, and align subsequent
 monotonic timestamps to the shared sample. Duration remains monotonic and
 start-spread evidence has one low-latency reference, but network asymmetry still

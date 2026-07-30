@@ -14,9 +14,10 @@ guard.
 
 The global `race()` helper returns `RaceBuilder`. Its fluent API covers:
 
-- participant count and the JSON request;
+- participant count and either a JSON request or distinct queued-job factory;
 - shared headers, cookies, bearer tokens, model identity, and bootstrap;
 - per-participant overrides through `ParticipantBuilder`;
+- bounded queue attempts and backoff for database/Redis queue races;
 - start/checkpoint release coordination;
 - execution through `run()`.
 
@@ -36,6 +37,12 @@ though the aligned Laravel package must access them.
 
 The full property and method list is intentionally kept in the machine baseline
 instead of duplicated here.
+
+Queue orchestration is an additive beta contract update. `RaceBuilder::queue()`
+and `queueAttempts()` are public. Queue participant results expose execution,
+attempt, job-class, connection, and run-scoped queue metadata. Existing HTTP
+result construction and report shapes remain backward compatible; queue-only
+fields are projected only for queue participants.
 
 ## Internal by default
 

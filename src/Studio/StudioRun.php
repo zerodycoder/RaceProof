@@ -97,6 +97,11 @@ final readonly class StudioRun implements JsonSerializable
             $participantOutcome = self::string($participant, 'outcome');
             $status = $participant['status'] ?? null;
             $exceptionClass = $participant['exception_class'] ?? null;
+            $execution = $participant['execution'] ?? 'http';
+            $attempts = $participant['attempts'] ?? 1;
+            $jobClass = self::optionalString($participant['job_class'] ?? null);
+            $queueConnection = self::optionalString($participant['queue_connection'] ?? null);
+            $queueName = self::optionalString($participant['queue_name'] ?? null);
 
             if (preg_match('/^p[1-9][0-9]{0,2}$/D', $participantId) !== 1) {
                 throw new RaceProofException('Studio report contains an invalid participant ID.');
@@ -120,6 +125,28 @@ final readonly class StudioRun implements JsonSerializable
                 throw new RaceProofException('Studio report contains an invalid exception class.');
             }
 
+            if (
+                ! is_string($execution)
+                || ! in_array($execution, ['http', 'queue'], true)
+                || ! is_int($attempts)
+                || $attempts < 0
+                || $attempts > 5
+            ) {
+                throw new RaceProofException('Studio report contains invalid participant execution metadata.');
+            }
+
+            if (
+                $execution === 'queue'
+                && (
+                    $jobClass === null
+                    || $queueConnection === null
+                    || $queueName === null
+                    || preg_match('/^raceproof:[a-f0-9]{32}:p[1-9][0-9]{0,2}$/D', $queueName) !== 1
+                )
+            ) {
+                throw new RaceProofException('Studio report contains incomplete queue participant metadata.');
+            }
+
             $headers = [];
 
             foreach (self::map($participant, 'headers') as $name => $value) {
@@ -141,6 +168,11 @@ final readonly class StudioRun implements JsonSerializable
                 headers: $headers,
                 headersTruncated: self::boolean($participant, 'headers_truncated'),
                 exceptionClass: $exceptionClass,
+                execution: $execution,
+                attempts: $attempts,
+                jobClass: $jobClass,
+                queueConnection: $queueConnection,
+                queueName: $queueName,
             );
         }
 
@@ -321,6 +353,15 @@ final readonly class StudioRun implements JsonSerializable
 
         if (! is_bool($value)) {
             throw new RaceProofException("Studio field [{$key}] must be a boolean.");
+        }
+
+        return $value;
+    }
+
+    private static function optionalString(mixed $value): ?string
+    {
+        if ($value !== null && ! is_string($value)) {
+            throw new RaceProofException('Studio report contains invalid queue metadata.');
         }
 
         return $value;

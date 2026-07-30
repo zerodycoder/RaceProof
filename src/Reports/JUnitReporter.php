@@ -122,6 +122,16 @@ final readonly class JUnitReporter implements Reporter
     {
         $evidence = [];
 
+        if ($participant->execution === 'queue') {
+            $evidence[] = sprintf(
+                'Queue: %s on %s; job: %s; attempts: %d.',
+                $participant->queueName ?? 'unknown',
+                $participant->queueConnection ?? 'unknown',
+                $participant->jobClass ?? 'unknown',
+                $participant->attempts,
+            );
+        }
+
         if ($participant->headers !== []) {
             $evidence[] = 'Headers: '.json_encode(
                 $participant->headers,

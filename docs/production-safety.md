@@ -27,6 +27,27 @@ as RaceProof command arguments or emitted in coordinator diagnostics.
 
 Human, JSON, and JUnit [evidence reporters](reporters.md) re-apply configured redaction and field limits. Human output is capped as a whole; structured formats bound their fields and collection counts so truncation never corrupts JSON or XML. Response-body redaction remains pattern-based and cannot replace restricted artifact access.
 
+## Queue payloads and cleanup
+
+[Queue races](queue-races.md) run only after the normal environment and
+database guards pass. Their parent-local factory creates real Laravel job
+objects, so job properties can contain application data even though RaceProof
+does not serialize those payloads into `plan.json` or project them into
+reports. Use disposable database/Redis queues, least-privilege credentials, and
+non-sensitive fixture data.
+
+For database queues, those guards validate both the application's default
+database and the queue connection's actual database. A separate queue database
+must independently pass the transaction, SQLite, and exact-name allowlist
+rules before Laravel resolves the queue connection.
+
+RaceProof clears only its random `raceproof:<run-id>:pN` queue names before
+dispatch and after every run outcome. It never purges the whole connection,
+default queue, failed-job storage, or unrelated jobs. A cleanup error is a
+retained run failure, not a warning. If manual rollback is required, resolve
+the exact run and participant queue names from bounded evidence before clearing
+them; never flush a shared broker.
+
 ## Studio boundary
 
 [RaceProof Studio](studio.md) requires explicit opt-in and accepts only

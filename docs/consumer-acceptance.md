@@ -12,16 +12,19 @@ composer consumer:check
 ```
 
 The consumer has a separate Composer dependency graph, application key,
-bootstrap, routes, users, Sanctum tokens, file sessions, SQLite database, and
-storage. Composer package discovery must register RaceProof; the application
-does not register its provider manually.
+bootstrap, routes, users, Sanctum tokens, file sessions, SQLite application and
+queue databases, optional Redis queue connection, and storage. Composer package
+discovery must register RaceProof; the application does not register its
+provider manually.
 
 The feature test drives real worker processes through session, legacy token,
 Sanctum, and explicit participant identity modes. It also exercises participant
 request overrides and bootstrap state, proves a coupon can be claimed only
-once by three simultaneous participants, runs the report/Studio/scaffolding
-commands, boots Doctor through a separate Laravel CLI process, and requests the
-Studio HTML and JSON endpoints.
+once by three simultaneous HTTP participants and by three native queued jobs,
+runs the report/Studio/scaffolding commands, boots Doctor through a separate
+Laravel CLI process, and requests the Studio HTML and JSON endpoints. The Redis
+CI job repeats the queued invariant on a real Redis service and retains a
+bounded payload-free evidence artifact.
 
 CI installs the consumer before installing the root package's development
 dependencies. That ordering prevents the package's own `vendor` directory or

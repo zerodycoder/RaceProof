@@ -89,6 +89,31 @@ $result
 For a copy-ready broken-to-fixed walkthrough, use the
 [five-minute guide](docs/five-minute-guide.md).
 
+## Queue the same critical section
+
+RaceProof can also execute one distinct Laravel `ShouldQueue` job per
+participant through Laravel's native worker lifecycle:
+
+```php
+$result = race()
+    ->participants(3)
+    ->queue(
+        fn (string $participantId) => new RedeemCoupon(
+            couponId: $coupon->getKey(),
+            userId: 100 + (int) substr($participantId, 1),
+        ),
+        connection: 'raceproof_database',
+    )
+    ->queueAttempts(maxAttempts: 3, backoffSeconds: 1)
+    ->releaseWhenAllReach('coupon-claim')
+    ->run();
+```
+
+Database and Redis queue drivers are supported through isolated run-scoped
+queues. Job cardinality, retry policy, cleanup, reporting, and unsupported job
+shapes fail closed. See the [queue race guide](docs/queue-races.md) for the
+configuration and safety contract.
+
 ## Install
 
 ```bash
@@ -130,12 +155,12 @@ instrumentation to production code.
 
 ## How it works
 
-1. The parent test validates the environment, database, request, participant
-   overrides, authentication specs, and checkpoint plan.
+1. The parent test validates the environment, database, HTTP request or queue
+   workload, participant overrides, authentication specs, and checkpoint plan.
 2. RaceProof boots independent Laravel worker processes locally or dispatches
    them to explicitly registered remote agents against the same database.
-3. A start barrier coordinates request entry; `race_point()` can rendezvous
-   workers inside the application.
+3. A start barrier coordinates HTTP entry or native queued-job execution;
+   `race_point()` can rendezvous workers inside the application.
 4. The parent releases a checkpoint only after the complete cohort arrives.
 5. The result combines responses, worker failures, timeouts, redacted
    diagnostics, and a versioned event timeline for assertions and CI reports.
@@ -333,6 +358,7 @@ Start with the [documentation map](docs/README.md), or jump directly to:
 
 - [Five-minute guide](docs/five-minute-guide.md)
 - [Architecture](docs/architecture.md)
+- [Queue races](docs/queue-races.md)
 - [Redis coordination](docs/redis-coordination.md)
 - [Remote worker transport](docs/remote-workers.md)
 - [PHPUnit and Pest workflows](docs/testing-workflows.md)

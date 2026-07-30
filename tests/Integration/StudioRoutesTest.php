@@ -95,6 +95,21 @@ final class StudioRoutesTest extends TestCase
             ->assertSee('explicitly allowed direct client addresses');
     }
 
+    public function test_dashboard_renders_queue_execution_metadata_without_job_payloads(): void
+    {
+        $runId = str_repeat('d', 32);
+        $this->app->make(ReportArchive::class)->store($this->queueRaceResult($runId));
+
+        $this->get('/raceproof/runs/'.$runId)
+            ->assertOk()
+            ->assertSee('Queue status')
+            ->assertSee('Attempts')
+            ->assertSee('App\\Jobs\\RedeemCoupon')
+            ->assertSee('raceproof_redis')
+            ->assertSee("raceproof:{$runId}:p1")
+            ->assertDontSee('job-payload-secret');
+    }
+
     private function raceResult(string $runId): RaceResult
     {
         return new RaceResult(
@@ -137,6 +152,33 @@ final class StudioRoutesTest extends TestCase
                 TimelineEvent::make($runId, 'participant.finished', 'p1', occurredAtNs: 2_000_000),
                 TimelineEvent::make($runId, 'participant.finished', 'p2', occurredAtNs: 2_200_000),
             ]),
+        );
+    }
+
+    private function queueRaceResult(string $runId): RaceResult
+    {
+        $participants = [];
+
+        foreach (['p1', 'p2'] as $participantId) {
+            $participants[] = new ParticipantResult(
+                runId: $runId,
+                participantId: $participantId,
+                status: 204,
+                startedAtNs: 1_000_000,
+                finishedAtNs: 2_000_000,
+                body: 'password=job-payload-secret',
+                execution: 'queue',
+                attempts: $participantId === 'p1' ? 2 : 1,
+                jobClass: 'App\\Jobs\\RedeemCoupon',
+                queueConnection: 'raceproof_redis',
+                queueName: "raceproof:{$runId}:{$participantId}",
+            );
+        }
+
+        return new RaceResult(
+            runId: $runId,
+            expectedParticipants: 2,
+            participants: $participants,
         );
     }
 

@@ -55,7 +55,15 @@ final class EngineFidelityTest extends TestCase
         self::assertSame(getenv('DB_DATABASE'), $evidence['database']);
         self::assertTrue($evidence['allowlist_enforced']);
         self::assertTrue($evidence['isolated_migration']);
-        self::assertCount(8, $evidence['scenarios']);
+        self::assertCount(9, $evidence['scenarios']);
+        self::assertSame(2, $evidence['scenarios']['queue_claim']['brokenQueueClaims']);
+        self::assertSame(1, $evidence['scenarios']['queue_claim']['fixedQueueClaims']);
+        self::assertSame([204 => 2], $evidence['scenarios']['queue_claim']['brokenQueue']['statuses']);
+        self::assertSame([204 => 2], $evidence['scenarios']['queue_claim']['fixedQueue']['statuses']);
+        self::assertSame(
+            ['p1' => 1, 'p2' => 1],
+            $evidence['scenarios']['queue_claim']['brokenQueue']['attempts'],
+        );
         self::assertSame($iterations, $evidence['critical_evidence']['expected']);
         self::assertSame($iterations, $evidence['critical_evidence']['broken_passed']);
         self::assertSame($iterations, $evidence['critical_evidence']['fixed_passed']);
