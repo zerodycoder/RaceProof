@@ -16,6 +16,12 @@ final class InMemoryRedisClient implements RedisClient
     /** @var array<string, array<string, int>> */
     public array $indexes = [];
 
+    /** @var array<string, string> */
+    public array $strings = [];
+
+    /** @var array<string, list<string>> */
+    public array $lists = [];
+
     /** @var list<array{command: string, arguments: list<int|string>}> */
     public array $commands = [];
 
@@ -60,6 +66,9 @@ final class InMemoryRedisClient implements RedisClient
             'hgetall' => $this->hashes[(string) $arguments[0]] ?? [],
             'hkeys' => array_keys($this->hashes[(string) $arguments[0]] ?? []),
             'hexists' => isset($this->hashes[(string) $arguments[0]][(string) $arguments[1]]) ? 1 : 0,
+            'set' => $this->set($arguments),
+            'get' => $this->strings[(string) $arguments[0]] ?? null,
+            'rpop' => $this->rpop((string) $arguments[0]),
             default => throw new RuntimeException("Unsupported in-memory Redis command [{$command}]."),
         };
     }
@@ -82,6 +91,13 @@ final class InMemoryRedisClient implements RedisClient
             'retained-runs' => $this->retainedRuns($keys, $arguments),
             'cleanup' => $this->cleanup($keys, $arguments),
             'health' => 1,
+            'remote-dispatch-start' => $this->remoteDispatchStart($keys, $arguments),
+            'remote-dispatch-stop' => $this->remoteDispatchStop($keys, $arguments),
+            'remote-claim' => $this->remoteClaim($keys, $arguments),
+            'remote-mark-running' => $this->remoteMarkRunning($keys),
+            'remote-finish' => $this->remoteFinish($keys, $arguments),
+            'remote-health' => 1,
+            'remote-heartbeat' => $this->remoteHeartbeat($keys),
             default => throw new RuntimeException("Unsupported in-memory Redis script [{$operation}]."),
         };
     }
@@ -185,6 +201,174 @@ final class InMemoryRedisClient implements RedisClient
     private function cleanup(array $keys, array $arguments): int
     {
         unset($this->hashes[$keys[0]], $this->indexes[$keys[1]][(string) $arguments[0]]);
+
+        return 1;
+    }
+
+    /** @param list<int|string> $arguments */
+    private function set(array $arguments): string
+    {
+        $this->strings[(string) $arguments[0]] = (string) $arguments[1];
+
+        return 'OK';
+    }
+
+    private function rpop(string $key): ?string
+    {
+        if (($this->lists[$key] ?? []) === []) {
+            return null;
+        }
+
+        return array_pop($this->lists[$key]);
+    }
+
+    /** @param list<int|string> $arguments */
+    private function remoteDispatchStart(array $keys, array $arguments): int
+    {
+        [$stateKey, $inboxKey] = $keys;
+
+        if (count($this->lists[$inboxKey] ?? []) >= (int) $arguments[7]) {
+            return -4;
+        }
+
+        if (isset($this->hashes[$stateKey])) {
+            return 0;
+        }
+
+        $this->hashes[$stateKey] = [
+            'status' => 'pending',
+            'agent_id' => (string) $arguments[2],
+            'run_id' => (string) $arguments[3],
+            'participant_id' => (string) $arguments[4],
+            'expires_at_ms' => (string) $arguments[5],
+            'output' => '',
+            'error_output' => '',
+        ];
+        $this->lists[$inboxKey] ??= [];
+        array_unshift($this->lists[$inboxKey], (string) $arguments[0]);
+
+        return 1;
+    }
+
+    /** @param list<int|string> $arguments */
+    private function remoteDispatchStop(array $keys, array $arguments): int
+    {
+        [$stateKey, $inboxKey] = $keys;
+
+        if (! isset($this->hashes[$stateKey])) {
+            return -1;
+        }
+
+        if ($this->hashes[$stateKey]['agent_id'] !== (string) $arguments[2]) {
+            return -2;
+        }
+
+        if (in_array($this->hashes[$stateKey]['status'], ['completed', 'failed', 'stopped', 'cancelled'], true)) {
+            return 0;
+        }
+
+        if (count($this->lists[$inboxKey] ?? []) >= (int) $arguments[7]) {
+            return -4;
+        }
+
+        $this->lists[$inboxKey] ??= [];
+        array_unshift($this->lists[$inboxKey], (string) $arguments[0]);
+
+        return 1;
+    }
+
+    /** @param list<int|string> $arguments */
+    private function remoteClaim(array $keys, array $arguments): int
+    {
+        [$stateKey, $seenKey] = $keys;
+
+        if (! isset($this->hashes[$stateKey])) {
+            return -1;
+        }
+
+        if (
+            $this->hashes[$stateKey]['agent_id'] !== (string) $arguments[2]
+            || $this->hashes[$stateKey]['run_id'] !== (string) $arguments[3]
+            || $this->hashes[$stateKey]['participant_id'] !== (string) $arguments[4]
+        ) {
+            return -2;
+        }
+
+        if (isset($this->strings[$seenKey])) {
+            return 0;
+        }
+
+        $this->strings[$seenKey] = (string) $arguments[5];
+        $status = $this->hashes[$stateKey]['status'];
+
+        if ($arguments[0] === 'start') {
+            if ($status !== 'pending') {
+                return 0;
+            }
+
+            $this->hashes[$stateKey]['status'] = 'claimed';
+
+            return 1;
+        }
+
+        if ($arguments[0] === 'stop') {
+            if ($status === 'pending') {
+                $this->hashes[$stateKey]['status'] = 'cancelled';
+                $this->hashes[$stateKey]['exit_code'] = '143';
+                $this->hashes[$stateKey]['error_output'] = 'Remote worker was cancelled before launch.';
+
+                return 1;
+            }
+
+            if (in_array($status, ['claimed', 'running'], true)) {
+                $this->hashes[$stateKey]['status'] = 'stop_requested';
+
+                return 1;
+            }
+
+            return 0;
+        }
+
+        return -3;
+    }
+
+    private function remoteMarkRunning(array $keys): int
+    {
+        $stateKey = $keys[0];
+
+        if (! isset($this->hashes[$stateKey])) {
+            return -1;
+        }
+
+        if ($this->hashes[$stateKey]['status'] !== 'claimed') {
+            return 0;
+        }
+
+        $this->hashes[$stateKey]['status'] = 'running';
+
+        return 1;
+    }
+
+    private function remoteHeartbeat(array $keys): int
+    {
+        $this->strings[$keys[0]] = '1';
+
+        return 1;
+    }
+
+    /** @param list<int|string> $arguments */
+    private function remoteFinish(array $keys, array $arguments): int
+    {
+        $stateKey = $keys[0];
+
+        if (! isset($this->hashes[$stateKey])) {
+            return -1;
+        }
+
+        $this->hashes[$stateKey]['status'] = (string) $arguments[0];
+        $this->hashes[$stateKey]['exit_code'] = (string) $arguments[1];
+        $this->hashes[$stateKey]['output'] = (string) $arguments[2];
+        $this->hashes[$stateKey]['error_output'] = (string) $arguments[3];
 
         return 1;
     }

@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Route;
 use RaceProof\Laravel\Contracts\CoordinatorStore;
 use RaceProof\Laravel\Contracts\ParticipantBootstrap;
 use RaceProof\Laravel\Contracts\RequestExecutor;
+use RaceProof\Laravel\Contracts\WorkerProcessFactory;
 use RaceProof\Laravel\Coordination\CoordinatorResolver;
 use RaceProof\Laravel\Coordination\FileCoordinatorStore;
 use RaceProof\Laravel\Coordination\RedisCoordinatorStore;
@@ -21,6 +22,7 @@ use RaceProof\Laravel\Data\ParticipantResult;
 use RaceProof\Laravel\Data\RacePlan;
 use RaceProof\Laravel\Data\RequestSpec;
 use RaceProof\Laravel\Data\TimelineEvent;
+use RaceProof\Laravel\Execution\WorkerTransportResolver;
 use RaceProof\Runtime\Checkpoint;
 use RuntimeException;
 
@@ -74,7 +76,7 @@ final class ConsoleCommandsTest extends TestCase
 
         self::assertSame(1, $payload['schema_version']);
         self::assertTrue($payload['ok']);
-        self::assertCount(5, $payload['checks']);
+        self::assertCount(6, $payload['checks']);
         self::assertSame(
             [
                 'environment-safety',
@@ -82,6 +84,7 @@ final class ConsoleCommandsTest extends TestCase
                 'proc-open',
                 'php-binary',
                 'coordinator-writable',
+                'worker-transport',
             ],
             array_column($payload['checks'], 'id'),
         );
@@ -147,6 +150,33 @@ final class ConsoleCommandsTest extends TestCase
         self::assertStringNotContainsString('super-secret', $output);
     }
 
+    public function test_doctor_rejects_unknown_worker_transport_without_exposing_configuration(): void
+    {
+        $secret = 'https://user:super-secret@example.test';
+        $this->app['config']->set('raceproof.worker_transport.driver', $secret);
+        $this->app->forgetInstance(WorkerTransportResolver::class);
+        $this->app->forgetInstance(WorkerProcessFactory::class);
+
+        self::assertSame(Command::FAILURE, Artisan::call('raceproof:doctor', ['--json' => true]));
+
+        $output = Artisan::output();
+        $payload = json_decode($output, true, 32, JSON_THROW_ON_ERROR);
+        $transport = $payload['checks'][5];
+
+        self::assertSame('worker-transport', $transport['id']);
+        self::assertSame('fail', $transport['status']);
+        self::assertStringContainsString('configuration is unsupported', $transport['message']);
+        self::assertStringNotContainsString($secret, $output);
+        self::assertStringNotContainsString('super-secret', $output);
+    }
+
+    public function test_worker_agent_requires_bounded_options_before_remote_configuration_resolution(): void
+    {
+        $this->artisan('raceproof:worker-agent')
+            ->expectsOutputToContain('valid registered agent ID')
+            ->assertExitCode(Command::INVALID);
+    }
+
     public function test_doctor_self_test_uses_a_separate_bounded_child_process(): void
     {
         $basePath = $this->app->basePath();
@@ -166,8 +196,8 @@ final class ConsoleCommandsTest extends TestCase
             $payload = json_decode(Artisan::output(), true, 32, JSON_THROW_ON_ERROR);
 
             self::assertTrue($payload['ok']);
-            self::assertSame('laravel-child-process', $payload['checks'][5]['id']);
-            self::assertSame('pass', $payload['checks'][5]['status']);
+            self::assertSame('laravel-child-process', $payload['checks'][6]['id']);
+            self::assertSame('pass', $payload['checks'][6]['status']);
         } finally {
             $this->app->setBasePath($basePath);
             $this->removeDirectory($directory);

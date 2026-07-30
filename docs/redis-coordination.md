@@ -1,6 +1,6 @@
 # Redis coordination
 
-RaceProof can coordinate its parent and local worker processes through one
+RaceProof can coordinate its parent and worker processes through one
 Laravel Redis connection. The `file` driver remains the zero-configuration
 default. Select Redis when every RaceProof process can reach the same dedicated
 test Redis service and local coordinator files are unsuitable.
@@ -12,8 +12,10 @@ test Redis service and local coordinator files are unsuitable.
 - a disposable or access-controlled test service shared by every worker;
 - a TTL longer than the maximum expected race lifecycle.
 
-Redis Cluster and Sentinel topologies, cross-region coordination, remote worker
-transport, and queue orchestration are not supported by this increment.
+Redis Cluster, Sentinel, cross-region coordination, and queue orchestration are
+not supported. Redis selection alone does not change worker placement; remote
+execution is a separate opt-in described in
+[remote worker transport](remote-workers.md).
 
 ## Configuration
 

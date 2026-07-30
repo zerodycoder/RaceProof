@@ -45,11 +45,37 @@ empty, or unknown values fail closed. The file path must be absolute and cannot
 target a filesystem root.
 
 Redis coordination requires a named single-node connection under
-`database.redis` and either `ext-redis` or `predis/predis`. It coordinates the
-existing local worker processes; it does not enable remote execution. Existing
-file runs are not migrated. To roll back, clean retained Redis runs, select
-`file`, clear Laravel's configuration cache, and rerun Doctor; otherwise the
-Redis keys expire at their bounded TTL.
+`database.redis` and either `ext-redis` or `predis/predis`. Selecting Redis alone
+does not enable remote execution. Existing file runs are not migrated. To roll
+back, clean retained Redis runs, select `file`, clear Laravel's configuration
+cache, and rerun Doctor; otherwise the Redis keys expire at their bounded TTL.
+
+### Worker transport configuration
+
+The default worker transport remains local Symfony processes, so existing
+applications require no migration:
+
+```php
+'worker_transport' => [
+    'driver' => env('RACEPROOF_WORKER_TRANSPORT', 'local'),
+    'remote' => [
+        // Publish the complete current configuration before selecting remote.
+    ],
+],
+```
+
+Remote execution is opt-in and requires the Redis coordinator, a strong secret,
+and a static agent list. Older published configuration files must be republished
+or manually aligned with `config/raceproof.php` before setting
+`RACEPROOF_WORKER_TRANSPORT=remote`; every missing or malformed bound fails
+before orchestration. Follow [the remote worker guide](docs/remote-workers.md)
+for the complete keys, agent startup, secret rotation, timing limits, and CI
+preflight.
+
+To roll back worker placement, stop new runs, let active remote workers settle,
+set `RACEPROOF_WORKER_TRANSPORT=local`, stop agents, clear configuration caches,
+and rerun Doctor. Coordinator data does not require migration; remote control
+state expires at its configured TTL.
 
 ## Published beta upgrade rehearsal
 

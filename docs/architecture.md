@@ -1,14 +1,19 @@
 # Architecture
 
-RaceProof has one parent process and N worker processes. The parent serializes a `RacePlan` to JSON, spawns workers through Symfony Process, waits for every READY marker, and atomically publishes the START release marker. Each worker is an Artisan command, so Laravel has already booted before it announces readiness.
+RaceProof has one parent process and N worker processes. The parent serializes a
+`RacePlan` to JSON, selects the configured local or remote worker transport,
+waits for every READY marker, and atomically publishes the START release marker.
+Each worker is the fixed Artisan command, so Laravel has already booted before
+it announces readiness.
 
 ```text
 Test -> RaceBuilder -> RaceOrchestrator
                          |
                          +-> plan.json
-                         +-> worker p1 -> HTTP Kernel -> result.json
-                         +-> worker p2 -> HTTP Kernel -> result.json
-                         +-> worker pN -> HTTP Kernel -> result.json
+                         +-> local Symfony process or signed Redis control
+                               +-> worker p1 -> HTTP Kernel -> result
+                               +-> worker p2 -> HTTP Kernel -> result
+                               +-> worker pN -> HTTP Kernel -> result
                          +-> checkpoint releases
                          +-> timeline.jsonl
 ```
@@ -41,14 +46,23 @@ monotonic event sequence. Reads do not extend retention; state-changing writes
 do. Both drivers expose the same health, retained-run discovery, cleanup, and
 bounded artifact contract.
 
-Redis coordination does not add remote worker transport. Workers remain local
-Artisan child processes, and Redis Cluster, Sentinel, cross-region execution,
-queues, and remote workers remain unsupported. See
-[Redis coordination](redis-coordination.md).
+Worker transport is selected independently through
+`raceproof.worker_transport.driver`. `local` remains the default and creates
+managed Symfony processes. `remote` requires the Redis coordinator, a static
+agent allowlist, a strong shared secret, and live TTL-bound heartbeats. The
+parent sends only canonical signed start/stop envelopes; agents atomically
+claim them once, enforce capacity, and launch the same local worker command.
+Secrets and arbitrary commands never enter the message. See
+[remote worker transport](remote-workers.md).
 
 ## Timing semantics
 
-Workers record `hrtime(true)` immediately before invoking the HTTP kernel. On the same host this monotonic clock allows the parent to calculate start spread and run duration without wall-clock changes. These timestamps must not be compared across distributed machines.
+Local workers record `hrtime(true)` immediately before invoking the HTTP
+kernel. Remote workers bracket one Redis `TIME` sample with their local
+monotonic clock, reject an excessive synchronization RTT, and align subsequent
+monotonic timestamps to the shared sample. Duration remains monotonic and
+start-spread evidence has one low-latency reference, but network asymmetry still
+limits precision. Cross-region timing and exact schedule claims are unsupported.
 
 ## Participant bootstrap
 
@@ -62,12 +76,18 @@ Application instrumentation belongs to the zero-framework `raceproof/runtime` pa
 
 ## Worker lifecycle
 
-The orchestrator creates workers through a process-factory contract and observes time through an injectable monotonic clock. Production uses Symfony Process and `hrtime`; deterministic tests use in-memory processes and a controlled clock.
+The orchestrator creates workers through a fail-closed transport resolver and
+observes its own deadlines through an injectable monotonic clock. Local
+production uses Symfony Process; remote production uses authenticated Redis
+controls plus independently supervised agents. Deterministic tests use
+in-memory processes, control planes, and clocks.
 
 - A worker is not settled merely because `isRunning()` becomes false; the parent always calls `wait()` to drain output and reap it.
 - Spawn failures stop and wait for every worker that already started.
 - Run timeouts stop every running worker and then wait for all participants before collecting results.
 - Worker stdout/stderr evidence is byte-bounded by `raceproof.capture.worker_output_bytes`.
+- Remote agent capacity, heartbeats, controls, shutdown acknowledgement,
+  stdout/stderr, replay state, and retention are separately bounded.
 
 ## Failure semantics
 

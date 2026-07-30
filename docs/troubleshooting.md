@@ -25,6 +25,11 @@ or malformed driver fails without echoing the configured value, and Redis
 connection failures are reduced to a generic message so credentials cannot leak
 through Doctor output.
 
+The `worker-transport` check resolves `local` or `remote` through the same path
+used before orchestration. Remote mode also checks control-plane health and a
+live heartbeat for every configured agent. It never launches a race or prints
+the authentication secret.
+
 The JSON shape is intentionally small and versioned:
 
 ```json
@@ -59,6 +64,24 @@ The JSON shape is intentionally small and versioned:
   run, and diagnosis window. Reads intentionally do not refresh retention.
 - **Parent/worker driver mismatch:** clear stale Laravel configuration caches and
   ensure the parent CLI and worker CLI load the same environment/configuration.
+- **Remote transport requires Redis:** select the Redis coordinator; file
+  coordination cannot be shared safely with remote agents.
+- **Remote agent unavailable:** start every configured
+  `raceproof:worker-agent --id=<agent>` process with the same application,
+  configuration, secret, Redis connection, and database reachability, then wait
+  for Doctor to observe all heartbeats.
+- **Control message rejected or expires:** compare clocks, message TTL, agent
+  ID/order, namespace, and secret deployment without printing the secret.
+  Rotation requires draining active work and restarting parent/agents together.
+- **Remote capacity exhausted:** increase the explicitly bounded per-agent
+  capacity only after measuring the disposable database and host, or add a
+  registered agent. Work remains queued; there is no automatic rerouting.
+- **Remote clock synchronization fails:** reduce Redis latency or increase the
+  bounded RTT limit only with reviewed evidence. Cross-region timing is not
+  supported.
+- **Remote stop acknowledgement times out:** inspect the bounded agent log and
+  remote state; a failed host can require manual process cleanup. RaceProof does
+  not silently fail over or retry the worker.
 - **Only Windows fails:** use an absolute PHP path, avoid shell-only quoting,
   reproduce with `php artisan raceproof:doctor --self-test`, and compare the
   public `platform-smoke (windows-latest)` job. Package maintainers can run

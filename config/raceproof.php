@@ -24,6 +24,29 @@ return [
         ],
     ],
 
+    'worker_transport' => [
+        'driver' => env('RACEPROOF_WORKER_TRANSPORT', 'local'),
+        'remote' => [
+            'namespace' => env('RACEPROOF_REMOTE_NAMESPACE', 'raceproof:remote'),
+            'secret' => env('RACEPROOF_REMOTE_SECRET', ''),
+            'agents' => array_values(array_filter(array_map(
+                'trim',
+                explode(',', (string) env('RACEPROOF_REMOTE_AGENTS', ''))
+            ), static fn (string $agent): bool => $agent !== '')),
+            'message_ttl_ms' => (int) env('RACEPROOF_REMOTE_MESSAGE_TTL_MS', 15_000),
+            'max_clock_skew_ms' => (int) env('RACEPROOF_REMOTE_MAX_CLOCK_SKEW_MS', 2_000),
+            'clock_sync_max_rtt_ms' => (int) env('RACEPROOF_REMOTE_CLOCK_SYNC_MAX_RTT_MS', 100),
+            'poll_interval_ms' => (int) env('RACEPROOF_REMOTE_POLL_INTERVAL_MS', 25),
+            'state_ttl_seconds' => (int) env('RACEPROOF_REMOTE_STATE_TTL_SECONDS', 300),
+            'heartbeat_ttl_ms' => (int) env('RACEPROOF_REMOTE_HEARTBEAT_TTL_MS', 5_000),
+            'shutdown_timeout_ms' => (int) env('RACEPROOF_REMOTE_SHUTDOWN_TIMEOUT_MS', 2_000),
+            'max_concurrency' => (int) env('RACEPROOF_REMOTE_MAX_CONCURRENCY', 8),
+            'max_pending_controls' => (int) env('RACEPROOF_REMOTE_MAX_PENDING_CONTROLS', 1_000),
+            'control_message_bytes' => (int) env('RACEPROOF_REMOTE_CONTROL_MESSAGE_BYTES', 2_048),
+            'output_bytes' => (int) env('RACEPROOF_REMOTE_OUTPUT_BYTES', 4_096),
+        ],
+    ],
+
     'database' => [
         'reject_open_transactions' => true,
         'reject_in_memory_sqlite' => true,

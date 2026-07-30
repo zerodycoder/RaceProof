@@ -34,7 +34,10 @@ Do not include live credentials or target production systems. Please allow reaso
 
 ## Security boundaries
 
-RaceProof deliberately refuses production execution and is disabled by default. Reports that bypass those controls, escape the coordinator directory, expose secrets, or permit unintended database writes are treated as high priority.
+RaceProof deliberately refuses production execution and is disabled by default.
+Reports that bypass those controls, escape the coordinator directory, forge or
+replay remote worker controls, launch an arbitrary remote command, expose
+secrets, or permit unintended database writes are treated as high priority.
 
 Release and CI workflows pin third-party actions to full commits, audit locked
 Composer dependencies, and keep publication credentials in a protected release

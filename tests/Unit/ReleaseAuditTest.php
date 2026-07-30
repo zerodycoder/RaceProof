@@ -25,8 +25,8 @@ final class ReleaseAuditTest extends TestCase
 
         $evidence = ReleaseAudit::machineEvidence($audit);
 
-        self::assertSame(8, $evidence['automated_controls']);
-        self::assertSame(6, $evidence['mutation_risk_hotspots']);
+        self::assertSame(9, $evidence['automated_controls']);
+        self::assertSame(7, $evidence['mutation_risk_hotspots']);
         self::assertSame('automated', $evidence['fresh_install']);
         self::assertSame('pending-from-published-beta', $evidence['published_upgrade']);
         self::assertSame('blocked', $evidence['release_status']);

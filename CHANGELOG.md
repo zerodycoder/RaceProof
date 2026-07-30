@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Added an opt-in authenticated remote worker transport with static agent
+  routing, HMAC-signed expiring controls, atomic replay protection, bounded
+  capacity/liveness/shutdown/output state, Redis-aligned participant timing,
+  Doctor diagnostics, and real two-agent consumer CI evidence while preserving
+  local execution as the default and rollback path.
 - Added single-node Redis coordination with atomic idempotent lifecycle
   transitions, ordered evidence, bounded TTL retention, credential-safe
   diagnostics, file/Redis contract parity, a real Redis CI service, and an
