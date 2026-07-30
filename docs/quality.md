@@ -16,9 +16,10 @@ Every pull request must pass:
 - isolated Laravel consumer installation and acceptance;
 - independent consumer smoke acceptance on GitHub-hosted macOS and Windows;
 - at least 90% executable-line coverage;
-- at least 80% strict covered-code mutation score across the selected fail-closed
-  environment, database, worker-process, and credential-redaction boundaries,
-  with timeouts counted in the denominator but never as tested mutants;
+- at least 80% strict covered-code mutation score across the selected
+  fail-closed safety/redaction boundaries and the orchestration, coordination,
+  and report-projection paths, with timeouts counted in the denominator but
+  never as tested mutants;
 - the pre-release policy, matrix, mutation-hotspot, artifact, and blocker audit.
 
 Coverage is a floor, not proof of correctness. Concurrency behavior also needs invariant assertions and repetition evidence.
@@ -30,17 +31,19 @@ file-backed SQLite, and Studio behavior; they do not constitute native
 MySQL/PostgreSQL release evidence or upgrade either platform's documented
 support level.
 
-`composer test:mutation` requires Xdebug or PCOV and mutates four explicitly
-selected fail-closed boundary files. The command uses repository-relative paths
-so it selects the same files on Windows and POSIX shells. It uses only covered
-lines, fails below 80%, and does not ignore an empty mutation set. A second
-fail-closed checker parses the retained report and divides tested mutants by all
-tested, untested, and timed-out mutants, so a slow mutant cannot inflate the
-accepted score. It also handles Pest's compact output when zero-value categories
-are omitted, while still rejecting missing, duplicate, or empty totals. CI
-retains the complete text report for 30 days. This is a targeted quality gate,
-not a repository-wide mutation score, and production code is never annotated
-merely to suppress surviving mutants.
+`composer test:mutation` requires Xdebug or PCOV and mutates seven explicitly
+selected files: the environment/database/redaction fail-closed boundaries,
+worker process and orchestration lifecycle, file-coordination integrity, and
+stable report projection. The command uses repository-relative paths so it
+selects the same files on Windows and POSIX shells. It uses only covered lines,
+fails below 80%, and does not ignore an empty mutation set. A second fail-closed
+checker parses the retained report and divides tested mutants by all tested,
+untested, and timed-out mutants, so a slow mutant cannot inflate the accepted
+score. It also handles Pest's compact output when zero-value categories are
+omitted, while still rejecting missing, duplicate, or empty totals. CI retains
+the complete text report for 30 days. This is a targeted quality gate, not a
+repository-wide mutation score, and production code is never annotated merely
+to suppress surviving mutants.
 
 ## Reliability evidence
 

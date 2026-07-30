@@ -68,6 +68,10 @@
                 },
                 {
                     "file": "tests/Integration/RaceOrchestratorLifecycleTest.php",
+                    "method": "test_checkpoint_is_not_released_before_the_complete_cohort_arrives"
+                },
+                {
+                    "file": "tests/Integration/RaceOrchestratorLifecycleTest.php",
                     "method": "test_early_exit_is_bounded_and_all_other_workers_are_stopped_and_waited"
                 },
                 {
@@ -77,6 +81,10 @@
                 {
                     "file": "tests/Integration/RaceOrchestratorLifecycleTest.php",
                     "method": "test_run_timeout_stops_and_reaps_workers_and_returns_structured_failures"
+                },
+                {
+                    "file": "tests/Integration/RaceOrchestratorLifecycleTest.php",
+                    "method": "test_missing_result_is_distinct_from_timeout_and_retains_artifacts"
                 },
                 {
                     "file": "tests/Integration/RaceOrchestratorLifecycleTest.php",

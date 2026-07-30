@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Expanded the strict mutation gate from four fail-closed boundary classes to
+  seven risk-selected safety, orchestration, coordination, and report-projection
+  classes, with behavioral lifecycle assertions for exact timeout boundaries,
+  checkpoint cohorts, redacted early-exit evidence, and missing-result output.
+
 ## [1.0.0-beta.1] - 2026-07-26
 
 - Made the targeted mutation command select the same four release-critical

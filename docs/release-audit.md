@@ -9,7 +9,7 @@ Audit definition prepared: 2026-07-26
 | Control | Mutation hotspot | Scope | Test methods |
 | --- | --- | --- | ---: |
 | `environment-database-safety` | yes | Production refusal, explicit local opt-in, open transactions, shared SQLite, and exact database allowlists. | 10 |
-| `worker-lifecycle` | yes | Spawn failures, early exits, timeouts, stop/wait ordering, orphan prevention, cleanup, and retained failure evidence. | 8 |
+| `worker-lifecycle` | yes | Spawn failures, early exits, timeouts, stop/wait ordering, orphan prevention, cleanup, and retained failure evidence. | 10 |
 | `redaction-reporting` | yes | Credential patterns, invalid UTF-8, byte bounds, response/report projection, and valid JSON/XML after redaction. | 9 |
 | `coordination-integrity` | yes | Atomic coordination files, concurrent timeline appends, malformed-line recovery, and cleanup boundaries. | 3 |
 | `production-runtime-boundary` | yes | Capability-scoped activation and a framework-free, process-free production no-op runtime. | 2 |
@@ -17,7 +17,7 @@ Audit definition prepared: 2026-07-26
 | `published-contracts` | no | Frozen API signatures, documentation links, executable examples, public evidence status, and package-content boundaries. | 3 |
 | `consumer-acceptance` | no | Clean Laravel installation, idempotent setup, child-process diagnostics, package discovery, participant identity, authentication, CLI workflows, a real database race, and Studio HTTP behavior. | 4 |
 
-These entries identify mutation-sensitive branch, timeout, cleanup, redaction, serialization, and packaging decisions and bind each one to named tests. CI additionally enforces an 80% strict covered-code mutation score for the fail-closed environment, database, worker-process, and credential-redaction boundaries through `composer test:mutation`; timeouts remain in its denominator and are never accepted as tested mutants. This remains targeted evidence, so do not claim a repository-wide mutation score.
+These entries identify mutation-sensitive branch, timeout, cleanup, redaction, serialization, and packaging decisions and bind each one to named tests. CI additionally enforces an 80% strict covered-code mutation score for seven selected safety, redaction, worker-lifecycle, orchestration, file-coordination, and report-projection classes through `composer test:mutation`; timeouts remain in its denominator and are never accepted as tested mutants. This remains targeted evidence, so do not claim a repository-wide mutation score.
 
 ## Compatibility evidence
 

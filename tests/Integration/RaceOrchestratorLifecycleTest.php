@@ -85,6 +85,27 @@ final class RaceOrchestratorLifecycleTest extends TestCase
         self::assertNotContains('run.cleanup_started', $this->eventTypes($result->timeline));
     }
 
+    public function test_checkpoint_is_not_released_before_the_complete_cohort_arrives(): void
+    {
+        $plan = $this->plan(checkpoints: ['after-read'], runTimeoutMs: 1);
+        $store = new LifecycleCoordinatorStore;
+        $store->ready = 2;
+        $store->checkpointReached = 1;
+        $processes = [
+            'p1' => new LifecycleWorkerProcess(running: true, exitAfterStop: 143),
+            'p2' => new LifecycleWorkerProcess(running: true, exitAfterStop: 143),
+        ];
+
+        $result = $this->orchestrator(
+            $store,
+            new LifecycleProcessFactory($processes),
+            new LifecycleClock([0, 0, 1_000_000]),
+        )->run($plan);
+
+        self::assertTrue($result->timedOut);
+        self::assertSame([], $store->releasedCheckpoints);
+    }
+
     public function test_completed_run_is_archived_before_successful_scratch_evidence_is_cleaned(): void
     {
         $archivePath = dirname(__DIR__, 2).'/build/studio-orchestrator-tests/'.bin2hex(random_bytes(8));
@@ -146,10 +167,25 @@ final class RaceOrchestratorLifecycleTest extends TestCase
             )->run($plan);
             self::fail('Expected an early worker exit.');
         } catch (RaceExecutionFailed $exception) {
+            $expectedOutput = $this->app->make(SensitiveDataRedactor::class)->workerOutput(
+                'Authorization: Bearer secret-token',
+                str_repeat('o', 40),
+            );
+            self::assertSame(
+                "Worker [p1] exited before the start barrier with exit code 7: {$expectedOutput}",
+                $exception->getPrevious()?->getMessage(),
+            );
             self::assertStringContainsString('exited before the start barrier with exit code 7', $exception->getMessage());
             self::assertStringContainsString('[truncated]', $exception->getMessage());
             self::assertStringNotContainsString(str_repeat('o', 40), $exception->getMessage());
             self::assertStringNotContainsString('secret-token', $exception->getMessage());
+            $earlyExit = $exception->result->timeline?->ofType('participant.early_exit') ?? [];
+            self::assertCount(1, $earlyExit);
+            self::assertSame('p1', $earlyExit[0]->participantId);
+            self::assertSame(7, $earlyExit[0]->data['exit_code']);
+            self::assertArrayHasKey('output', $earlyExit[0]->data);
+            self::assertStringContainsString('[truncated]', (string) $earlyExit[0]->data['output']);
+            self::assertStringNotContainsString('secret-token', (string) $earlyExit[0]->data['output']);
             self::assertSame([
                 'participant.spawned',
                 'participant.spawned',
@@ -173,13 +209,21 @@ final class RaceOrchestratorLifecycleTest extends TestCase
             'p1' => new LifecycleWorkerProcess(running: true),
             'p2' => new LifecycleWorkerProcess(running: true),
         ];
-        $clock = new LifecycleClock([0, 2_000_000]);
-
-        $this->expectException(RaceProofException::class);
-        $this->expectExceptionMessage('spawn timeout');
+        $clock = new LifecycleClock([0, 1_000_000]);
 
         try {
             $this->orchestrator($store, new LifecycleProcessFactory($processes), $clock)->run($plan);
+            self::fail('Expected the spawn timeout.');
+        } catch (RaceExecutionFailed $exception) {
+            self::assertInstanceOf(RaceProofException::class, $exception->getPrevious());
+            self::assertStringContainsString('spawn timeout', $exception->getMessage());
+            $timeouts = $exception->result->timeline?->ofType('run.spawn_timed_out') ?? [];
+            self::assertCount(1, $timeouts);
+            self::assertSame([
+                'ready_count' => 0,
+                'expected_count' => 2,
+                'timeout_ms' => 1,
+            ], $timeouts[0]->data);
         } finally {
             self::assertSame([], $clock->sleeps);
             self::assertSame(1, $processes['p1']->stopCalls);
@@ -200,7 +244,7 @@ final class RaceOrchestratorLifecycleTest extends TestCase
         $result = $this->orchestrator(
             $store,
             new LifecycleProcessFactory($processes),
-            new LifecycleClock([0, 0, 2_000_000]),
+            new LifecycleClock([0, 0, 1_000_000]),
         )->run($plan);
 
         self::assertTrue($result->timedOut);
@@ -212,6 +256,9 @@ final class RaceOrchestratorLifecycleTest extends TestCase
         );
         self::assertSame(1, $processes['p1']->stopCalls);
         self::assertSame(1, $processes['p1']->waitCalls);
+        $timeouts = $result->timeline?->ofType('run.timed_out') ?? [];
+        self::assertCount(1, $timeouts);
+        self::assertSame(['timeout_ms' => 1], $timeouts[0]->data);
         self::assertSame([
             'participant.spawned',
             'participant.spawned',
@@ -230,7 +277,7 @@ final class RaceOrchestratorLifecycleTest extends TestCase
         $store->storedResults = [$this->participant($plan, 'p1', 201)];
         $processes = [
             'p1' => new LifecycleWorkerProcess(running: false, exitCode: 0),
-            'p2' => new LifecycleWorkerProcess(running: false, exitCode: 5),
+            'p2' => new LifecycleWorkerProcess(running: false, exitCode: 5, output: 'worker stdout'),
         ];
 
         $result = $this->orchestrator(
@@ -240,9 +287,9 @@ final class RaceOrchestratorLifecycleTest extends TestCase
         )->run($plan);
 
         self::assertFalse($result->timedOut);
-        self::assertStringContainsString(
-            'exited without a result with exit code 5',
-            (string) $result->participant('p2')?->workerError,
+        self::assertSame(
+            'Worker exited without a result with exit code 5. worker stdout',
+            $result->participant('p2')?->workerError,
         );
         self::assertSame('/raceproof-artifacts/'.$plan->runId, $result->artifactPath);
         self::assertSame([], $store->cleanedRuns);
