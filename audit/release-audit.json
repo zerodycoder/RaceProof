@@ -236,10 +236,13 @@
         },
         {
             "id": "release-supply-chain",
-            "scope": "Reproducible consumer archives, pinned workflow actions, runtime-first publication, signatures, provenance, and clean artifact installation.",
+            "scope": "Reproducible consumer archives, a real published-beta upgrade rehearsal, pinned workflow actions, runtime-first publication, signatures, provenance, and clean artifact installation.",
             "mutation_hotspot": true,
             "sources": [
                 "tools/release/Release.php",
+                "tools/release/UpgradeRehearsal.php",
+                "tools/release/upgrade-dry-run.php",
+                "tests/ConsumerApp/tests/Feature/PublishedUpgradeSmokeTest.php",
                 ".github/workflows/release.yml",
                 ".github/workflows/tests.yml"
             ],
@@ -251,6 +254,14 @@
                 {
                     "file": "tests/Unit/ReleaseEngineeringTest.php",
                     "method": "test_release_workflow_is_fail_closed_and_runtime_first"
+                },
+                {
+                    "file": "tests/Unit/ReleaseUpgradeTest.php",
+                    "method": "test_release_dry_run_includes_rehearsal_without_claiming_final_verification"
+                },
+                {
+                    "file": "tests/ConsumerApp/tests/Feature/PublishedUpgradeSmokeTest.php",
+                    "method": "test_runtime_discovery_and_race_invariant_survive_the_upgrade"
                 }
             ]
         },

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added a fail-closed published-upgrade rehearsal that installs the real
+  `v1.0.0-beta.1` packages from Packagist, upgrades both packages to distinct
+  candidate artifacts, and repeats the same Doctor/runtime/race smoke contract.
 - Added a safety-first private-beta onboarding packet with pinned prerelease
   installation, fail-closed preflight, bounded evidence handoff, cleanup
   guidance, and release-status wording aligned across security documentation.

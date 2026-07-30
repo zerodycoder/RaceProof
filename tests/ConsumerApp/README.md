@@ -23,6 +23,8 @@ and JSON child-process modes, and verifies:
 - per-participant payload, header, cookie, token, identity, and bootstrap
   overrides;
 - a three-process coupon redemption race with a database invariant;
+- a bounded runtime/discovery/race contract reused before and after the
+  published-beta upgrade rehearsal;
 - a separate Laravel CLI bootstrap through `raceproof:doctor --self-test`;
 - report listing, JSON inspection, Studio URL, scaffold generation, and Studio
   cleanup commands;
@@ -40,3 +42,9 @@ by this app's local/testing environment configuration.
 
 This fixture is synthetic package acceptance evidence. It does not represent an
 external adopter, beta invitation, consented case study, or a production test.
+
+`composer release:upgrade-dry-run` copies this application without its
+dependencies, lock file, environment file, SQLite database, or RaceProof path
+repositories. It installs the published beta from Packagist, runs only the
+bounded upgrade smoke, upgrades both packages from candidate archives, and runs
+the same smoke again.

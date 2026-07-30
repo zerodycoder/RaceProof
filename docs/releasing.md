@@ -79,7 +79,16 @@ support links, and authoritative history remain in the source monorepo.
 
 `release:dry-run` builds both deterministic ZIP artifacts twice, compares their
 SHA-256 hashes, installs them together through a Composer artifact repository,
-and verifies that the production runtime checkpoint remains a no-op.
+and verifies that the production runtime checkpoint remains a no-op. It also
+runs `release:upgrade-dry-run`: an isolated Laravel application installs the
+exact published `v1.0.0-beta.1` packages from Packagist, records their immutable
+references, executes a bounded Doctor/runtime/race smoke, upgrades both packages
+to distinct local candidate artifacts, and repeats the same smoke.
+
+The default upgrade candidate is `1.0.0-rc.1`. Override it only with
+`RACEPROOF_UPGRADE_CANDIDATE` or a direct script argument during a reviewed
+release preparation. The generated evidence under `build/release/upgrade` is a
+rehearsal until it is rerun on the exact final candidate commit and version.
 
 `release:audit` is a pre-release control audit, not permission to publish. It
 keeps the published policies, matrix, mutation-risk registry, package evidence,
@@ -132,9 +141,11 @@ Laravel publication.
   the signed commits.
 - Run the five-minute smoke scenario in a fresh supported Laravel application.
 - Exercise an upgrade from the immediately previous published artifact.
-  `v1.0.0-beta.1` is now the first real baseline; the upgrade gate remains
-  pending until a subsequent reviewed artifact can be installed over it. Never
-  simulate an upgrade by assigning two versions to the same source tree.
+  `v1.0.0-beta.1` is the first real baseline and the automated rehearsal
+  installs it from Packagist before applying candidate artifacts. The upgrade
+  gate remains pending until that command is rerun on the exact final candidate,
+  its evidence is reviewed, and the audit status is updated. Never simulate an
+  upgrade by assigning two versions to the same source tree.
 - Run `composer install --no-dev` in an instrumented fixture and confirm
   `race_point()` remains available and inactive.
 - Record release links, CI run, hashes, compatibility evidence, and accepted

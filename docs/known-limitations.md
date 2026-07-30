@@ -10,8 +10,10 @@ promises and must not be overstated in release material.
   references, and clean installation.
 - The generated runtime repository is a public subtree split. The main RaceProof
   repository remains its only source of truth.
-- `v1.0.0-beta.1` is the first published upgrade baseline. A real upgrade cannot
-  be verified until a subsequent version exists.
+- `v1.0.0-beta.1` is the first published upgrade baseline. The repository
+  rehearses an upgrade from those Packagist packages to distinct local candidate
+  artifacts, but final verification still requires the exact reviewed release
+  candidate commit and version.
 - Private-beta evidence currently records 0/10 invited projects and 0/5
   confirmed adopters.
 - Stable publication is still blocked by beta-adoption evidence and a real
@@ -25,9 +27,10 @@ The stable release workflow enforces the evidence and upgrade boundaries with
 named by `stable-release` is closed only after that workflow publishes
 successfully.
 
-The deterministic artifact dry-run and public verification prove clean local
-artifact and Packagist installations. They do not prove an upgrade from a real
-prior version.
+The deterministic dry-run proves clean local artifact installation and
+rehearses a real Packagist-beta-to-local-candidate upgrade. It does not prove the
+final stable-candidate upgrade until the exact release commit/version is tested
+and the generated evidence is reviewed.
 
 ## Concurrency model
 

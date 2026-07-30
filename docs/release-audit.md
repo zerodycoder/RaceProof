@@ -13,7 +13,7 @@ Audit definition prepared: 2026-07-26
 | `redaction-reporting` | yes | Credential patterns, invalid UTF-8, byte bounds, response/report projection, and valid JSON/XML after redaction. | 12 |
 | `coordination-integrity` | yes | Atomic coordination files, concurrent timeline appends, malformed-line recovery, and cleanup boundaries. | 6 |
 | `production-runtime-boundary` | yes | Capability-scoped activation and a framework-free, process-free production no-op runtime. | 2 |
-| `release-supply-chain` | yes | Reproducible consumer archives, pinned workflow actions, runtime-first publication, signatures, provenance, and clean artifact installation. | 2 |
+| `release-supply-chain` | yes | Reproducible consumer archives, a real published-beta upgrade rehearsal, pinned workflow actions, runtime-first publication, signatures, provenance, and clean artifact installation. | 4 |
 | `published-contracts` | no | Frozen API signatures, documentation links, executable examples, public evidence status, and package-content boundaries. | 3 |
 | `consumer-acceptance` | no | Clean Laravel installation, idempotent setup, child-process diagnostics, package discovery, participant identity, authentication, CLI workflows, a real database race, and Studio HTTP behavior. | 4 |
 
