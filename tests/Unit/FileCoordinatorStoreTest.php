@@ -367,6 +367,32 @@ final class FileCoordinatorStoreTest extends TestCase
         }
     }
 
+    public function test_health_check_creates_missing_coordinator_storage(): void
+    {
+        $store = new FileCoordinatorStore($this->basePath);
+
+        self::assertDirectoryDoesNotExist($this->basePath);
+
+        $store->healthCheck();
+
+        self::assertDirectoryExists($this->basePath);
+        self::assertSame([], glob($this->basePath.'/.health-*') ?: []);
+    }
+
+    public function test_it_accepts_windows_drive_and_unc_absolute_paths(): void
+    {
+        $runId = str_repeat('a', 32);
+
+        self::assertSame(
+            'C:\\raceproof/'.$runId,
+            (new FileCoordinatorStore('C:\\raceproof'))->artifactReference($runId),
+        );
+        self::assertSame(
+            '\\\\server\\share/'.$runId,
+            (new FileCoordinatorStore('\\\\server\\share'))->artifactReference($runId),
+        );
+    }
+
     private function removeDirectory(string $directory): void
     {
         if (! is_dir($directory)) {
