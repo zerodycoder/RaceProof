@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace RaceProof\Laravel;
 
 use Illuminate\Contracts\Config\Repository as Config;
+use Illuminate\Contracts\Redis\Factory as RedisFactory;
 use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
 use RaceProof\Laravel\Console\CleanCommand;
@@ -20,6 +21,8 @@ use RaceProof\Laravel\Contracts\RequestExecutor;
 use RaceProof\Laravel\Contracts\WorkerProcessFactory;
 use RaceProof\Laravel\Coordination\CoordinatorResolver;
 use RaceProof\Laravel\Coordination\FileCoordinatorStore;
+use RaceProof\Laravel\Coordination\LaravelRedisClient;
+use RaceProof\Laravel\Coordination\RedisCoordinatorStore;
 use RaceProof\Laravel\Execution\KernelRequestExecutor;
 use RaceProof\Laravel\Execution\RaceContext;
 use RaceProof\Laravel\Execution\SymfonyWorkerProcessFactory;
@@ -38,6 +41,28 @@ final class RaceProofServiceProvider extends ServiceProvider
         $this->app->singleton(FileCoordinatorStore::class, fn (): FileCoordinatorStore => new FileCoordinatorStore(
             ConfigValue::string($this->app->make(Config::class), 'raceproof.coordinator.path'),
         ));
+        $this->app->singleton(RedisCoordinatorStore::class, function (): RedisCoordinatorStore {
+            $config = $this->app->make(Config::class);
+            $connectionName = ConfigValue::string(
+                $config,
+                'raceproof.coordinator.redis.connection',
+            );
+
+            return new RedisCoordinatorStore(
+                new LaravelRedisClient(
+                    $this->app->make(RedisFactory::class),
+                    $connectionName,
+                ),
+                $connectionName,
+                ConfigValue::string($config, 'raceproof.coordinator.redis.namespace'),
+                ConfigValue::integer($config, 'raceproof.coordinator.redis.ttl_seconds', 86_400),
+                ConfigValue::integer(
+                    $config,
+                    'raceproof.coordinator.redis.poll_interval_ms',
+                    5,
+                ),
+            );
+        });
         $this->app->singleton(CoordinatorResolver::class);
         $this->app->singleton(
             CoordinatorStore::class,

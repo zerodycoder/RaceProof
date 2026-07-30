@@ -145,6 +145,63 @@ jobs:
       - name: Verify consumer cleanup preserves tracked fixtures
         run: git diff --exit-code -- tests/ConsumerApp
 
+  redis:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      redis:
+        image: redis:7.4-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 2s
+          --health-timeout 2s
+          --health-retries 30
+
+    env:
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: 6379
+      REDIS_DB: 15
+      RACEPROOF_REDIS_TEST: '1'
+      RACEPROOF_REDIS_EVIDENCE_OUTPUT: build/redis-evidence/evidence.json
+      RACEPROOF_COORDINATOR_DRIVER: redis
+      RACEPROOF_REDIS_CONNECTION: default
+      RACEPROOF_REDIS_NAMESPACE: raceproof-consumer-ci
+      RACEPROOF_REDIS_TTL_SECONDS: 300
+      RACEPROOF_REDIS_POLL_INTERVAL_MS: 5
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.5'
+          coverage: none
+          extensions: pdo_sqlite, redis
+          tools: composer:v2
+
+      - run: composer update --with "illuminate/support:^13.0" --with "orchestra/testbench:^11.0" --with-all-dependencies --prefer-dist --no-interaction --no-progress
+      - name: Verify the atomic Redis coordinator contract
+        run: composer test:redis
+      - name: Install only the consumer application's dependencies
+        run: composer consumer:install
+      - run: composer audit --working-dir=tests/ConsumerApp --locked --no-interaction
+      - name: Exercise a real multi-process consumer through Redis
+        run: composer --working-dir=tests/ConsumerApp check
+      - name: Verify consumer cleanup preserves tracked fixtures
+        run: git diff --exit-code -- tests/ConsumerApp
+
+      - name: Upload Redis coordination evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: redis-coordination-evidence
+          path: build/redis-evidence/evidence.json
+          if-no-files-found: error
+          retention-days: 30
+
   platform-smoke:
     name: platform-smoke (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -271,6 +328,7 @@ jobs:
       - coverage
       - mutation
       - consumer
+      - redis
       - platform-smoke
       - release-dry-run
       - database

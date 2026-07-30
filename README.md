@@ -268,6 +268,8 @@ RaceProof fails closed:
 - captured bodies and headers are bounded and sensitive data is redacted;
 - run, participant, and checkpoint identifiers are path-safe;
 - coordination uses JSON only, with no untrusted `unserialize()`;
+- Redis coordination uses bounded TTLs and atomic transitions without exposing
+  connection credentials in worker arguments or diagnostics;
 - crash and timeout artifacts are retained for diagnosis.
 
 Use a dedicated disposable database. Do not combine multi-process tests with
@@ -287,6 +289,7 @@ records. The [production safety guide](docs/production-safety.md) and
 | macOS | Best-effort; continuous independent-consumer smoke |
 | Native Windows | Experimental; continuous independent-consumer smoke |
 | SQLite | File-backed smoke tests only; not production lock evidence |
+| Coordination | Local files by default; single-node Redis 7.4 continuously verified on Linux |
 
 The exact compatibility promise is maintained in
 [the platform matrix](docs/platform-support.md).
@@ -307,6 +310,7 @@ Start with the [documentation map](docs/README.md), or jump directly to:
 
 - [Five-minute guide](docs/five-minute-guide.md)
 - [Architecture](docs/architecture.md)
+- [Redis coordination](docs/redis-coordination.md)
 - [PHPUnit and Pest workflows](docs/testing-workflows.md)
 - [Troubleshooting](docs/troubleshooting.md)
 - [Public API contract](docs/public-api.md)

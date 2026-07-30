@@ -2,7 +2,7 @@
 
 This is a reproducible pre-release audit, not stable-release approval. It inventories executable controls, supported evidence, policies, artifact checks, and unresolved external gates from [`audit/release-audit.json`](../audit/release-audit.json).
 
-Audit definition prepared: 2026-07-26
+Audit definition prepared: 2026-07-30
 
 ## Automated controls and mutation-risk hotspots
 
@@ -11,13 +11,13 @@ Audit definition prepared: 2026-07-26
 | `environment-database-safety` | yes | Production refusal, explicit local opt-in, open transactions, shared SQLite, and exact database allowlists. | 11 |
 | `worker-lifecycle` | yes | Spawn failures, early exits, timeouts, stop/wait ordering, orphan prevention, cleanup, and retained failure evidence. | 13 |
 | `redaction-reporting` | yes | Credential patterns, invalid UTF-8, byte bounds, response/report projection, and valid JSON/XML after redaction. | 12 |
-| `coordination-integrity` | yes | Fail-closed backend selection, parent/worker parity, credential-safe process arguments, atomic coordination files, concurrent timeline appends, malformed-line recovery, and backend-neutral cleanup boundaries. | 11 |
+| `coordination-integrity` | yes | Fail-closed backend selection, parent/worker parity, credential-safe process arguments, atomic file and Redis transitions, bounded Redis retention, ordered timeline recovery, and backend-neutral cleanup boundaries. | 18 |
 | `production-runtime-boundary` | yes | Capability-scoped activation and a framework-free, process-free production no-op runtime. | 2 |
 | `release-supply-chain` | yes | Reproducible consumer archives, a real published-beta upgrade rehearsal, pinned workflow actions, runtime-first publication, signatures, provenance, and clean artifact installation. | 4 |
 | `published-contracts` | no | Frozen API signatures, documentation links, executable examples, public evidence status, and package-content boundaries. | 3 |
 | `consumer-acceptance` | no | Clean Laravel installation, idempotent setup, child-process diagnostics, package discovery, participant identity, authentication, CLI workflows, a real database race, and Studio HTTP behavior. | 4 |
 
-These entries identify mutation-sensitive branch, timeout, cleanup, redaction, serialization, and packaging decisions and bind each one to named tests. CI additionally enforces an 80% strict covered-code mutation score for eight selected safety, redaction, worker-lifecycle, orchestration, coordinator-selection, file-coordination, and report-projection classes through `composer test:mutation`; timeouts remain in its denominator and are never accepted as tested mutants. This remains targeted evidence, so do not claim a repository-wide mutation score.
+These entries identify mutation-sensitive branch, timeout, cleanup, redaction, serialization, and packaging decisions and bind each one to named tests. CI additionally enforces an 80% strict covered-code mutation score for nine selected safety, redaction, worker-lifecycle, orchestration, coordinator-selection, file/Redis-coordination, and report-projection classes through `composer test:mutation`; timeouts remain in its denominator and are never accepted as tested mutants. This remains targeted evidence, so do not claim a repository-wide mutation score.
 
 ## Compatibility evidence
 

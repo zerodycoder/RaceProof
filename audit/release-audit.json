@@ -1,6 +1,6 @@
 {
     "schema_version": 1,
-    "prepared_on": "2026-07-26",
+    "prepared_on": "2026-07-30",
     "controls": [
         {
             "id": "environment-database-safety",
@@ -182,12 +182,14 @@
         },
         {
             "id": "coordination-integrity",
-            "scope": "Fail-closed backend selection, parent/worker parity, credential-safe process arguments, atomic coordination files, concurrent timeline appends, malformed-line recovery, and backend-neutral cleanup boundaries.",
+            "scope": "Fail-closed backend selection, parent/worker parity, credential-safe process arguments, atomic file and Redis transitions, bounded Redis retention, ordered timeline recovery, and backend-neutral cleanup boundaries.",
             "mutation_hotspot": true,
             "sources": [
                 "src/Contracts/CoordinatorStore.php",
                 "src/Coordination/CoordinatorResolver.php",
-                "src/Coordination/FileCoordinatorStore.php"
+                "src/Coordination/FileCoordinatorStore.php",
+                "src/Coordination/LaravelRedisClient.php",
+                "src/Coordination/RedisCoordinatorStore.php"
             ],
             "tests": [
                 {
@@ -209,6 +211,14 @@
                 {
                     "file": "tests/Integration/CoordinatorSelectionTest.php",
                     "method": "test_unsupported_driver_fails_before_worker_factory_resolution"
+                },
+                {
+                    "file": "tests/Integration/CoordinatorSelectionTest.php",
+                    "method": "test_parent_resolves_the_configured_redis_backend_without_connecting"
+                },
+                {
+                    "file": "tests/Integration/ConsoleCommandsTest.php",
+                    "method": "test_doctor_redacts_redis_connection_failures"
                 },
                 {
                     "file": "tests/Unit/FileCoordinatorStoreTest.php",
@@ -233,6 +243,26 @@
                 {
                     "file": "tests/Unit/FileCoordinatorTimelineTest.php",
                     "method": "test_concurrent_writers_produce_complete_independent_json_lines"
+                },
+                {
+                    "file": "tests/Unit/RedisCoordinatorStoreTest.php",
+                    "method": "test_it_coordinates_an_idempotent_run_with_ordered_evidence_and_cleanup"
+                },
+                {
+                    "file": "tests/Unit/RedisCoordinatorStoreTest.php",
+                    "method": "test_run_creation_is_collision_safe"
+                },
+                {
+                    "file": "tests/Unit/RedisCoordinatorStoreTest.php",
+                    "method": "test_client_failures_are_generic_and_do_not_disclose_credentials"
+                },
+                {
+                    "file": "tests/Unit/CoordinatorStoreContractTest.php",
+                    "method": "test_backends_share_the_same_observable_lifecycle"
+                },
+                {
+                    "file": "tests/Redis/RedisCoordinatorStoreTest.php",
+                    "method": "test_real_redis_lifecycle_is_atomic_bounded_and_cleanup_safe"
                 }
             ]
         },

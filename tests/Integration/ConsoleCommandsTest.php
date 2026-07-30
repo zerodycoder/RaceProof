@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace RaceProof\Laravel\Tests\Integration;
 
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Redis\Connection as RedisConnection;
+use Illuminate\Contracts\Redis\Factory as RedisFactory;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 use RaceProof\Laravel\Contracts\CoordinatorStore;
@@ -12,6 +14,7 @@ use RaceProof\Laravel\Contracts\ParticipantBootstrap;
 use RaceProof\Laravel\Contracts\RequestExecutor;
 use RaceProof\Laravel\Coordination\CoordinatorResolver;
 use RaceProof\Laravel\Coordination\FileCoordinatorStore;
+use RaceProof\Laravel\Coordination\RedisCoordinatorStore;
 use RaceProof\Laravel\Data\BootstrapSpec;
 use RaceProof\Laravel\Data\ParticipantContext;
 use RaceProof\Laravel\Data\ParticipantResult;
@@ -32,6 +35,7 @@ final class ConsoleCommandsTest extends TestCase
         $this->coordinatorPath = dirname(__DIR__, 2).'/build/console-command-tests/'.bin2hex(random_bytes(8));
         $this->app['config']->set('raceproof.coordinator.path', $this->coordinatorPath);
         $this->app->forgetInstance(FileCoordinatorStore::class);
+        $this->app->forgetInstance(RedisCoordinatorStore::class);
         $this->app->forgetInstance(CoordinatorResolver::class);
         $this->app->forgetInstance(CoordinatorStore::class);
     }
@@ -119,6 +123,30 @@ final class ConsoleCommandsTest extends TestCase
         self::assertStringNotContainsString('super-secret', $output);
     }
 
+    public function test_doctor_redacts_redis_connection_failures(): void
+    {
+        $secret = 'redis://raceproof:super-secret@example.test';
+        $this->app->instance(RedisFactory::class, new FailingRedisFactory($secret));
+        $this->app['config']->set('raceproof.coordinator.driver', 'redis');
+        $this->app['config']->set('raceproof.coordinator.redis.connection', 'default');
+        $this->app['config']->set('raceproof.coordinator.redis.namespace', 'raceproof-test');
+        $this->app->forgetInstance(RedisCoordinatorStore::class);
+        $this->app->forgetInstance(CoordinatorResolver::class);
+        $this->app->forgetInstance(CoordinatorStore::class);
+
+        self::assertSame(Command::FAILURE, Artisan::call('raceproof:doctor', ['--json' => true]));
+
+        $output = Artisan::output();
+        $payload = json_decode($output, true, 32, JSON_THROW_ON_ERROR);
+        $coordinator = $payload['checks'][4];
+
+        self::assertSame('coordinator-writable', $coordinator['id']);
+        self::assertSame('fail', $coordinator['status']);
+        self::assertStringContainsString('unavailable or misconfigured', $coordinator['message']);
+        self::assertStringNotContainsString($secret, $output);
+        self::assertStringNotContainsString('super-secret', $output);
+    }
+
     public function test_doctor_self_test_uses_a_separate_bounded_child_process(): void
     {
         $basePath = $this->app->basePath();
@@ -178,6 +206,14 @@ final class ConsoleCommandsTest extends TestCase
             self::assertStringContainsString("'self_test_output_bytes' => 65_536", (string) file_get_contents($target));
             self::assertStringContainsString(
                 "'driver' => env('RACEPROOF_COORDINATOR_DRIVER', 'file')",
+                (string) file_get_contents($target),
+            );
+            self::assertStringContainsString(
+                "'connection' => env('RACEPROOF_REDIS_CONNECTION', 'default')",
+                (string) file_get_contents($target),
+            );
+            self::assertStringContainsString(
+                "'ttl_seconds' => (int) env('RACEPROOF_REDIS_TTL_SECONDS', 86_400)",
                 (string) file_get_contents($target),
             );
             self::assertSame("EXISTING_VALUE=preserved\n", file_get_contents($environment));
@@ -339,5 +375,29 @@ final class FailingParticipantBootstrap implements ParticipantBootstrap
     public function bootstrap(ParticipantContext $context, array $configuration): void
     {
         throw new RuntimeException('bootstrap failed token=bootstrap-secret');
+    }
+}
+
+final readonly class FailingRedisFactory implements RedisFactory
+{
+    public function __construct(private string $message) {}
+
+    public function connection($name = null): RedisConnection
+    {
+        return new FailingRedisConnection($this->message);
+    }
+}
+
+final readonly class FailingRedisConnection implements RedisConnection
+{
+    public function __construct(private string $message) {}
+
+    public function subscribe($channels, \Closure $callback): void {}
+
+    public function psubscribe($channels, \Closure $callback): void {}
+
+    public function command($method, array $parameters = []): never
+    {
+        throw new RuntimeException($this->message);
     }
 }

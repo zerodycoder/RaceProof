@@ -23,6 +23,9 @@
         <testsuite name="Database">
             <directory>tests/Database</directory>
         </testsuite>
+        <testsuite name="Redis">
+            <directory>tests/Redis</directory>
+        </testsuite>
     </testsuites>
     <php>
         <env name="APP_ENV" value="testing" force="true"/>

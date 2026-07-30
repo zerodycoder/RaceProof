@@ -102,7 +102,7 @@ final class ReleaseAudit
         }
 
         $lines[] = '';
-        $lines[] = 'These entries identify mutation-sensitive branch, timeout, cleanup, redaction, serialization, and packaging decisions and bind each one to named tests. CI additionally enforces an 80% strict covered-code mutation score for eight selected safety, redaction, worker-lifecycle, orchestration, coordinator-selection, file-coordination, and report-projection classes through `composer test:mutation`; timeouts remain in its denominator and are never accepted as tested mutants. This remains targeted evidence, so do not claim a repository-wide mutation score.';
+        $lines[] = 'These entries identify mutation-sensitive branch, timeout, cleanup, redaction, serialization, and packaging decisions and bind each one to named tests. CI additionally enforces an 80% strict covered-code mutation score for nine selected safety, redaction, worker-lifecycle, orchestration, coordinator-selection, file/Redis-coordination, and report-projection classes through `composer test:mutation`; timeouts remain in its denominator and are never accepted as tested mutants. This remains targeted evidence, so do not claim a repository-wide mutation score.';
         $lines[] = '';
         $lines[] = '## Compatibility evidence';
         $lines[] = '';
@@ -663,10 +663,14 @@ final class ReleaseAudit
             'tools/check-mutation.php',
             'consumer:',
             'tests/ConsumerApp',
+            'redis:',
+            'image: redis:7.4-alpine',
+            'composer test:redis',
             'platform-smoke:',
             'macos-latest',
             'windows-latest',
             '- mutation',
+            '- redis',
             '- platform-smoke',
             'image: mysql:8.4',
             'image: postgres:17',

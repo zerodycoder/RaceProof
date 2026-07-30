@@ -35,6 +35,7 @@ final class MutationCommandTest extends TestCase
             'src/Execution/RaceOrchestrator.php',
             'src/Coordination/CoordinatorResolver.php',
             'src/Coordination/FileCoordinatorStore.php',
+            'src/Coordination/RedisCoordinatorStore.php',
             'src/Reports/RaceReportFactory.php',
         ];
         $tests = [
@@ -46,6 +47,8 @@ final class MutationCommandTest extends TestCase
             'tests/Unit/CoordinatorResolverTest.php',
             'tests/Unit/FileCoordinatorStoreTest.php',
             'tests/Unit/FileCoordinatorTimelineTest.php',
+            'tests/Unit/RedisCoordinatorStoreTest.php',
+            'tests/Unit/CoordinatorStoreContractTest.php',
             'tests/Unit/RaceResultReportTest.php',
             'tests/Unit/ReportModelTest.php',
             'tests/Integration/ReportersTest.php',

@@ -16,6 +16,12 @@ return [
     'coordinator' => [
         'driver' => env('RACEPROOF_COORDINATOR_DRIVER', 'file'),
         'path' => storage_path('framework/raceproof'),
+        'redis' => [
+            'connection' => env('RACEPROOF_REDIS_CONNECTION', 'default'),
+            'namespace' => env('RACEPROOF_REDIS_NAMESPACE', 'raceproof'),
+            'ttl_seconds' => (int) env('RACEPROOF_REDIS_TTL_SECONDS', 86_400),
+            'poll_interval_ms' => (int) env('RACEPROOF_REDIS_POLL_INTERVAL_MS', 5),
+        ],
     ],
 
     'database' => [

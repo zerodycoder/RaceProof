@@ -14,6 +14,8 @@ Every pull request must pass:
 - PHPStan at level max;
 - strict Composer validation and locked dependency audit;
 - isolated Laravel consumer installation and acceptance;
+- a real single-node Redis coordinator contract plus an independent
+  multi-process consumer using that backend;
 - independent consumer smoke acceptance on GitHub-hosted macOS and Windows;
 - at least 90% executable-line coverage;
 - at least 80% strict covered-code mutation score across the selected
@@ -31,10 +33,10 @@ file-backed SQLite, and Studio behavior; they do not constitute native
 MySQL/PostgreSQL release evidence or upgrade either platform's documented
 support level.
 
-`composer test:mutation` requires Xdebug or PCOV and mutates eight explicitly
+`composer test:mutation` requires Xdebug or PCOV and mutates nine explicitly
 selected files: the environment/database/redaction fail-closed boundaries,
 worker process and orchestration lifecycle, coordinator selection,
-file-coordination integrity, and stable report projection. The command uses
+file/Redis coordination integrity, and stable report projection. The command uses
 repository-relative paths so it
 selects the same files on Windows and POSIX shells. It uses only covered lines,
 fails below 80%, and does not ignore an empty mutation set. A second fail-closed
@@ -93,11 +95,11 @@ worker, scaffold, session, and Studio cleanup paths run. Generated consumer
 state may not be hidden by accepting a dirty worktree.
 
 The final `release-audit` CI job depends on every PHP/Laravel, coverage,
-targeted-mutation, Linux/macOS/Windows consumer, release-dry-run, MySQL, and
-PostgreSQL job. It validates pinned workflow actions, policy presence, the exact
-supported matrix, named tests for mutation-risk hotspots, package evidence, and
-honest external blockers, then uploads machine-readable evidence. See
-[the pre-release audit](release-audit.md).
+targeted-mutation, Linux/macOS/Windows consumer, Redis, release-dry-run, MySQL,
+and PostgreSQL job. It validates pinned workflow actions, policy presence, the
+exact supported matrix, named tests for mutation-risk hotspots, package
+evidence, and honest external blockers, then uploads machine-readable evidence.
+See [the pre-release audit](release-audit.md).
 
 `composer release:gate` is stricter and is invoked automatically for stable
 tags. It cannot pass while the published upgrade, package publication, real beta

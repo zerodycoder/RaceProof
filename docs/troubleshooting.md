@@ -20,9 +20,10 @@ variables.
 
 The coordinator check resolves `raceproof.coordinator.driver` (normally
 `RACEPROOF_COORDINATOR_DRIVER`) through the same container path used by parent
-and worker processes. The only valid value today is `file`. An unknown, missing,
-or malformed driver fails without echoing the configured value, so connection
-strings cannot leak through Doctor output.
+and worker processes. Valid values are `file` and `redis`. An unknown, missing,
+or malformed driver fails without echoing the configured value, and Redis
+connection failures are reduced to a generic message so credentials cannot leak
+through Doctor output.
 
 The JSON shape is intentionally small and versioned:
 
@@ -48,9 +49,14 @@ The JSON shape is intentionally small and versioned:
 - **Spawn timeout with no worker output:** verify `proc_open`, the PHP executable,
   file permissions, antivirus/process policy, and that Composer dependencies are
   installed for the worker process.
-- **Coordinator driver rejected:** publish the current configuration and set
-  `raceproof.coordinator.driver` to `file`; Redis and custom drivers are not yet
-  implemented.
+- **Coordinator driver rejected:** publish the current configuration and select
+  `file` or `redis`; custom drivers are not supported.
+- **Redis coordinator unavailable:** verify the named connection under
+  `database.redis`, client extension/package, TLS and ACL settings, network
+  reachability from CLI PHP, and a single-node topology. Do not paste connection
+  strings into diagnostics.
+- **Redis run disappears:** increase the bounded TTL above the longest spawn,
+  run, and diagnosis window. Reads intentionally do not refresh retention.
 - **Parent/worker driver mismatch:** clear stale Laravel configuration caches and
   ensure the parent CLI and worker CLI load the same environment/configuration.
 - **Only Windows fails:** use an absolute PHP path, avoid shell-only quoting,

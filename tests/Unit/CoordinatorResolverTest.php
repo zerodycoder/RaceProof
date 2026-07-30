@@ -8,8 +8,10 @@ use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Contracts\Container\Container;
 use Mockery;
 use PHPUnit\Framework\TestCase;
+use RaceProof\Laravel\Contracts\CoordinatorStore;
 use RaceProof\Laravel\Coordination\CoordinatorResolver;
 use RaceProof\Laravel\Coordination\FileCoordinatorStore;
+use RaceProof\Laravel\Coordination\RedisCoordinatorStore;
 use RaceProof\Laravel\Exceptions\RaceProofException;
 use stdClass;
 
@@ -63,6 +65,25 @@ final class CoordinatorResolverTest extends TestCase
             self::assertStringNotContainsString($secret, $exception->getMessage());
             self::assertStringNotContainsString('super-secret', $exception->getMessage());
         }
+    }
+
+    public function test_it_resolves_and_caches_the_redis_driver(): void
+    {
+        $config = Mockery::mock(Config::class);
+        $container = Mockery::mock(Container::class);
+        $store = Mockery::mock(CoordinatorStore::class);
+        $config->shouldReceive('get')
+            ->once()
+            ->with('raceproof.coordinator.driver')
+            ->andReturn('redis');
+        $container->shouldReceive('make')
+            ->once()
+            ->with(RedisCoordinatorStore::class)
+            ->andReturn($store);
+        $resolver = new CoordinatorResolver($config, $container);
+
+        self::assertSame($store, $resolver->resolve());
+        self::assertSame($store, $resolver->resolve());
     }
 
     public function test_it_rejects_missing_and_malformed_driver_configuration(): void

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added single-node Redis coordination with atomic idempotent lifecycle
+  transitions, ordered evidence, bounded TTL retention, credential-safe
+  diagnostics, file/Redis contract parity, a real Redis CI service, and an
+  independent multi-process consumer check.
 - Added a fail-closed coordinator driver boundary that keeps the file backend as
   the safe default, resolves the same backend in parent and worker processes,
   removes backend details from worker command arguments, and exposes
@@ -13,7 +17,7 @@
   installation, fail-closed preflight, bounded evidence handoff, cleanup
   guidance, and release-status wording aligned across security documentation.
 - Expanded the strict mutation gate from four fail-closed boundary classes to
-  seven risk-selected safety, orchestration, coordination, and report-projection
+  nine risk-selected safety, orchestration, coordination, and report-projection
   classes, with behavioral lifecycle assertions for exact timeout boundaries,
   checkpoint cohorts, redacted early-exit evidence, and missing-result output.
 
