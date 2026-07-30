@@ -42,6 +42,12 @@ final class FileCoordinatorStoreTest extends TestCase
         );
 
         $store->createRun($plan);
+        self::assertDirectoryExists($this->basePath.'/'.$plan->runId.'/participants');
+        self::assertDirectoryExists($this->basePath.'/'.$plan->runId.'/checkpoints');
+        self::assertSame(
+            json_encode($plan, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
+            file_get_contents($this->basePath.'/'.$plan->runId.'/plan.json'),
+        );
         self::assertEquals($plan, $store->plan($plan->runId));
 
         $store->markReady($plan->runId, 'p1');
@@ -144,6 +150,16 @@ final class FileCoordinatorStoreTest extends TestCase
         ));
         self::assertSame(200, $timeline->events[7]->occurredAtNs);
         self::assertSame($this->basePath, $store->basePath());
+        self::assertSame(
+            implode('', array_map(
+                static fn (TimelineEvent $event): string => json_encode(
+                    $event,
+                    JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE,
+                )."\n",
+                $timeline->events,
+            )),
+            file_get_contents($this->basePath.'/'.$plan->runId.'/timeline.jsonl'),
+        );
 
         $store->cleanup($plan->runId);
         self::assertDirectoryDoesNotExist($this->basePath.'/'.$plan->runId);
@@ -288,6 +304,7 @@ final class FileCoordinatorStoreTest extends TestCase
                 "Race plan [{$plan->runId}] contains invalid JSON.",
                 $exception->getMessage(),
             );
+            self::assertSame(0, $exception->getCode());
             self::assertNotNull($exception->getPrevious());
         }
     }

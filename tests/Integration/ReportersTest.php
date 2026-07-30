@@ -164,7 +164,7 @@ final class ReportersTest extends TestCase
         $factory = $this->app->make(RaceReportFactory::class);
         $result = new RaceResult(
             runId: $runId,
-            expectedParticipants: 2,
+            expectedParticipants: 1,
             participants: [
                 new ParticipantResult($runId, 'p10', 204, 10, 20),
                 new ParticipantResult($runId, 'p2', 201, 5, 15),
@@ -184,14 +184,24 @@ final class ReportersTest extends TestCase
             expectedParticipants: 1,
             participants: [new ParticipantResult($runId, 'p1', 200, 1, 2)],
         ));
+        $singleFailure = $factory->make(new RaceResult(
+            runId: $runId,
+            expectedParticipants: 2,
+            participants: [
+                new ParticipantResult($runId, 'p1', 200, 1, 2),
+                new ParticipantResult($runId, 'p2', 500, 2, 3),
+            ],
+        ));
 
         self::assertSame('failed', $report->outcome);
         self::assertSame(['p1', 'p2', 'p10'], array_map(
             static fn (ParticipantReport $participant): string => $participant->participantId,
             $report->participants,
         ));
-        self::assertSame('ready 2/2; after-read 1/2 released', $report->coordinationSummary);
+        self::assertSame('ready 2/1; after-read 1/1 released', $report->coordinationSummary);
         self::assertSame('passed', $passed->outcome);
+        self::assertSame('failed', $singleFailure->outcome);
+        self::assertSame(1, $singleFailure->failedParticipants);
         self::assertNull($passed->coordinationSummary);
         self::assertSame(0, $passed->timelineEventCount);
         self::assertSame([], $passed->timelineEvents);

@@ -8,7 +8,7 @@ Audit definition prepared: 2026-07-26
 
 | Control | Mutation hotspot | Scope | Test methods |
 | --- | --- | --- | ---: |
-| `environment-database-safety` | yes | Production refusal, explicit local opt-in, open transactions, shared SQLite, and exact database allowlists. | 10 |
+| `environment-database-safety` | yes | Production refusal, explicit local opt-in, open transactions, shared SQLite, and exact database allowlists. | 11 |
 | `worker-lifecycle` | yes | Spawn failures, early exits, timeouts, stop/wait ordering, orphan prevention, cleanup, and retained failure evidence. | 13 |
 | `redaction-reporting` | yes | Credential patterns, invalid UTF-8, byte bounds, response/report projection, and valid JSON/XML after redaction. | 12 |
 | `coordination-integrity` | yes | Atomic coordination files, concurrent timeline appends, malformed-line recovery, and cleanup boundaries. | 6 |

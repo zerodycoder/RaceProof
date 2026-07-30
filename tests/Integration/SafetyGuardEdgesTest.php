@@ -144,4 +144,26 @@ final class SafetyGuardEdgesTest extends TestCase
 
         (new DatabaseSafety($database, new Repository))->validate();
     }
+
+    public function test_database_safety_normalizes_driver_database_names_before_exact_allowlist_checks(): void
+    {
+        $connection = $this->createMock(Connection::class);
+        $connection->method('transactionLevel')->willReturn(0);
+        $connection->method('getDatabaseName')->willReturn(123);
+        $connection->method('getDriverName')->willReturn('mysql');
+        $database = $this->createMock(DatabaseManager::class);
+        $database->method('connection')->willReturn($connection);
+        $config = new Repository([
+            'raceproof' => [
+                'database' => [
+                    'require_allowlist' => true,
+                    'allowed_names' => ['123'],
+                ],
+            ],
+        ]);
+
+        (new DatabaseSafety($database, $config))->validate();
+
+        self::assertTrue(true);
+    }
 }

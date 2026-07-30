@@ -50,6 +50,10 @@
                 {
                     "file": "tests/Integration/SafetyGuardEdgesTest.php",
                     "method": "test_database_safety_rejects_an_empty_sqlite_database_name"
+                },
+                {
+                    "file": "tests/Integration/SafetyGuardEdgesTest.php",
+                    "method": "test_database_safety_normalizes_driver_database_names_before_exact_allowlist_checks"
                 }
             ]
         },
