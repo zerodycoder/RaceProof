@@ -21,5 +21,10 @@ final readonly class StudioParticipant
         public array $headers,
         public bool $headersTruncated,
         public ?string $exceptionClass,
+        public string $execution,
+        public int $attempts,
+        public ?string $jobClass,
+        public ?string $queueConnection,
+        public ?string $queueName,
     ) {}
 }

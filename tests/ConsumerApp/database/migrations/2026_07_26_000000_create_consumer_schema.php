@@ -43,10 +43,29 @@ return new class extends Migration
             $table->unsignedBigInteger('redeemed_by')->nullable();
             $table->timestamps();
         });
+
+        Schema::connection('queue_sqlite')->dropIfExists('jobs');
+        Schema::connection('queue_sqlite')->create('jobs', function (Blueprint $table): void {
+            $table->id();
+            $table->string('queue')->index();
+            $table->longText('payload');
+            $table->unsignedTinyInteger('attempts');
+            $table->unsignedInteger('reserved_at')->nullable();
+            $table->unsignedInteger('available_at');
+            $table->unsignedInteger('created_at');
+        });
+
+        Schema::create('queued_coupon_outcomes', function (Blueprint $table): void {
+            $table->id();
+            $table->string('participant_id')->unique();
+            $table->boolean('claimed');
+        });
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('queued_coupon_outcomes');
+        Schema::connection('queue_sqlite')->dropIfExists('jobs');
         Schema::dropIfExists('coupons');
         Schema::dropIfExists('personal_access_tokens');
         Schema::dropIfExists('password_reset_tokens');

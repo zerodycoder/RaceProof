@@ -23,6 +23,9 @@ and JSON child-process modes, and verifies:
 - per-participant payload, header, cookie, token, identity, and bootstrap
   overrides;
 - a three-process coupon redemption race with a database invariant;
+- one distinct native queued coupon job per participant through the dedicated
+  SQLite database queue;
+- the same queued invariant through a real Redis service in the Redis CI job;
 - a bounded runtime/discovery/race contract reused before and after the
   published-beta upgrade rehearsal;
 - a separate Laravel CLI bootstrap through `raceproof:doctor --self-test`;

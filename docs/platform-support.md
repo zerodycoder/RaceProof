@@ -6,7 +6,7 @@ reflect observed evidence, not assumptions about Symfony Process portability.
 
 | Platform | Level | Evidence and boundary |
 | --- | --- | --- |
-| Ubuntu Linux | Primary, continuously verified | Every pull request runs the full PHPUnit suite, the real-process Pest contract, targeted mutation testing, PHP 8.2/Laravel 12, PHP 8.5/Laravel 13, coverage, a real Redis 7.4 coordinator and consumer, MySQL 8.4, and PostgreSQL 17 on GitHub-hosted Ubuntu runners. |
+| Ubuntu Linux | Primary, continuously verified | Every pull request runs the full PHPUnit suite, the real-process Pest contract, targeted mutation testing, PHP 8.2/Laravel 12, PHP 8.5/Laravel 13, coverage, real database/Redis queue races, a Redis 7.4 coordinator and consumer, MySQL 8.4, and PostgreSQL 17 on GitHub-hosted Ubuntu runners. |
 | WSL2 | Primary development target | Uses the Linux process model, but is not a separate CI target. Docker networking, mounted-drive performance, and Windows-host antivirus remain environment-specific. |
 | macOS | Best-effort compatible, continuous smoke | A GitHub-hosted macOS runner installs the independent PHP 8.4 consumer app and continuously exercises discovery, installer/Doctor, authentication, CLI, a real multi-process file-backed SQLite invariant, and Studio HTTP behavior. It provides no native MySQL/PostgreSQL evidence. |
 | Native Windows | Experimental, continuous smoke | A GitHub-hosted Windows runner executes the same independent PHP 8.4 consumer acceptance flow and fixture-cleanliness check. Windows process mechanics are continuously observed, but native MySQL/PostgreSQL behavior, antivirus policies, and user-specific path restrictions remain unverified. |

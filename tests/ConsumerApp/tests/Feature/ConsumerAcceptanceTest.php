@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Jobs\RedeemQueuedCoupon;
 use App\Models\User;
 use App\Support\ConsumerParticipantBootstrap;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Encryption\Encrypter;
+use Illuminate\Contracts\Queue\Factory;
 use Illuminate\Cookie\CookieValuePrefix;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Session\SessionManager;
@@ -39,6 +41,25 @@ final class ConsumerAcceptanceTest extends TestCase
 
         $this->assertAuthenticationModes($users);
         $this->assertParticipantOverridesAndBootstrap($users);
+        $this->assertQueuedJobInvariant('raceproof_database', 2);
+
+        if (getenv('RACEPROOF_REDIS_QUEUE_TEST') === '1') {
+            $redisQueueRun = $this->assertQueuedJobInvariant('raceproof_redis', 3);
+            $evidencePath = getenv('RACEPROOF_REDIS_QUEUE_EVIDENCE_OUTPUT');
+
+            if (is_string($evidencePath) && $evidencePath !== '') {
+                File::ensureDirectoryExists(dirname($evidencePath), 0700);
+                File::put($evidencePath, json_encode([
+                    'schema_version' => 1,
+                    'driver' => 'redis',
+                    'run_id' => $redisQueueRun,
+                    'participants' => 3,
+                    'job_class' => RedeemQueuedCoupon::class,
+                    'checkpoint' => 'queued-coupon-claim',
+                    'run_scoped_cleanup' => true,
+                ], JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT)."\n");
+            }
+        }
 
         $firstCouponRun = $this->runCouponInvariant();
 
@@ -181,6 +202,65 @@ final class ConsumerAcceptanceTest extends TestCase
                 fn (): bool => DB::table('coupons')->where('id', 1)->value('redeemed_by') === 42,
                 'Exactly one participant must redeem the coupon.',
             );
+
+        return $result->runId;
+    }
+
+    private function assertQueuedJobInvariant(string $connection, int $couponId): string
+    {
+        if ($connection === 'raceproof_database') {
+            DB::connection('queue_sqlite')->table('jobs')->delete();
+        }
+
+        DB::table('queued_coupon_outcomes')->delete();
+        DB::table('coupons')->delete();
+        DB::table('coupons')->insert([
+            'id' => $couponId,
+            'code' => 'QUEUED-ONCE-'.$couponId,
+            'redeemed_by' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $result = race()
+            ->participants(3)
+            ->queue(
+                static fn (string $participantId): RedeemQueuedCoupon => new RedeemQueuedCoupon(
+                    couponId: $couponId,
+                    userId: 100 + (int) substr($participantId, 1),
+                    participantId: $participantId,
+                ),
+                $connection,
+            )
+            ->releaseWhenAllReach('queued-coupon-claim')
+            ->run();
+
+        $result
+            ->assertAllFinished()
+            ->assertNoWorkerFailures()
+            ->assertNoTimeouts()
+            ->assertStatusCount(204, 3)
+            ->assertInvariant(
+                fn (): bool => DB::table('queued_coupon_outcomes')->where('claimed', true)->count() === 1,
+                'Exactly one queued participant must claim the coupon.',
+            );
+
+        self::assertSame(3, DB::table('queued_coupon_outcomes')->count());
+        self::assertNotNull(DB::table('coupons')->where('id', $couponId)->value('redeemed_by'));
+
+        foreach ($result->participants as $participant) {
+            self::assertSame('queue', $participant->execution);
+            self::assertSame(1, $participant->attempts);
+            self::assertSame(RedeemQueuedCoupon::class, $participant->jobClass);
+            self::assertSame($connection, $participant->queueConnection);
+            self::assertNotNull($participant->queueName);
+            self::assertSame(
+                0,
+                $this->app->make(Factory::class)
+                    ->connection($connection)
+                    ->size($participant->queueName),
+            );
+        }
 
         return $result->runId;
     }

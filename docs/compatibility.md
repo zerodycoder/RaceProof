@@ -32,6 +32,12 @@ row locks, deadlocks, isolation levels, or timeout behavior. In-memory SQLite is
 rejected by default because independent workers cannot share it. Other database
 versions and drivers are unverified until CI evidence is added.
 
+Queue races support Laravel's clearable database and single-node Redis queue
+drivers. SQLite provides queue process-mechanics evidence; the MySQL 8.4 and
+PostgreSQL 17 jobs exercise the database queue invariant, and Redis 7.4 CI
+exercises the Redis queue path. Other brokers and custom queue connectors are
+outside the support contract.
+
 ## Operating systems and process model
 
 The detailed levels live in [the platform matrix](platform-support.md):

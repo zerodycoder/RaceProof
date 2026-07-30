@@ -44,6 +44,11 @@ final class MutationCommandTest extends TestCase
             'src/Remote/RedisWorkerControlPlane.php',
             'src/Remote/RemoteWorkerProcess.php',
             'src/Reports/RaceReportFactory.php',
+            'src/Data/QueueSpec.php',
+            'src/Queue/QueueConnectionGuard.php',
+            'src/Queue/QueueJobValidator.php',
+            'src/Queue/QueueRaceDispatcher.php',
+            'src/Queue/QueueJobExecutor.php',
         ];
         $tests = [
             'tests/Integration/SafetyGuardEdgesTest.php',
@@ -64,6 +69,11 @@ final class MutationCommandTest extends TestCase
             'tests/Unit/RaceResultReportTest.php',
             'tests/Unit/ReportModelTest.php',
             'tests/Integration/ReportersTest.php',
+            'tests/Unit/QueueSpecTest.php',
+            'tests/Unit/QueueJobValidatorTest.php',
+            'tests/Integration/RaceBuilderTest.php',
+            'tests/Integration/QueueExecutionEdgesTest.php',
+            'tests/Integration/QueueRaceDispatcherTest.php',
         ];
 
         self::assertStringContainsString('--path='.implode(',', $paths), $command);

@@ -7,7 +7,7 @@ __pycache__/
 /.vscode/
 composer.phar
 phpunit.xml
-tests/Fixtures/*/storage/database.sqlite
+tests/Fixtures/*/storage/*.sqlite
 tests/Fixtures/*/storage/framework/raceproof/
 tests/Fixtures/*/storage/framework/raceproof-studio/
 tests/Fixtures/*/storage/logs/*.log

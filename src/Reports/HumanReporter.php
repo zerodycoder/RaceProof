@@ -55,9 +55,16 @@ final readonly class HumanReporter implements Reporter
         foreach ($report->participants as $participant) {
             if ($participant->failed()) {
                 $lines[] = sprintf(
-                    'Failure %s [%s]: %s',
+                    'Failure %s [%s%s]: %s',
                     $participant->participantId,
                     $participant->outcome,
+                    $participant->execution === 'queue'
+                        ? sprintf(
+                            ', queue %s, %d attempt(s)',
+                            $participant->jobClass ?? 'unknown job',
+                            $participant->attempts,
+                        )
+                        : '',
                     $participant->diagnostic,
                 );
             }

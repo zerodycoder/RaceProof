@@ -6,6 +6,7 @@ namespace RaceProof\Laravel;
 
 use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Contracts\Redis\Factory as RedisFactory;
+use Illuminate\Queue\Worker;
 use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
 use RaceProof\Laravel\Console\CleanCommand;
@@ -19,7 +20,9 @@ use RaceProof\Laravel\Console\WorkerCommand;
 use RaceProof\Laravel\Contracts\CoordinatorStore;
 use RaceProof\Laravel\Contracts\LocalWorkerProcessFactory;
 use RaceProof\Laravel\Contracts\ParticipantClock;
+use RaceProof\Laravel\Contracts\ParticipantExecutor;
 use RaceProof\Laravel\Contracts\RaceClock;
+use RaceProof\Laravel\Contracts\RaceRunner;
 use RaceProof\Laravel\Contracts\RequestExecutor;
 use RaceProof\Laravel\Contracts\WorkerControlClock;
 use RaceProof\Laravel\Contracts\WorkerControlPlane;
@@ -29,11 +32,17 @@ use RaceProof\Laravel\Coordination\FileCoordinatorStore;
 use RaceProof\Laravel\Coordination\LaravelRedisClient;
 use RaceProof\Laravel\Coordination\RedisCoordinatorStore;
 use RaceProof\Laravel\Execution\KernelRequestExecutor;
+use RaceProof\Laravel\Execution\ParticipantExecutorResolver;
 use RaceProof\Laravel\Execution\RaceContext;
+use RaceProof\Laravel\Execution\RaceOrchestrator;
 use RaceProof\Laravel\Execution\SymfonyWorkerProcessFactory;
 use RaceProof\Laravel\Execution\WorkerTransportResolver;
 use RaceProof\Laravel\Http\EnsureStudioRequestIsLocal;
 use RaceProof\Laravel\Http\StudioController;
+use RaceProof\Laravel\Queue\QueueConnectionGuard;
+use RaceProof\Laravel\Queue\QueueJobExecutor;
+use RaceProof\Laravel\Queue\QueueJobValidator;
+use RaceProof\Laravel\Queue\QueueRaceDispatcher;
 use RaceProof\Laravel\Remote\RedisSynchronizedParticipantClock;
 use RaceProof\Laravel\Remote\RedisWorkerControlPlane;
 use RaceProof\Laravel\Remote\RemoteControlMessageCodec;
@@ -137,7 +146,14 @@ final class RaceProofServiceProvider extends ServiceProvider
             },
         );
         $this->app->singleton(ReportArchive::class);
+        $this->app->singleton(QueueConnectionGuard::class);
+        $this->app->singleton(QueueJobExecutor::class);
+        $this->app->singleton(QueueJobValidator::class);
+        $this->app->singleton(QueueRaceDispatcher::class);
+        $this->app->bind(Worker::class, fn (): Worker => $this->app->make('queue.worker'));
         $this->app->bind(RequestExecutor::class, KernelRequestExecutor::class);
+        $this->app->bind(ParticipantExecutor::class, ParticipantExecutorResolver::class);
+        $this->app->bind(RaceRunner::class, RaceOrchestrator::class);
         $this->app->bind(RaceBuilder::class);
     }
 

@@ -14,6 +14,16 @@ return [
             'foreign_key_constraints' => true,
             'busy_timeout' => 5000,
         ],
+        'queue_sqlite' => [
+            'driver' => 'sqlite',
+            'url' => null,
+            'database' => __DIR__.'/../storage/queue.sqlite',
+            'prefix' => '',
+            'foreign_key_constraints' => true,
+            'busy_timeout' => 10000,
+            'journal_mode' => 'WAL',
+            'synchronous' => 'NORMAL',
+        ],
     ],
 
     'migrations' => [

@@ -18,7 +18,7 @@ final readonly class RacePlan implements JsonSerializable
     public function __construct(
         public string $runId,
         public int $participants,
-        public RequestSpec $request,
+        public ?RequestSpec $request,
         public ?AuthSpec $auth = null,
         public array $checkpoints = [],
         public int $spawnTimeoutMs = 10_000,
@@ -26,6 +26,7 @@ final readonly class RacePlan implements JsonSerializable
         public int $pollIntervalMs = 5,
         public ?BootstrapSpec $bootstrap = null,
         public array $participantSpecs = [],
+        public ?QueueSpec $queue = null,
     ) {
         if (! preg_match('/^[a-f0-9]{32}$/', $runId)) {
             throw new InvalidRacePlan('Run ID must be a 32 character lowercase hex value.');
@@ -37,6 +38,18 @@ final readonly class RacePlan implements JsonSerializable
 
         if ($spawnTimeoutMs < 1 || $runTimeoutMs < 1 || $pollIntervalMs < 1) {
             throw new InvalidRacePlan('Race timeouts and polling interval must be positive.');
+        }
+
+        if (($request === null) === ($queue === null)) {
+            throw new InvalidRacePlan('A race plan must define exactly one request or queue workload.');
+        }
+
+        if ($queue !== null) {
+            $queue->validateParticipants($participants);
+
+            if ($auth !== null) {
+                throw new InvalidRacePlan('Queue races do not support request authentication.');
+            }
         }
 
         foreach ($checkpoints as $checkpoint) {
@@ -55,6 +68,20 @@ final readonly class RacePlan implements JsonSerializable
                     "Participant override [{$participantId}] is outside this {$participants}-participant race.",
                 );
             }
+
+            if (
+                $queue !== null
+                && (
+                    $spec->payload !== null
+                    || $spec->headers !== []
+                    || $spec->cookies !== []
+                    || $spec->auth !== null
+                )
+            ) {
+                throw new InvalidRacePlan(
+                    'Queue participant overrides may configure bootstrap only.',
+                );
+            }
         }
     }
 
@@ -63,6 +90,8 @@ final readonly class RacePlan implements JsonSerializable
     {
         $auth = $data['auth'] ?? null;
         $bootstrap = $data['bootstrap'] ?? null;
+        $request = $data['request'] ?? null;
+        $queue = $data['queue'] ?? null;
         $participantSpecs = [];
 
         foreach (Input::map($data, 'participant_specs') as $participantId => $spec) {
@@ -74,7 +103,7 @@ final readonly class RacePlan implements JsonSerializable
         return new self(
             runId: Input::string($data, 'run_id'),
             participants: Input::integer($data, 'participants'),
-            request: RequestSpec::fromArray(Input::map($data, 'request')),
+            request: $request === null ? null : RequestSpec::fromArray(Input::mapValue($request, 'request')),
             auth: $auth === null ? null : AuthSpec::fromArray(Input::mapValue($auth, 'auth')),
             checkpoints: Input::stringList($data, 'checkpoints'),
             spawnTimeoutMs: Input::integer($data, 'spawn_timeout_ms', 10_000),
@@ -82,11 +111,16 @@ final readonly class RacePlan implements JsonSerializable
             pollIntervalMs: Input::integer($data, 'poll_interval_ms', 5),
             bootstrap: $bootstrap === null ? null : BootstrapSpec::fromArray(Input::mapValue($bootstrap, 'bootstrap')),
             participantSpecs: $participantSpecs,
+            queue: $queue === null ? null : QueueSpec::fromArray(Input::mapValue($queue, 'queue')),
         );
     }
 
     public function requestFor(string $participantId): RequestSpec
     {
+        if ($this->request === null) {
+            throw new InvalidRacePlan('Queue race participants do not have HTTP request specifications.');
+        }
+
         return $this->participantSpec($participantId)?->request($this->request) ?? $this->request;
     }
 
@@ -118,6 +152,7 @@ final readonly class RacePlan implements JsonSerializable
             'poll_interval_ms' => $this->pollIntervalMs,
             'bootstrap' => $this->bootstrap,
             'participant_specs' => (object) $this->participantSpecs,
+            'queue' => $this->queue,
         ];
     }
 

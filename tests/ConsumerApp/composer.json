@@ -55,7 +55,8 @@
         ],
         "prepare": [
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
-            "@php -r \"file_put_contents('database/consumer.sqlite', '');\""
+            "@php -r \"file_put_contents('database/consumer.sqlite', '');\"",
+            "@php -r \"file_put_contents('database/queue.sqlite', '');\""
         ],
         "check": [
             "@prepare",

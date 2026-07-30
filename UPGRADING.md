@@ -20,6 +20,27 @@ Every future release section must list required code/configuration changes,
 deprecated paths, and safe rollback constraints. "No migration required" must
 be stated explicitly when true.
 
+### Queue race orchestration
+
+Queue races are additive and require no migration for existing HTTP races.
+Applications that use them must provide an explicitly named clearable
+`database` or `redis` connection in `config/queue.php`; RaceProof does not
+publish or select one automatically. Database queues also require Laravel's
+normal committed jobs table in a disposable database visible to child workers.
+
+Replace neither application queue workers nor production queue configuration.
+Pass the dedicated connection to `RaceBuilder::queue()` and keep job-owned
+connection, queue, delay, uniqueness, encryption, chain/batch, after-commit,
+retry, and timeout policy out of the participating jobs. Configure the bounded
+RaceProof policy with `queueAttempts()` instead. Review
+[the queue race guide](docs/queue-races.md) before enabling Redis or remote
+agents.
+
+To roll back, stop creating queue races, allow active runs to settle, clear only
+recorded run-scoped queues if automated cleanup failed, and return those tests
+to the HTTP builder. No RaceProof database migration or queue-wide purge is
+required.
+
 ### Coordinator driver configuration
 
 The default coordinator remains local files and requires no application change

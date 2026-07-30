@@ -74,7 +74,7 @@ A stable v1 requires all of the following:
 - [x] Backend-neutral coordinator lifecycle with fail-closed driver selection
 - [x] Redis coordination with atomic operations, namespaces, TTLs, and CI
 - [x] Remote worker transport with authenticated, bounded control messages
-- [ ] Queue race orchestration with explicit job and retry invariants
+- [x] Queue race orchestration with explicit job and retry invariants
 - [ ] Interleaving exploration and exact schedule controls with honest limits
 
 This track can harden architecture while external adoption is unavailable, but
@@ -83,7 +83,7 @@ capability requires its own evidence before support claims expand.
 
 ## Enterprise sequencing
 
-Pluggable file/Redis coordination and local/remote worker transport now share
-orchestration, worker boot, diagnostics, cleanup, and evidence semantics. Queue
-races are the next bounded increment; schedule exploration remains separate so
-each capability can be reviewed, rolled back, and evidenced independently.
+Pluggable file/Redis coordination, local/remote worker transport, and bounded
+database/Redis queue races now share orchestration, worker boot, diagnostics,
+cleanup, and evidence semantics. Schedule exploration remains separate so it
+can be reviewed, rolled back, and evidenced independently.

@@ -32,6 +32,11 @@ final readonly class KernelRequestExecutor implements RequestExecutor
         private ParticipantClock $clock,
     ) {}
 
+    public function prepare(RacePlan $plan, ParticipantContext $context): void
+    {
+        // HTTP participants do not reserve external work before the start barrier.
+    }
+
     public function execute(RacePlan $plan, ParticipantContext $context): ParticipantResult
     {
         $request = $this->makeRequest($plan, $context);

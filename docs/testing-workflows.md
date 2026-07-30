@@ -99,6 +99,32 @@ three real Laravel worker processes through a checkpoint. `composer check`
 runs both the PHPUnit suite and that Pest contract on every supported
 PHP/Laravel CI combination.
 
+## Queue races
+
+PHPUnit and Pest use the same additive queue builder:
+
+```php
+$result = race()
+    ->participants(3)
+    ->queue(
+        fn (string $participantId) => new RedeemCoupon(
+            couponId: 1,
+            participantId: $participantId,
+        ),
+        'raceproof_database',
+    )
+    ->queueAttempts(3, 1)
+    ->releaseWhenAllReach('coupon-claim')
+    ->run();
+```
+
+Commit queue setup before `run()`, use one dedicated database or Redis queue
+connection visible to every worker, and assert both participant outcomes and
+the final business invariant. Do not combine queue races with Laravel's queue
+fakes: the feature deliberately exercises the native worker lifecycle. The
+[queue race guide](queue-races.md) defines supported jobs, retry bounds,
+cleanup, evidence, and rollback.
+
 ## Outer parallelism
 
 When PHPUnit or Pest runs test files in parallel, assign a different disposable

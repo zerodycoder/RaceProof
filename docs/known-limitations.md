@@ -60,7 +60,7 @@ and the configured TTL must exceed the race lifecycle.
 The opt-in remote transport supports a static set of authenticated agents that
 run the same application and share Redis plus the disposable database. It does
 not support Redis Cluster, Sentinel, cross-region timing, automatic discovery,
-autoscaling, retries, failover, arbitrary commands, or queue orchestration.
+autoscaling, transport retries, failover, or arbitrary commands.
 CI evidence is limited to two Ubuntu agent processes. Remote timing uses a
 bounded Redis-time alignment sample; network asymmetry still limits
 start-spread precision and remote results are not benchmark evidence.
@@ -69,6 +69,26 @@ Process termination is best effort at the operating-system boundary. CI tests
 stop and reap workers, but agent or host failure can still require manual
 cleanup. There is one active HMAC secret; rotate it only after in-flight controls
 settle.
+
+## Queue boundaries
+
+Queue races support clearable Laravel database and single-node Redis
+connections only. They create and consume isolated run-scoped queues; they do
+not attach to existing `queue:work` daemons, inspect shared queues, run in
+production, benchmark queue throughput, or prove delivery behavior during
+broker/host failover.
+
+Each participant must supply one distinct plain `ShouldQueue` object. Unique,
+encrypted, delayed, after-commit, chained, batched, self-releasing, and
+job-owned retry/timeout policies are deliberately unsupported. RaceProof owns a
+bounded one-to-five-attempt policy and zero-to-sixty-second backoff. Supporting
+those excluded shapes would require separate cardinality, timing, ownership,
+and cleanup contracts.
+
+Successful queue participants use synthetic HTTP-like status `204` for
+compatibility with existing assertions. This means queue status values are
+RaceProof execution outcomes, not an upstream protocol response. See the
+[queue race guide](queue-races.md) for the complete contract.
 
 ## Database boundaries
 

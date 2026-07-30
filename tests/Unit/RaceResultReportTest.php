@@ -61,4 +61,41 @@ final class RaceResultReportTest extends TestCase
             self::assertStringContainsString('Artifacts: /tmp/raceproof/'.$runId, $exception->getMessage());
         }
     }
+
+    public function test_queue_failures_include_bounded_execution_context(): void
+    {
+        $runId = str_repeat('c', 32);
+        $result = new RaceResult($runId, 2, [
+            new ParticipantResult(
+                runId: $runId,
+                participantId: 'p1',
+                status: null,
+                startedAtNs: 1,
+                finishedAtNs: 2,
+                workerError: 'Queue job failed itself.',
+                execution: 'queue',
+                attempts: 2,
+                jobClass: 'App\\Jobs\\RedeemCoupon',
+                queueConnection: 'raceproof_database',
+                queueName: "raceproof:{$runId}:p1",
+            ),
+            new ParticipantResult(
+                runId: $runId,
+                participantId: 'p2',
+                status: 204,
+                startedAtNs: 1,
+                finishedAtNs: 2,
+                execution: 'queue',
+                attempts: 1,
+                jobClass: 'App\\Jobs\\RedeemCoupon',
+                queueConnection: 'raceproof_database',
+                queueName: "raceproof:{$runId}:p2",
+            ),
+        ]);
+
+        self::assertStringContainsString(
+            "Failure p1 [job App\\Jobs\\RedeemCoupon; 2 attempt(s); queue raceproof:{$runId}:p1]",
+            $result->failureReport(),
+        );
+    }
 }

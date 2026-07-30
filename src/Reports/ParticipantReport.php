@@ -35,9 +35,25 @@ final readonly class ParticipantReport implements JsonSerializable
         public array $headers = [],
         public bool $headersTruncated = false,
         public ?string $exceptionClass = null,
+        public string $execution = 'http',
+        public int $attempts = 1,
+        public ?string $jobClass = null,
+        public ?string $queueConnection = null,
+        public ?string $queueName = null,
     ) {
         if (! in_array($outcome, self::outcomes(), true)) {
             throw new RaceProofException("Unsupported participant report outcome [{$outcome}].");
+        }
+
+        if (! in_array($execution, ['http', 'queue'], true) || $attempts < 0 || $attempts > 5) {
+            throw new RaceProofException('Participant report execution metadata is invalid.');
+        }
+
+        if (
+            $execution === 'queue'
+            && ($jobClass === null || $queueConnection === null || $queueName === null)
+        ) {
+            throw new RaceProofException('Queue participant report metadata is incomplete.');
         }
     }
 
@@ -58,7 +74,7 @@ final readonly class ParticipantReport implements JsonSerializable
     /** @return array<string, mixed> */
     public function jsonSerialize(): array
     {
-        return [
+        $data = [
             'participant_id' => $this->participantId,
             'outcome' => $this->outcome,
             'status' => $this->status,
@@ -72,6 +88,16 @@ final readonly class ParticipantReport implements JsonSerializable
             'headers_truncated' => $this->headersTruncated,
             'exception_class' => $this->exceptionClass,
         ];
+
+        if ($this->execution === 'queue') {
+            $data['execution'] = $this->execution;
+            $data['attempts'] = $this->attempts;
+            $data['job_class'] = $this->jobClass;
+            $data['queue_connection'] = $this->queueConnection;
+            $data['queue_name'] = $this->queueName;
+        }
+
+        return $data;
     }
 
     /** @return list<string> */

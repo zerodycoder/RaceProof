@@ -6,6 +6,8 @@ use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use RaceProof\Laravel\Support\DatabaseSafety;
+use RaceProof\Laravel\Tests\Fixtures\Jobs\BrokenQueueClaimJob;
+use RaceProof\Laravel\Tests\Fixtures\Jobs\FixedQueueClaimJob;
 
 $iterations = 1;
 $exchangeParticipants = [10, 25];
@@ -153,6 +155,41 @@ function resetCommerceState(): void
 
     DB::table('lock_counters')->delete();
     DB::table('lock_counters')->insert(['id' => 1, 'version' => 0]);
+}
+
+/** @return array{run_id: string, statuses: array<int, int>, attempts: array<string, int>} */
+function queuedClaimRun(string $jobClass, string $checkpoint): array
+{
+    DB::table('jobs')->delete();
+    $result = race()
+        ->participants(2)
+        ->queue(
+            static fn (string $participantId): object => new $jobClass('shared-claim'),
+            'raceproof_database',
+        )
+        ->releaseWhenAllReach($checkpoint)
+        ->run();
+
+    $result
+        ->assertAllFinished()
+        ->assertNoTimeouts()
+        ->assertNoWorkerFailures()
+        ->assertStatusCount(204, 2);
+    $attempts = [];
+
+    foreach ($result->participants as $participant) {
+        evidenceAssert($participant->execution === 'queue', 'Database queue evidence used the wrong executor.');
+        evidenceAssert($participant->jobClass === $jobClass, 'Database queue evidence executed the wrong job class.');
+        $attempts[$participant->participantId] = $participant->attempts;
+    }
+
+    evidenceAssert(DB::table('jobs')->count() === 0, 'Run-scoped database queues were not cleaned.');
+
+    return [
+        'run_id' => $result->runId,
+        'statuses' => $result->statuses(),
+        'attempts' => $attempts,
+    ];
 }
 
 function resetExchangeState(int $participants): void
@@ -370,6 +407,22 @@ $fixedState = commerceState(true);
 evidenceStatuses($fixed, [201 => 2], 'lock/fixed');
 evidenceAssert($fixedState['lock_version'] === 2, 'Transactional locking fix failed.');
 $scenarios['lock_misuse'] = compact('broken', 'brokenState', 'fixed', 'fixedState');
+
+DB::table('queue_claims_broken')->delete();
+$brokenQueue = queuedClaimRun(BrokenQueueClaimJob::class, 'queue-claim-read');
+$brokenQueueClaims = DB::table('queue_claims_broken')->where('claim_key', 'shared-claim')->count();
+evidenceAssert($brokenQueueClaims === 2, 'The queued broken claim did not reproduce a duplicate.');
+
+DB::table('queue_claims_fixed')->delete();
+$fixedQueue = queuedClaimRun(FixedQueueClaimJob::class, 'queue-claim-insert');
+$fixedQueueClaims = DB::table('queue_claims_fixed')->where('claim_key', 'shared-claim')->count();
+evidenceAssert($fixedQueueClaims === 1, 'The queued fixed claim did not preserve uniqueness.');
+$scenarios['queue_claim'] = compact(
+    'brokenQueue',
+    'brokenQueueClaims',
+    'fixedQueue',
+    'fixedQueueClaims',
+);
 
 DB::table('deadlock_rows')->delete();
 DB::table('deadlock_rows')->insert([['id' => 1, 'value' => 0], ['id' => 2, 'value' => 0]]);

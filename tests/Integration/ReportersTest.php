@@ -325,6 +325,58 @@ final class ReportersTest extends TestCase
         self::assertStringContainsString('&lt;unsafe&gt;', $xml);
     }
 
+    public function test_queue_attempt_metadata_is_projected_without_raw_job_payloads_or_secrets(): void
+    {
+        $runId = str_repeat('b', 32);
+        $result = new RaceResult(
+            runId: $runId,
+            expectedParticipants: 2,
+            participants: [
+                new ParticipantResult(
+                    runId: $runId,
+                    participantId: 'p1',
+                    status: 204,
+                    startedAtNs: 10,
+                    finishedAtNs: 20,
+                    execution: 'queue',
+                    attempts: 2,
+                    jobClass: 'App\\Jobs\\ProcessOrder',
+                    queueConnection: 'raceproof_redis',
+                    queueName: "raceproof:{$runId}:p1",
+                ),
+                new ParticipantResult(
+                    runId: $runId,
+                    participantId: 'p2',
+                    status: null,
+                    startedAtNs: 11,
+                    finishedAtNs: 21,
+                    workerError: 'token=queue-report-secret',
+                    execution: 'queue',
+                    attempts: 1,
+                    jobClass: 'App\\Jobs\\ProcessOrder',
+                    queueConnection: 'raceproof_redis',
+                    queueName: "raceproof:{$runId}:p2",
+                ),
+            ],
+            timedOut: false,
+            artifactPath: '/tmp/queue-report',
+        );
+        $json = $result->report($this->app->make(JsonReporter::class));
+        $human = $result->report($this->app->make(HumanReporter::class));
+        $junit = $result->report($this->app->make(JUnitReporter::class));
+        $decoded = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+
+        self::assertSame('queue', $decoded['participants'][0]['execution']);
+        self::assertSame(2, $decoded['participants'][0]['attempts']);
+        self::assertSame('App\\Jobs\\ProcessOrder', $decoded['participants'][0]['job_class']);
+        self::assertSame("raceproof:{$runId}:p1", $decoded['participants'][0]['queue_name']);
+        self::assertStringContainsString('queue App\\Jobs\\ProcessOrder, 1 attempt(s)', $human);
+        self::assertStringContainsString('Queue: raceproof:', $junit);
+        self::assertStringNotContainsString('queue-report-secret', $json.$human.$junit);
+        self::assertStringContainsString('[REDACTED]', $json.$human.$junit);
+        self::assertStringNotContainsString('command', strtolower($json));
+    }
+
     private function configureSmallLimits(): void
     {
         $this->app['config']->set('raceproof.reporting.human_output_bytes', 320);

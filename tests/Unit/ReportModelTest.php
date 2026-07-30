@@ -33,6 +33,20 @@ final class ReportModelTest extends TestCase
         yield 'participant outcome' => [
             static fn () => new ParticipantReport('p1', 'unknown', null, 0, 0, 0.0),
         ];
+        yield 'participant attempts' => [
+            static fn () => new ParticipantReport('p1', 'success', 204, 0, 0, 0.0, attempts: 6),
+        ];
+        yield 'queue participant metadata' => [
+            static fn () => new ParticipantReport(
+                'p1',
+                'success',
+                204,
+                0,
+                0,
+                0.0,
+                execution: 'queue',
+            ),
+        ];
         yield 'schema version' => [
             static fn () => self::report(schemaVersion: 2),
         ];

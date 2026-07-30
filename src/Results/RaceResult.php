@@ -125,7 +125,16 @@ final readonly class RaceResult implements JsonSerializable
                 $participant->status !== null => 'HTTP '.$participant->status,
                 default => 'no response evidence',
             };
-            $lines[] = "Failure {$participant->participantId}: ".$this->compactDiagnostic($reason);
+            $execution = $participant->execution === 'queue'
+                ? sprintf(
+                    ' [job %s; %d attempt(s); queue %s]',
+                    $participant->jobClass,
+                    $participant->attempts,
+                    $participant->queueName,
+                )
+                : '';
+            $lines[] = "Failure {$participant->participantId}{$execution}: "
+                .$this->compactDiagnostic($reason);
         }
 
         if ($this->timeline !== null) {

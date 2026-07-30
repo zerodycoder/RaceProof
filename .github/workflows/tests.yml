@@ -166,6 +166,8 @@ jobs:
       REDIS_DB: 15
       RACEPROOF_REDIS_TEST: '1'
       RACEPROOF_REDIS_EVIDENCE_OUTPUT: build/redis-evidence/evidence.json
+      RACEPROOF_REDIS_QUEUE_TEST: '1'
+      RACEPROOF_REDIS_QUEUE_EVIDENCE_OUTPUT: ${{ github.workspace }}/build/redis-evidence/queue.json
       RACEPROOF_COORDINATOR_DRIVER: redis
       RACEPROOF_REDIS_CONNECTION: default
       RACEPROOF_REDIS_NAMESPACE: raceproof-consumer-ci
@@ -241,7 +243,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: redis-coordination-evidence
-          path: build/redis-evidence/evidence.json
+          path: build/redis-evidence
           if-no-files-found: error
           retention-days: 30
 
