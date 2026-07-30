@@ -1,7 +1,7 @@
 # Upgrading RaceProof
 
-No tagged release exists yet. This file becomes the authoritative migration
-index when the first beta is published.
+Signed `v1.0.0-beta.1` packages are published on GitHub and Packagist and form
+the first real upgrade baseline. Stable v1 is not published.
 
 ## Toward 1.0
 
@@ -20,7 +20,27 @@ Every future release section must list required code/configuration changes,
 deprecated paths, and safe rollback constraints. "No migration required" must
 be stated explicitly when true.
 
-An upgrade from a previously published artifact cannot be verified until the
-first real release exists. Repackaging the current source under two synthetic
-versions would not be upgrade evidence and is intentionally prohibited by the
-[pre-release audit](docs/release-audit.md).
+## Published beta upgrade rehearsal
+
+Maintainers can exercise the current upgrade control with:
+
+```bash
+composer release:upgrade-dry-run
+```
+
+The command creates an isolated Laravel application without RaceProof path
+repositories, installs exact `v1.0.0-beta.1` packages from Packagist, records
+their immutable source/dist references, and runs a bounded Doctor/runtime/race
+smoke. It then builds `1.0.0-rc.1` candidate archives from the current source
+commit, upgrades both packages together through a Composer artifact repository,
+and repeats the same smoke.
+
+Bounded machine-readable output is written to
+`build/release/upgrade/1.0.0-rc.1/evidence.json`. Generated applications,
+archives, locks, and evidence stay outside version control.
+
+This is a repeatable rehearsal of the control, not final stable-candidate
+evidence. The release PR must rerun it on the exact candidate commit and version,
+review the applicable migration and rollback notes, and only then update the
+[pre-release audit](docs/release-audit.md). Repackaging one source tree as both
+the baseline and candidate remains prohibited.

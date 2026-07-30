@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests;
 
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 
 abstract class TestCase extends BaseTestCase
@@ -31,5 +32,12 @@ abstract class TestCase extends BaseTestCase
         }
 
         $this->artisan('migrate:fresh', ['--force' => true])->run();
+    }
+
+    protected function tearDown(): void
+    {
+        DB::purge();
+
+        parent::tearDown();
     }
 }

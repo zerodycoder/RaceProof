@@ -76,6 +76,11 @@ builds reproducible Laravel/runtime archives, installs them together, and keeps
 the runtime-first publication order explicit. See the [release runbook](releasing.md)
 for signatures, provenance, Packagist verification, and rollback rules.
 
+The release dry-run also installs the published beta packages in an isolated
+Laravel application, upgrades both to candidate artifacts built from the exact
+head, and repeats a bounded Doctor/runtime/race smoke. This remains rehearsal
+evidence until the final candidate version is selected and reviewed.
+
 `composer beta:check` validates the bounded, consented public evidence registry
 and verifies that its generated report is current. It deliberately does not make
 the human evidence gate pass. `composer beta:gate` remains fail-closed until the

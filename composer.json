@@ -78,7 +78,11 @@
         "beta:report": "@php tools/beta/report.php",
         "release:audit": "@php tools/audit/check.php",
         "release:audit-report": "@php tools/audit/report.php",
-        "release:dry-run": "@php tools/release/dry-run.php",
+        "release:dry-run": [
+            "@php tools/release/dry-run.php",
+            "@release:upgrade-dry-run"
+        ],
+        "release:upgrade-dry-run": "@php tools/release/upgrade-dry-run.php",
         "release:gate": "@php tools/audit/gate.php",
         "consumer:install": "composer update --working-dir=tests/ConsumerApp --prefer-dist --no-interaction --no-progress",
         "consumer:check": [
