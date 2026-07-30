@@ -1,6 +1,6 @@
 # Production safety
 
-RaceProof refuses to execute in Laravel's `production` environment even when its enabled flag is set. Outside `testing`, a second explicit `RACEPROOF_ALLOW_NON_TESTING=1` gate is required. The worker command is hidden, accepts only validated run/participant identifiers, and reads plans from the configured local coordinator.
+RaceProof refuses to execute in Laravel's `production` environment even when its enabled flag is set. Outside `testing`, a second explicit `RACEPROOF_ALLOW_NON_TESTING=1` gate is required. The worker command is hidden, accepts validated run/participant identifiers plus a non-secret driver name for parent/worker parity, and resolves its coordinator through application configuration; coordinator paths and connection details are not accepted as command arguments.
 
 ## Production checkpoints
 

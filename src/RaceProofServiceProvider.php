@@ -18,6 +18,7 @@ use RaceProof\Laravel\Contracts\CoordinatorStore;
 use RaceProof\Laravel\Contracts\RaceClock;
 use RaceProof\Laravel\Contracts\RequestExecutor;
 use RaceProof\Laravel\Contracts\WorkerProcessFactory;
+use RaceProof\Laravel\Coordination\CoordinatorResolver;
 use RaceProof\Laravel\Coordination\FileCoordinatorStore;
 use RaceProof\Laravel\Execution\KernelRequestExecutor;
 use RaceProof\Laravel\Execution\RaceContext;
@@ -37,7 +38,11 @@ final class RaceProofServiceProvider extends ServiceProvider
         $this->app->singleton(FileCoordinatorStore::class, fn (): FileCoordinatorStore => new FileCoordinatorStore(
             ConfigValue::string($this->app->make(Config::class), 'raceproof.coordinator.path'),
         ));
-        $this->app->alias(FileCoordinatorStore::class, CoordinatorStore::class);
+        $this->app->singleton(CoordinatorResolver::class);
+        $this->app->singleton(
+            CoordinatorStore::class,
+            fn (): CoordinatorStore => $this->app->make(CoordinatorResolver::class)->resolve(),
+        );
 
         $this->app->singleton(RaceContext::class);
         $this->app->singleton(RacePoint::class);

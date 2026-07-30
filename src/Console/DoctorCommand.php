@@ -6,7 +6,7 @@ namespace RaceProof\Laravel\Console;
 
 use Closure;
 use Illuminate\Console\Command;
-use RaceProof\Laravel\Coordination\FileCoordinatorStore;
+use RaceProof\Laravel\Coordination\CoordinatorResolver;
 use RaceProof\Laravel\Support\DatabaseSafety;
 use RaceProof\Laravel\Support\DoctorSelfTest;
 use RaceProof\Laravel\Support\EnvironmentGuard;
@@ -24,7 +24,7 @@ final class DoctorCommand extends Command
     public function __construct(
         private readonly EnvironmentGuard $environment,
         private readonly DatabaseSafety $database,
-        private readonly FileCoordinatorStore $store,
+        private readonly CoordinatorResolver $coordinator,
         private readonly DoctorSelfTest $selfTest,
         private readonly SensitiveDataRedactor $redactor,
     ) {
@@ -61,15 +61,7 @@ final class DoctorCommand extends Command
             ],
             'Coordinator writable' => [
                 'id' => 'coordinator-writable',
-                'run' => function (): void {
-                    $path = $this->store->basePath();
-                    if (! is_dir($path) && ! @mkdir($path, 0700, true) && ! is_dir($path)) {
-                        throw new \RuntimeException("Cannot create [{$path}].");
-                    }
-                    if (! is_writable($path)) {
-                        throw new \RuntimeException("Directory [{$path}] is not writable.");
-                    }
-                },
+                'run' => fn () => $this->coordinator->resolve()->healthCheck(),
             ],
         ];
 

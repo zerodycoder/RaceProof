@@ -11,6 +11,15 @@ use RaceProof\Laravel\Results\RaceTimeline;
 
 interface CoordinatorStore
 {
+    public function driver(): string;
+
+    public function healthCheck(): void;
+
+    /** @return list<string> */
+    public function retainedRunIds(): array;
+
+    public function artifactReference(string $runId): string;
+
     public function createRun(RacePlan $plan): void;
 
     public function plan(string $runId): RacePlan;
@@ -41,6 +50,4 @@ interface CoordinatorStore
     public function timeline(string $runId): RaceTimeline;
 
     public function cleanup(string $runId): void;
-
-    public function basePath(): string;
 }

@@ -149,7 +149,10 @@ final class FileCoordinatorStoreTest extends TestCase
             $timeline->events,
         ));
         self::assertSame(200, $timeline->events[7]->occurredAtNs);
-        self::assertSame($this->basePath, $store->basePath());
+        $store->healthCheck();
+        self::assertSame([], glob($this->basePath.'/.health-*') ?: []);
+        self::assertSame([$plan->runId], $store->retainedRunIds());
+        self::assertSame($this->basePath.'/'.$plan->runId, $store->artifactReference($plan->runId));
         self::assertSame(
             implode('', array_map(
                 static fn (TimelineEvent $event): string => json_encode(
@@ -163,6 +166,7 @@ final class FileCoordinatorStoreTest extends TestCase
 
         $store->cleanup($plan->runId);
         self::assertDirectoryDoesNotExist($this->basePath.'/'.$plan->runId);
+        self::assertSame([], $store->retainedRunIds());
     }
 
     public function test_result_evidence_distinguishes_all_outcomes_and_sorts_participants(): void
@@ -346,6 +350,47 @@ final class FileCoordinatorStoreTest extends TestCase
                 self::assertStringStartsWith('Invalid ', $exception->getMessage());
             }
         }
+    }
+
+    public function test_it_rejects_relative_empty_and_root_coordinator_paths(): void
+    {
+        foreach (['', '.', 'relative/path', '/', '\\', 'C:\\'] as $path) {
+            try {
+                new FileCoordinatorStore($path);
+                self::fail('Expected a broad coordinator path to be rejected.');
+            } catch (RaceProofException $exception) {
+                self::assertSame(
+                    'RaceProof coordinator path must be absolute and must not be a filesystem root.',
+                    $exception->getMessage(),
+                );
+            }
+        }
+    }
+
+    public function test_health_check_creates_missing_coordinator_storage(): void
+    {
+        $store = new FileCoordinatorStore($this->basePath);
+
+        self::assertDirectoryDoesNotExist($this->basePath);
+
+        $store->healthCheck();
+
+        self::assertDirectoryExists($this->basePath);
+        self::assertSame([], glob($this->basePath.'/.health-*') ?: []);
+    }
+
+    public function test_it_accepts_windows_drive_and_unc_absolute_paths(): void
+    {
+        $runId = str_repeat('a', 32);
+
+        self::assertSame(
+            'C:\\raceproof/'.$runId,
+            (new FileCoordinatorStore('C:\\raceproof'))->artifactReference($runId),
+        );
+        self::assertSame(
+            '\\\\server\\share/'.$runId,
+            (new FileCoordinatorStore('\\\\server\\share'))->artifactReference($runId),
+        );
     }
 
     private function removeDirectory(string $directory): void

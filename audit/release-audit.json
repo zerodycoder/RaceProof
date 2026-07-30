@@ -182,12 +182,34 @@
         },
         {
             "id": "coordination-integrity",
-            "scope": "Atomic coordination files, concurrent timeline appends, malformed-line recovery, and cleanup boundaries.",
+            "scope": "Fail-closed backend selection, parent/worker parity, credential-safe process arguments, atomic coordination files, concurrent timeline appends, malformed-line recovery, and backend-neutral cleanup boundaries.",
             "mutation_hotspot": true,
             "sources": [
+                "src/Contracts/CoordinatorStore.php",
+                "src/Coordination/CoordinatorResolver.php",
                 "src/Coordination/FileCoordinatorStore.php"
             ],
             "tests": [
+                {
+                    "file": "tests/Unit/CoordinatorResolverTest.php",
+                    "method": "test_it_rejects_unknown_driver_configuration_without_echoing_it"
+                },
+                {
+                    "file": "tests/Unit/SymfonyWorkerProcessFactoryTest.php",
+                    "method": "test_it_builds_a_managed_process_for_the_fixture_application"
+                },
+                {
+                    "file": "tests/Integration/ConsoleCommandsTest.php",
+                    "method": "test_doctor_rejects_an_unknown_coordinator_without_exposing_configuration"
+                },
+                {
+                    "file": "tests/Integration/ConsoleCommandsTest.php",
+                    "method": "test_worker_rejects_a_parent_driver_mismatch_before_reading_the_plan"
+                },
+                {
+                    "file": "tests/Integration/CoordinatorSelectionTest.php",
+                    "method": "test_unsupported_driver_fails_before_worker_factory_resolution"
+                },
                 {
                     "file": "tests/Unit/FileCoordinatorStoreTest.php",
                     "method": "test_it_coordinates_a_complete_run_with_atomic_files"

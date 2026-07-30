@@ -349,6 +349,6 @@ final readonly class RaceOrchestrator
 
     private function artifactPath(RacePlan $plan): string
     {
-        return rtrim($this->store->basePath(), '/\\').'/'.$plan->runId;
+        return $this->store->artifactReference($plan->runId);
     }
 }

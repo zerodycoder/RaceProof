@@ -7,8 +7,10 @@ namespace RaceProof\Laravel\Tests\Integration;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
+use RaceProof\Laravel\Contracts\CoordinatorStore;
 use RaceProof\Laravel\Contracts\ParticipantBootstrap;
 use RaceProof\Laravel\Contracts\RequestExecutor;
+use RaceProof\Laravel\Coordination\CoordinatorResolver;
 use RaceProof\Laravel\Coordination\FileCoordinatorStore;
 use RaceProof\Laravel\Data\BootstrapSpec;
 use RaceProof\Laravel\Data\ParticipantContext;
@@ -30,6 +32,8 @@ final class ConsoleCommandsTest extends TestCase
         $this->coordinatorPath = dirname(__DIR__, 2).'/build/console-command-tests/'.bin2hex(random_bytes(8));
         $this->app['config']->set('raceproof.coordinator.path', $this->coordinatorPath);
         $this->app->forgetInstance(FileCoordinatorStore::class);
+        $this->app->forgetInstance(CoordinatorResolver::class);
+        $this->app->forgetInstance(CoordinatorStore::class);
     }
 
     protected function tearDown(): void
@@ -95,6 +99,26 @@ final class ConsoleCommandsTest extends TestCase
         self::assertStringContainsString('RaceProof is disabled', $payload['checks'][0]['message']);
     }
 
+    public function test_doctor_rejects_an_unknown_coordinator_without_exposing_configuration(): void
+    {
+        $secret = 'redis://raceproof:super-secret@example.test';
+        $this->app['config']->set('raceproof.coordinator.driver', $secret);
+        $this->app->forgetInstance(CoordinatorResolver::class);
+        $this->app->forgetInstance(CoordinatorStore::class);
+
+        self::assertSame(Command::FAILURE, Artisan::call('raceproof:doctor', ['--json' => true]));
+
+        $output = Artisan::output();
+        $payload = json_decode($output, true, 32, JSON_THROW_ON_ERROR);
+        $coordinator = $payload['checks'][4];
+
+        self::assertSame('coordinator-writable', $coordinator['id']);
+        self::assertSame('fail', $coordinator['status']);
+        self::assertStringContainsString('configuration is unsupported', $coordinator['message']);
+        self::assertStringNotContainsString($secret, $output);
+        self::assertStringNotContainsString('super-secret', $output);
+    }
+
     public function test_doctor_self_test_uses_a_separate_bounded_child_process(): void
     {
         $basePath = $this->app->basePath();
@@ -152,6 +176,10 @@ final class ConsoleCommandsTest extends TestCase
                 ->assertExitCode(Command::SUCCESS);
             self::assertStringContainsString("'self_test_timeout_ms' => 15_000", (string) file_get_contents($target));
             self::assertStringContainsString("'self_test_output_bytes' => 65_536", (string) file_get_contents($target));
+            self::assertStringContainsString(
+                "'driver' => env('RACEPROOF_COORDINATOR_DRIVER', 'file')",
+                (string) file_get_contents($target),
+            );
             self::assertSame("EXISTING_VALUE=preserved\n", file_get_contents($environment));
         } finally {
             $this->app->useConfigPath($configPath);
@@ -179,6 +207,17 @@ final class ConsoleCommandsTest extends TestCase
         $this->artisan('raceproof:worker')->assertExitCode(Command::INVALID);
     }
 
+    public function test_worker_rejects_a_parent_driver_mismatch_before_reading_the_plan(): void
+    {
+        $this->artisan('raceproof:worker', [
+            '--run' => str_repeat('a', 32),
+            '--participant' => 'p1',
+            '--driver' => 'redis',
+        ])
+            ->expectsOutputToContain('does not match the parent process')
+            ->assertExitCode(Command::FAILURE);
+    }
+
     public function test_worker_executes_and_stores_a_result(): void
     {
         Route::post('/raceproof/worker', fn () => response('worker-ok', 202));
@@ -190,7 +229,7 @@ final class ConsoleCommandsTest extends TestCase
         $this->artisan('raceproof:worker', [
             '--run' => $plan->runId,
             '--participant' => 'p1',
-            '--coordinator' => $this->coordinatorPath,
+            '--driver' => 'file',
         ])->assertExitCode(Command::SUCCESS);
 
         $results = $store->results($plan->runId);
@@ -217,7 +256,7 @@ final class ConsoleCommandsTest extends TestCase
         $this->artisan('raceproof:worker', [
             '--run' => $plan->runId,
             '--participant' => 'p1',
-            '--coordinator' => $this->coordinatorPath,
+            '--driver' => 'file',
         ])->assertExitCode(Command::FAILURE);
 
         $results = $store->results($plan->runId);
@@ -240,7 +279,7 @@ final class ConsoleCommandsTest extends TestCase
         $this->artisan('raceproof:worker', [
             '--run' => $plan->runId,
             '--participant' => 'p1',
-            '--coordinator' => $this->coordinatorPath,
+            '--driver' => 'file',
         ])->assertExitCode(Command::FAILURE);
 
         $results = $store->results($plan->runId);

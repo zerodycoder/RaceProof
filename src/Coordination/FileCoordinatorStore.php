@@ -25,7 +25,75 @@ use Throwable;
 
 final class FileCoordinatorStore implements CoordinatorStore
 {
-    public function __construct(private readonly string $basePath) {}
+    private readonly string $basePath;
+
+    public function __construct(string $basePath)
+    {
+        $normalized = rtrim($basePath, '/\\');
+        $absolute = str_starts_with($normalized, '/')
+            || preg_match('/^[A-Za-z]:[\\\\\\/]/D', $normalized) === 1
+            || str_starts_with($normalized, '\\\\');
+
+        if (
+            $normalized === ''
+            || preg_match('/^[A-Za-z]:$/D', $normalized) === 1
+            || ! $absolute
+        ) {
+            throw new RaceProofException(
+                'RaceProof coordinator path must be absolute and must not be a filesystem root.',
+            );
+        }
+
+        $this->basePath = $normalized;
+    }
+
+    public function driver(): string
+    {
+        return 'file';
+    }
+
+    public function healthCheck(): void
+    {
+        $this->makeDirectory($this->basePath);
+
+        if (! is_writable($this->basePath)) {
+            throw new RaceProofException('RaceProof coordinator storage is not writable.');
+        }
+
+        $probe = $this->basePath.'/.health-'.bin2hex(random_bytes(8));
+
+        try {
+            $this->atomicWrite($probe, 'healthy');
+
+            if (! @unlink($probe)) {
+                throw new RaceProofException('RaceProof coordinator health probe could not be removed.');
+            }
+        } finally {
+            @unlink($probe);
+        }
+    }
+
+    public function retainedRunIds(): array
+    {
+        $runIds = [];
+
+        foreach (glob(rtrim($this->basePath, '/\\').'/*', GLOB_ONLYDIR) ?: [] as $directory) {
+            $runId = basename($directory);
+
+            if (preg_match('/^[a-f0-9]{32}$/D', $runId) === 1) {
+                $runIds[] = $runId;
+            }
+        }
+
+        sort($runIds, SORT_STRING);
+
+        return $runIds;
+    }
+
+    public function artifactReference(string $runId): string
+    {
+        return $this->runDirectory($runId);
+    }
 
     public function createRun(RacePlan $plan): void
     {
@@ -241,11 +309,6 @@ final class FileCoordinatorStore implements CoordinatorStore
         @rmdir($directory);
     }
 
-    public function basePath(): string
-    {
-        return $this->basePath;
-    }
-
     private function participantPath(string $runId, string $participantId, string $suffix): string
     {
         return $this->runDirectory($runId).'/participants/'.$this->safeParticipant($participantId).'.'.$suffix;
@@ -304,6 +367,7 @@ final class FileCoordinatorStore implements CoordinatorStore
         $temporary = $path.'.'.bin2hex(random_bytes(6)).'.tmp';
 
         if (file_put_contents($temporary, $contents, LOCK_EX) === false) {
+            @unlink($temporary);
             throw new RaceProofException("Unable to write RaceProof file [{$temporary}].");
         }
 

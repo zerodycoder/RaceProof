@@ -580,6 +580,23 @@ final class LifecycleCoordinatorStore implements CoordinatorStore
 
     public ?RacePlan $createdPlan = null;
 
+    public function driver(): string
+    {
+        return 'memory';
+    }
+
+    public function healthCheck(): void {}
+
+    public function retainedRunIds(): array
+    {
+        return [];
+    }
+
+    public function artifactReference(string $runId): string
+    {
+        return '/raceproof-artifacts/'.$runId;
+    }
+
     public function createRun(RacePlan $plan): void
     {
         $this->createdPlan = $plan;
@@ -641,11 +658,6 @@ final class LifecycleCoordinatorStore implements CoordinatorStore
     public function cleanup(string $runId): void
     {
         $this->cleanedRuns[] = $runId;
-    }
-
-    public function basePath(): string
-    {
-        return '/raceproof-artifacts';
     }
 }
 

@@ -51,11 +51,12 @@ under hundreds of distributed clients.
 
 ## Storage and process boundaries
 
-The coordinator uses local files and independent CLI PHP processes. Every worker
-must see the same local coordination directory and database. Network filesystems,
-multi-host execution, Redis coordination, queues, and remote workers are outside
-v1. Process termination is best effort at the operating-system boundary; CI
-tests stop and reap workers, but host failure can still require manual cleanup.
+The coordinator contract supports fail-closed driver selection, but `file` is
+the only implemented driver. Every independent CLI worker must still see the
+same local coordination directory and database. Network filesystems, multi-host
+execution, Redis coordination, queues, and remote workers are outside v1.
+Process termination is best effort at the operating-system boundary; CI tests
+stop and reap workers, but host failure can still require manual cleanup.
 
 ## Database boundaries
 

@@ -20,6 +20,25 @@ Every future release section must list required code/configuration changes,
 deprecated paths, and safe rollback constraints. "No migration required" must
 be stated explicitly when true.
 
+### Coordinator driver configuration
+
+The default coordinator remains local files and requires no application change
+when the published configuration is current:
+
+```php
+'coordinator' => [
+    'driver' => env('RACEPROOF_COORDINATOR_DRIVER', 'file'),
+    'path' => storage_path('framework/raceproof'),
+],
+```
+
+Applications with a previously published configuration file must add the
+`driver` key before adopting a version that includes pluggable coordination.
+Missing, malformed, empty, or unknown values fail closed. Only `file` is
+currently implemented; configuring `redis` does not enable distributed
+coordination. The file path must be absolute and cannot target a filesystem
+root.
+
 ## Published beta upgrade rehearsal
 
 Maintainers can exercise the current upgrade control with:
