@@ -75,7 +75,7 @@ support links, and authoritative history remain in the source monorepo.
 
 6. Open a focused draft PR, record correctness/security/package-content review,
    and merge only when the exact head passes the PHP/Laravel matrix, coverage,
-   release dry-run, MySQL, PostgreSQL, and dependent release-audit jobs.
+   release dry-run, Redis, MySQL, PostgreSQL, and dependent release-audit jobs.
 
 `release:dry-run` builds both deterministic ZIP artifacts twice, compares their
 SHA-256 hashes, installs them together through a Composer artifact repository,

@@ -99,6 +99,11 @@ Avoid combining `actingAs()` and a request token for the same participant unless
 
 ## Credential handling
 
-Workers need the real request credentials, so request headers and cookies are written to the permission-restricted `plan.json` inside the coordinator directory. Failed and timed-out runs retain that directory as evidence. Use disposable, least-privilege test tokens and sessions, keep artifact access restricted, and remove retained artifacts promptly after diagnosis.
+Workers need the real request credentials, so request headers and cookies are
+written to the permission-restricted `plan.json` for the file driver or the
+TTL-bounded run hash for the Redis driver. Failed and timed-out runs retain that
+state as evidence. Use disposable, least-privilege test tokens and sessions,
+keep file or Redis artifact access restricted, and remove retained artifacts
+promptly after diagnosis.
 
 See Laravel's [session documentation](https://laravel.com/docs/13.x/session) and [Sanctum documentation](https://laravel.com/docs/13.x/sanctum) for application-side storage and middleware requirements.

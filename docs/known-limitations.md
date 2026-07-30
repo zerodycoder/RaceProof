@@ -51,10 +51,12 @@ under hundreds of distributed clients.
 
 ## Storage and process boundaries
 
-The coordinator contract supports fail-closed driver selection, but `file` is
-the only implemented driver. Every independent CLI worker must still see the
-same local coordination directory and database. Network filesystems, multi-host
-execution, Redis coordination, queues, and remote workers are outside v1.
+The coordinator contract supports fail-closed `file` and `redis` drivers.
+File-backed workers must see the same local coordination directory. Redis-backed
+workers must reach the same single-node, access-controlled test Redis service,
+and the configured TTL must exceed the race lifecycle. Redis Cluster, Sentinel,
+cross-region or multi-host execution, network filesystems, queues, and remote
+workers are outside this increment and outside v1.
 Process termination is best effort at the operating-system boundary; CI tests
 stop and reap workers, but host failure can still require manual cleanup.
 

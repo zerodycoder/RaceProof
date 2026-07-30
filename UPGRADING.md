@@ -29,15 +29,27 @@ when the published configuration is current:
 'coordinator' => [
     'driver' => env('RACEPROOF_COORDINATOR_DRIVER', 'file'),
     'path' => storage_path('framework/raceproof'),
+    'redis' => [
+        'connection' => env('RACEPROOF_REDIS_CONNECTION', 'default'),
+        'namespace' => env('RACEPROOF_REDIS_NAMESPACE', 'raceproof'),
+        'ttl_seconds' => (int) env('RACEPROOF_REDIS_TTL_SECONDS', 86_400),
+        'poll_interval_ms' => (int) env('RACEPROOF_REDIS_POLL_INTERVAL_MS', 5),
+    ],
 ],
 ```
 
 Applications with a previously published configuration file must add the
 `driver` key before adopting a version that includes pluggable coordination.
-Missing, malformed, empty, or unknown values fail closed. Only `file` is
-currently implemented; configuring `redis` does not enable distributed
-coordination. The file path must be absolute and cannot target a filesystem
-root.
+Add the nested `redis` keys before selecting that driver. Missing, malformed,
+empty, or unknown values fail closed. The file path must be absolute and cannot
+target a filesystem root.
+
+Redis coordination requires a named single-node connection under
+`database.redis` and either `ext-redis` or `predis/predis`. It coordinates the
+existing local worker processes; it does not enable remote execution. Existing
+file runs are not migrated. To roll back, clean retained Redis runs, select
+`file`, clear Laravel's configuration cache, and rerun Doctor; otherwise the
+Redis keys expire at their bounded TTL.
 
 ## Published beta upgrade rehearsal
 

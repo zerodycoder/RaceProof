@@ -29,6 +29,7 @@ final class CoordinatorResolver
 
         $store = match ($driver) {
             'file' => $this->container->make(FileCoordinatorStore::class),
+            'redis' => $this->container->make(RedisCoordinatorStore::class),
             default => throw new RaceProofException(
                 'RaceProof coordinator driver configuration is unsupported.',
             ),

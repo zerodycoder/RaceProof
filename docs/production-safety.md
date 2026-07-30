@@ -18,6 +18,13 @@ Exception diagnostics and worker stdout/stderr are redacted before their byte li
 
 Request credentials cannot be redacted from `plan.json` because workers need their exact header and cookie values. Coordinator files are permissioned to `0600` where supported, but failed runs are retained. Authentication tests should use disposable, least-privilege tokens and sessions, and retained artifacts must be removed promptly after diagnosis.
 
+The Redis driver stores that same exact plan in the selected Redis service.
+Use a dedicated test connection with least-privilege ACLs and transport security,
+restrict backup and monitoring access, and keep the bounded TTL short. The
+namespace prevents collisions but is not a security boundary. Redis connection
+credentials remain in Laravel's database configuration and are never accepted
+as RaceProof command arguments or emitted in coordinator diagnostics.
+
 Human, JSON, and JUnit [evidence reporters](reporters.md) re-apply configured redaction and field limits. Human output is capped as a whole; structured formats bound their fields and collection counts so truncation never corrupts JSON or XML. Response-body redaction remains pattern-based and cannot replace restricted artifact access.
 
 ## Studio boundary

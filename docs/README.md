@@ -11,6 +11,7 @@ does not replace them.
 | --- | --- |
 | Reproduce and fix a race in five minutes | [Five-minute guide](five-minute-guide.md) |
 | Understand the process and coordination model | [Architecture](architecture.md) |
+| Configure and operate Redis coordination | [Redis coordination](redis-coordination.md) |
 | Add checkpoints safely | [Runtime checkpoint deployment](runtime-checkpoints.md) |
 | Configure individual requests or identities | [Participant requests and authentication](participant-specs.md) |
 | Prepare process-local state | [Participant bootstrap](participant-bootstrap.md) |

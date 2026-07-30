@@ -43,9 +43,10 @@ The reader streams the file one line at a time. A blank, partial, malformed, uns
 For automation, the [evidence reporters](reporters.md) project the result into
 one versioned, bounded, redacted model. JSON reports include a bounded event
 projection plus counts and warning details; JUnit uses the same outcome model.
-`timeline.jsonl` remains the authoritative event-level artifact when the
-coordinator scratch directory is retained. [RaceProof Studio](studio.md)
-archives the bounded projection before successful scratch cleanup.
+`timeline.jsonl` remains the authoritative event-level artifact for a retained
+file-backed run. A retained Redis run keeps the same ordered event envelopes in
+its TTL-bounded hash. [RaceProof Studio](studio.md) archives the bounded
+projection before successful coordinator cleanup.
 
 ## Sensitive data
 

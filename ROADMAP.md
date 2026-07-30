@@ -72,7 +72,7 @@ A stable v1 requires all of the following:
 ### Enterprise foundations â€” pre-adoption hardening
 
 - [x] Backend-neutral coordinator lifecycle with fail-closed driver selection
-- [ ] Redis coordination with atomic operations, namespaces, TTLs, and CI
+- [x] Redis coordination with atomic operations, namespaces, TTLs, and CI
 - [ ] Remote worker transport with authenticated, bounded control messages
 - [ ] Queue race orchestration with explicit job and retry invariants
 - [ ] Interleaving exploration and exact schedule controls with honest limits
@@ -83,8 +83,7 @@ capability requires its own evidence before support claims expand.
 
 ## Enterprise sequencing
 
-Pluggable coordination comes first so future drivers do not fork orchestration,
-worker boot, diagnostics, cleanup, or evidence semantics. Redis coordination is
-the next bounded driver; remote transport, queue races, and schedule exploration
-remain separate increments so each can be reviewed, rolled back, and evidenced
-independently.
+Pluggable file/Redis coordination now shares orchestration, worker boot,
+diagnostics, cleanup, and evidence semantics. Remote transport is the next
+bounded increment; queue races and schedule exploration remain separate so each
+can be reviewed, rolled back, and evidenced independently.
