@@ -14,6 +14,7 @@ return [
     ],
 
     'coordinator' => [
+        'driver' => env('RACEPROOF_COORDINATOR_DRIVER', 'file'),
         'path' => storage_path('framework/raceproof'),
     ],
 

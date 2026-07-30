@@ -69,8 +69,22 @@ A stable v1 requires all of the following:
 - [ ] Public beta evidence and adoption gates
 - [ ] Final security, compatibility, reliability, and documentation audit
 
-## Later, based on adoption
+### Enterprise foundations â€” pre-adoption hardening
 
-Redis coordination, network mode, queue races, interleaving fuzzing, and exact
-schedule control are intentionally post-v1 candidates. They should be
-prioritized from user evidence, not added to inflate scope.
+- [x] Backend-neutral coordinator lifecycle with fail-closed driver selection
+- [ ] Redis coordination with atomic operations, namespaces, TTLs, and CI
+- [ ] Remote worker transport with authenticated, bounded control messages
+- [ ] Queue race orchestration with explicit job and retry invariants
+- [ ] Interleaving exploration and exact schedule controls with honest limits
+
+This track can harden architecture while external adoption is unavailable, but
+it does not satisfy or weaken the stable-v1 adoption gate. Each distributed
+capability requires its own evidence before support claims expand.
+
+## Enterprise sequencing
+
+Pluggable coordination comes first so future drivers do not fork orchestration,
+worker boot, diagnostics, cleanup, or evidence semantics. Redis coordination is
+the next bounded driver; remote transport, queue races, and schedule exploration
+remain separate increments so each can be reviewed, rolled back, and evidenced
+independently.

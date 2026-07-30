@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace RaceProof\Laravel\Console;
 
 use Illuminate\Console\Command;
+use RaceProof\Laravel\Contracts\CoordinatorStore;
 use RaceProof\Laravel\Contracts\RequestExecutor;
-use RaceProof\Laravel\Coordination\FileCoordinatorStore;
+use RaceProof\Laravel\Coordination\CoordinatorResolver;
 use RaceProof\Laravel\Data\ParticipantContext;
 use RaceProof\Laravel\Data\ParticipantResult;
 use RaceProof\Laravel\Data\TimelineEvent;
@@ -24,7 +25,7 @@ final class WorkerCommand extends Command
     protected $signature = 'raceproof:worker
         {--run= : Race run ID}
         {--participant= : Participant ID}
-        {--coordinator= : Absolute coordinator directory}';
+        {--driver= : Non-secret coordinator driver name}';
 
     protected $description = 'Internal RaceProof worker process';
 
@@ -35,6 +36,7 @@ final class WorkerCommand extends Command
         private readonly SensitiveDataRedactor $redactor,
         private readonly ParticipantBootstrapRunner $bootstrapRunner,
         private readonly RacePoint $checkpointHandler,
+        private readonly CoordinatorResolver $coordinator,
     ) {
         parent::__construct();
         $this->setHidden(true);
@@ -44,9 +46,9 @@ final class WorkerCommand extends Command
     {
         $runOption = $this->option('run');
         $participantOption = $this->option('participant');
-        $coordinatorOption = $this->option('coordinator');
+        $driverOption = $this->option('driver');
 
-        if (! is_string($runOption) || ! is_string($participantOption) || ! is_string($coordinatorOption)) {
+        if (! is_string($runOption) || ! is_string($participantOption) || ! is_string($driverOption)) {
             $this->components->error('Worker options must be strings.');
 
             return self::INVALID;
@@ -54,13 +56,18 @@ final class WorkerCommand extends Command
 
         $runId = $runOption;
         $participantId = $participantOption;
-        $coordinator = $coordinatorOption;
-        $store = new FileCoordinatorStore($coordinator);
+        $store = null;
         $plan = null;
         $activation = null;
 
         try {
             $this->environment->ensureEnabled();
+            $store = $this->coordinator->resolve();
+
+            if (! hash_equals($driverOption, $store->driver())) {
+                throw new \RuntimeException('Worker coordinator driver does not match the parent process.');
+            }
+
             $plan = $store->plan($runId);
             $participantContext = new ParticipantContext($runId, $participantId);
             $bootstrapSpec = $plan->bootstrapFor($participantId);
@@ -102,7 +109,7 @@ final class WorkerCommand extends Command
         } catch (Throwable $exception) {
             $message = $this->redactor->diagnostic($exception->getMessage());
 
-            if ($plan !== null) {
+            if ($plan !== null && $store instanceof CoordinatorStore) {
                 try {
                     $store->storeResult(ParticipantResult::workerFailure(
                         $runId,

@@ -32,7 +32,7 @@ final readonly class SymfonyWorkerProcessFactory implements WorkerProcessFactory
             'raceproof:worker',
             '--run='.$runId,
             '--participant='.$participantId,
-            '--coordinator='.$this->store->basePath(),
+            '--driver='.$this->store->driver(),
             '--no-interaction',
         ], $this->app->basePath(), timeout: null));
     }

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added a fail-closed coordinator driver boundary that keeps the file backend as
+  the safe default, resolves the same backend in parent and worker processes,
+  removes backend details from worker command arguments, and exposes
+  backend-neutral health, cleanup, and artifact capabilities.
 - Added a fail-closed published-upgrade rehearsal that installs the real
   `v1.0.0-beta.1` packages from Packagist, upgrades both packages to distinct
   candidate artifacts, and repeats the same Doctor/runtime/race smoke contract.

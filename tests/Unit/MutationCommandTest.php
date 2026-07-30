@@ -33,6 +33,7 @@ final class MutationCommandTest extends TestCase
             'src/Support/SensitiveDataRedactor.php',
             'src/Execution/SymfonyWorkerProcess.php',
             'src/Execution/RaceOrchestrator.php',
+            'src/Coordination/CoordinatorResolver.php',
             'src/Coordination/FileCoordinatorStore.php',
             'src/Reports/RaceReportFactory.php',
         ];
@@ -42,6 +43,7 @@ final class MutationCommandTest extends TestCase
             'tests/Integration/SensitiveDataRedactorTest.php',
             'tests/Unit/SymfonyWorkerProcessStopTest.php',
             'tests/Integration/RaceOrchestratorLifecycleTest.php',
+            'tests/Unit/CoordinatorResolverTest.php',
             'tests/Unit/FileCoordinatorStoreTest.php',
             'tests/Unit/FileCoordinatorTimelineTest.php',
             'tests/Unit/RaceResultReportTest.php',

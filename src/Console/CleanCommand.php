@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace RaceProof\Laravel\Console;
 
 use Illuminate\Console\Command;
-use RaceProof\Laravel\Coordination\FileCoordinatorStore;
+use RaceProof\Laravel\Coordination\CoordinatorResolver;
 use RaceProof\Laravel\Studio\ReportArchive;
 
 final class CleanCommand extends Command
@@ -16,7 +16,7 @@ final class CleanCommand extends Command
     protected $description = 'Remove retained RaceProof run artifacts';
 
     public function __construct(
-        private readonly FileCoordinatorStore $store,
+        private readonly CoordinatorResolver $coordinator,
         private readonly ReportArchive $archive,
     ) {
         parent::__construct();
@@ -25,14 +25,11 @@ final class CleanCommand extends Command
     public function handle(): int
     {
         $count = 0;
+        $store = $this->coordinator->resolve();
 
-        foreach (glob(rtrim($this->store->basePath(), '/\\').'/*', GLOB_ONLYDIR) ?: [] as $directory) {
-            $runId = basename($directory);
-
-            if (preg_match('/^[a-f0-9]{32}$/', $runId)) {
-                $this->store->cleanup($runId);
-                $count++;
-            }
+        foreach ($store->retainedRunIds() as $runId) {
+            $store->cleanup($runId);
+            $count++;
         }
 
         $this->components->info("Removed {$count} RaceProof run(s).");

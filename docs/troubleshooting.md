@@ -18,6 +18,12 @@ configuration failures. Add `--json` for a schema-v1 diagnostic that contains
 check identifiers and redacted failure messages without dumping environment
 variables.
 
+The coordinator check resolves `raceproof.coordinator.driver` (normally
+`RACEPROOF_COORDINATOR_DRIVER`) through the same container path used by parent
+and worker processes. The only valid value today is `file`. An unknown, missing,
+or malformed driver fails without echoing the configured value, so connection
+strings cannot leak through Doctor output.
+
 The JSON shape is intentionally small and versioned:
 
 ```json
@@ -42,6 +48,11 @@ The JSON shape is intentionally small and versioned:
 - **Spawn timeout with no worker output:** verify `proc_open`, the PHP executable,
   file permissions, antivirus/process policy, and that Composer dependencies are
   installed for the worker process.
+- **Coordinator driver rejected:** publish the current configuration and set
+  `raceproof.coordinator.driver` to `file`; Redis and custom drivers are not yet
+  implemented.
+- **Parent/worker driver mismatch:** clear stale Laravel configuration caches and
+  ensure the parent CLI and worker CLI load the same environment/configuration.
 - **Only Windows fails:** use an absolute PHP path, avoid shell-only quoting,
   reproduce with `php artisan raceproof:doctor --self-test`, and compare the
   public `platform-smoke (windows-latest)` job. Package maintainers can run

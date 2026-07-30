@@ -25,7 +25,21 @@ Test -> RaceBuilder -> RaceOrchestrator
 - A malformed or partial timeline line is reported as a warning without discarding other valid evidence.
 - A failed or timed-out run is retained. A clean run is removed by default.
 
-The file coordinator assumes every worker can access the same local filesystem. Redis and network/distributed coordination are separate future drivers.
+The backend is selected once from `raceproof.coordinator.driver` (published as
+`RACEPROOF_COORDINATOR_DRIVER`) through a fail-closed resolver. Parent
+orchestration, child workers, Doctor, cleanup, and artifact reporting consume
+the same backend-neutral contract. Worker command arguments contain only the run
+and participant identifiers plus the non-secret driver name used for a
+fail-fast parent/worker parity check. Backend paths and future connection
+credentials are never passed on the command line.
+
+`file` is the only implemented driver and remains the default. It retains the
+existing permission-restricted directory layout, requires an absolute non-root
+path, and assumes every worker can access the same local filesystem. Its health
+check performs an atomic write/delete probe. The contract also defines
+backend-neutral health, retained-run discovery, cleanup, and bounded artifact
+references so a future Redis driver does not fork lifecycle behavior. Redis and
+remote worker transport remain unimplemented and unsupported.
 
 ## Timing semantics
 
