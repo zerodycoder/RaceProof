@@ -41,7 +41,8 @@ replay an exact global schedule, prove the absence of races, or provide a formal
 correctness proof.
 
 It is a regression-test tool, not a production traffic generator, benchmark,
-load tester, queue fuzzer, or distributed test coordinator.
+load tester, queue fuzzer, general distributed test coordinator, or remote
+shell.
 
 The required database matrix exercises 10- and 25-participant exchange
 contention. Scheduled evidence extends that bounded cohort to 50 and 100
@@ -54,11 +55,20 @@ under hundreds of distributed clients.
 The coordinator contract supports fail-closed `file` and `redis` drivers.
 File-backed workers must see the same local coordination directory. Redis-backed
 workers must reach the same single-node, access-controlled test Redis service,
-and the configured TTL must exceed the race lifecycle. Redis Cluster, Sentinel,
-cross-region or multi-host execution, network filesystems, queues, and remote
-workers are outside this increment and outside v1.
-Process termination is best effort at the operating-system boundary; CI tests
-stop and reap workers, but host failure can still require manual cleanup.
+and the configured TTL must exceed the race lifecycle.
+
+The opt-in remote transport supports a static set of authenticated agents that
+run the same application and share Redis plus the disposable database. It does
+not support Redis Cluster, Sentinel, cross-region timing, automatic discovery,
+autoscaling, retries, failover, arbitrary commands, or queue orchestration.
+CI evidence is limited to two Ubuntu agent processes. Remote timing uses a
+bounded Redis-time alignment sample; network asymmetry still limits
+start-spread precision and remote results are not benchmark evidence.
+
+Process termination is best effort at the operating-system boundary. CI tests
+stop and reap workers, but agent or host failure can still require manual
+cleanup. There is one active HMAC secret; rotate it only after in-flight controls
+settle.
 
 ## Database boundaries
 

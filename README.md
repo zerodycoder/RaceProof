@@ -132,8 +132,8 @@ instrumentation to production code.
 
 1. The parent test validates the environment, database, request, participant
    overrides, authentication specs, and checkpoint plan.
-2. RaceProof boots independent Laravel worker processes against the same
-   configured database.
+2. RaceProof boots independent Laravel worker processes locally or dispatches
+   them to explicitly registered remote agents against the same database.
 3. A start barrier coordinates request entry; `race_point()` can rendezvous
    workers inside the application.
 4. The parent releases a checkpoint only after the complete cohort arrives.
@@ -171,6 +171,26 @@ boundary as JSON - never serialized closures. Read the
 [request and authentication guide](docs/participant-specs.md) and
 [bootstrap guide](docs/participant-bootstrap.md) for merge rules and security
 boundaries.
+
+## Remote workers
+
+Local Symfony processes remain the zero-configuration default. For isolated
+multi-host test environments, RaceProof can route workers to a static set of
+authenticated agents through the Redis coordinator:
+
+```dotenv
+RACEPROOF_COORDINATOR_DRIVER=redis
+RACEPROOF_WORKER_TRANSPORT=remote
+RACEPROOF_REMOTE_AGENTS=agent-a,agent-b
+RACEPROOF_REMOTE_SECRET=<secret-manager value>
+```
+
+Each agent runs the same reviewed application with
+`php artisan raceproof:worker-agent --id=agent-a`. Start/stop controls are
+versioned, byte-bounded, expiring HMAC-SHA256 envelopes with atomic replay
+protection. Capacity, heartbeat, shutdown, output retention, and Redis-aligned
+cross-host timing all fail closed. See the
+[remote worker guide](docs/remote-workers.md) before enabling it.
 
 ## Assertions and evidence
 
@@ -270,6 +290,8 @@ RaceProof fails closed:
 - coordination uses JSON only, with no untrusted `unserialize()`;
 - Redis coordination uses bounded TTLs and atomic transitions without exposing
   connection credentials in worker arguments or diagnostics;
+- remote controls are signed, expiring, replay-protected, byte-bounded, and
+  restricted to the fixed worker command;
 - crash and timeout artifacts are retained for diagnosis.
 
 Use a dedicated disposable database. Do not combine multi-process tests with
@@ -290,6 +312,7 @@ records. The [production safety guide](docs/production-safety.md) and
 | Native Windows | Experimental; continuous independent-consumer smoke |
 | SQLite | File-backed smoke tests only; not production lock evidence |
 | Coordination | Local files by default; single-node Redis 7.4 continuously verified on Linux |
+| Worker transport | Local by default; two authenticated Redis-backed agents continuously verified on Linux |
 
 The exact compatibility promise is maintained in
 [the platform matrix](docs/platform-support.md).
@@ -311,6 +334,7 @@ Start with the [documentation map](docs/README.md), or jump directly to:
 - [Five-minute guide](docs/five-minute-guide.md)
 - [Architecture](docs/architecture.md)
 - [Redis coordination](docs/redis-coordination.md)
+- [Remote worker transport](docs/remote-workers.md)
 - [PHPUnit and Pest workflows](docs/testing-workflows.md)
 - [Troubleshooting](docs/troubleshooting.md)
 - [Public API contract](docs/public-api.md)

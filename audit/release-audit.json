@@ -267,6 +267,74 @@
             ]
         },
         {
+            "id": "remote-worker-transport",
+            "scope": "Fail-closed transport selection, authenticated expiring controls, atomic replay protection, bounded routing/capacity/liveness/shutdown/output, Redis-aligned timing, and independent-agent evidence.",
+            "mutation_hotspot": true,
+            "sources": [
+                "src/Execution/WorkerTransportResolver.php",
+                "src/Remote/RemoteWorkerConfiguration.php",
+                "src/Remote/RemoteControlMessageCodec.php",
+                "src/Remote/RedisWorkerControlPlane.php",
+                "src/Remote/RemoteWorkerProcess.php",
+                "src/Remote/RemoteWorkerAgent.php",
+                "src/Remote/RedisSynchronizedParticipantClock.php"
+            ],
+            "tests": [
+                {
+                    "file": "tests/Unit/WorkerTransportResolverTest.php",
+                    "method": "test_remote_transport_rejects_the_file_coordinator_before_container_resolution"
+                },
+                {
+                    "file": "tests/Unit/RemoteWorkerConfigurationTest.php",
+                    "method": "test_it_rejects_invalid_configuration_without_echoing_values"
+                },
+                {
+                    "file": "tests/Unit/RemoteControlMessageCodecTest.php",
+                    "method": "test_it_rejects_malformed_tampered_or_misrouted_messages"
+                },
+                {
+                    "file": "tests/Unit/RemoteControlMessageCodecTest.php",
+                    "method": "test_it_rejects_expired_future_and_overlong_lifetime_messages"
+                },
+                {
+                    "file": "tests/Unit/RedisWorkerControlPlaneTest.php",
+                    "method": "test_it_dispatches_claims_runs_and_finishes_a_worker_once"
+                },
+                {
+                    "file": "tests/Unit/RedisWorkerControlPlaneTest.php",
+                    "method": "test_signed_stop_cancels_an_unclaimed_start_and_replay_cannot_launch_it"
+                },
+                {
+                    "file": "tests/Unit/RemoteWorkerProcessTest.php",
+                    "method": "test_wait_is_bounded_when_an_agent_never_reaches_terminal_state"
+                },
+                {
+                    "file": "tests/Integration/RemoteWorkerAgentTest.php",
+                    "method": "test_stop_controls_take_priority_and_stop_a_running_worker"
+                },
+                {
+                    "file": "tests/Integration/RemoteWorkerAgentTest.php",
+                    "method": "test_it_does_not_acknowledge_a_stop_after_losing_the_local_process_handle"
+                },
+                {
+                    "file": "tests/Integration/RemoteWorkerAgentTest.php",
+                    "method": "test_capacity_is_bounded_and_queued_starts_are_not_dropped"
+                },
+                {
+                    "file": "tests/Unit/RedisSynchronizedParticipantClockTest.php",
+                    "method": "test_it_aligns_a_monotonic_clock_to_one_bounded_redis_time_sample"
+                },
+                {
+                    "file": "tests/Redis/RemoteWorkerControlPlaneTest.php",
+                    "method": "test_real_redis_authentication_replay_lifecycle_and_ttl_are_atomic"
+                },
+                {
+                    "file": "tests/ConsumerApp/tests/Feature/ConsumerAcceptanceTest.php",
+                    "method": "test_real_consumer_install_auth_cli_race_and_studio_workflow"
+                }
+            ]
+        },
+        {
             "id": "production-runtime-boundary",
             "scope": "Capability-scoped activation and a framework-free, process-free production no-op runtime.",
             "mutation_hotspot": true,

@@ -6,7 +6,9 @@ namespace RaceProof\Laravel\Console;
 
 use Closure;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Container\Container;
 use RaceProof\Laravel\Coordination\CoordinatorResolver;
+use RaceProof\Laravel\Execution\WorkerTransportResolver;
 use RaceProof\Laravel\Support\DatabaseSafety;
 use RaceProof\Laravel\Support\DoctorSelfTest;
 use RaceProof\Laravel\Support\EnvironmentGuard;
@@ -25,6 +27,7 @@ final class DoctorCommand extends Command
         private readonly EnvironmentGuard $environment,
         private readonly DatabaseSafety $database,
         private readonly CoordinatorResolver $coordinator,
+        private readonly Container $container,
         private readonly DoctorSelfTest $selfTest,
         private readonly SensitiveDataRedactor $redactor,
     ) {
@@ -62,6 +65,18 @@ final class DoctorCommand extends Command
             'Coordinator writable' => [
                 'id' => 'coordinator-writable',
                 'run' => fn () => $this->coordinator->resolve()->healthCheck(),
+            ],
+            'Worker transport' => [
+                'id' => 'worker-transport',
+                'run' => function (): void {
+                    $transport = $this->container->make(WorkerTransportResolver::class);
+
+                    if (! $transport instanceof WorkerTransportResolver) {
+                        throw new \RuntimeException('RaceProof resolved an invalid worker transport.');
+                    }
+
+                    $transport->healthCheck();
+                },
             ],
         ];
 

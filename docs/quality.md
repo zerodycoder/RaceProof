@@ -16,6 +16,8 @@ Every pull request must pass:
 - isolated Laravel consumer installation and acceptance;
 - a real single-node Redis coordinator contract plus an independent
   multi-process consumer using that backend;
+- an authenticated remote-control contract plus the same consumer race through
+  two independently running, capacity-bounded agents;
 - independent consumer smoke acceptance on GitHub-hosted macOS and Windows;
 - at least 90% executable-line coverage;
 - at least 80% strict covered-code mutation score across the selected
@@ -33,10 +35,11 @@ file-backed SQLite, and Studio behavior; they do not constitute native
 MySQL/PostgreSQL release evidence or upgrade either platform's documented
 support level.
 
-`composer test:mutation` requires Xdebug or PCOV and mutates nine explicitly
+`composer test:mutation` requires Xdebug or PCOV and mutates fourteen explicitly
 selected files: the environment/database/redaction fail-closed boundaries,
 worker process and orchestration lifecycle, coordinator selection,
-file/Redis coordination integrity, and stable report projection. The command uses
+file/Redis coordination integrity, authenticated remote transport selection,
+message/configuration/control-state/process boundaries, and stable report projection. The command uses
 repository-relative paths so it
 selects the same files on Windows and POSIX shells. It uses only covered lines,
 fails below 80%, and does not ignore an empty mutation set. A second fail-closed
@@ -93,6 +96,12 @@ audited invitation, adoption, and resulting-fix thresholds in the
 The isolated consumer job also requires a clean tracked fixture after its real
 worker, scaffold, session, and Studio cleanup paths run. Generated consumer
 state may not be hidden by accepting a dirty worktree.
+
+The Redis job additionally generates its remote authentication secret at
+runtime, starts two registered agent processes, waits for Doctor to verify both
+heartbeats, executes the isolated consumer workflow through the remote
+transport, and retains agent logs, Doctor JSON, and JUnit evidence for 30 days.
+This proves the bounded Ubuntu/single-node topology only.
 
 The final `release-audit` CI job depends on every PHP/Laravel, coverage,
 targeted-mutation, Linux/macOS/Windows consumer, Redis, release-dry-run, MySQL,

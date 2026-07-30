@@ -41,10 +41,18 @@ The detailed levels live in [the platform matrix](platform-support.md):
 - macOS is best-effort compatible with continuous consumer smoke evidence;
 - native Windows is experimental with continuous consumer smoke evidence.
 
-All platforms require `proc_open`, a usable CLI PHP binary, local writable
+Local transport requires `proc_open`, a usable CLI PHP binary, local writable
 coordination storage, and one disposable database reachable by every worker.
-Network filesystems, containers, antivirus, and database networking can change
-timing and are environment-specific.
+Remote agents require the same process capabilities on each agent, a shared
+single-node Redis coordinator/control plane, the same application revision and
+dependencies, and equivalent access to the disposable database. Network
+filesystems, containers, antivirus, Redis/database networking, and network
+asymmetry can change timing and are environment-specific.
+
+Authenticated remote transport is continuously verified only on Ubuntu with
+two independently running agent processes and Redis 7.4. Redis Cluster,
+Sentinel, cross-region execution, automatic discovery/failover, and native
+Windows/macOS agents remain outside support.
 
 The macOS and Windows jobs use PHP 8.4, Laravel 12, and file-backed SQLite to
 verify installation and process mechanics. They do not expand the database

@@ -220,6 +220,10 @@ final class ReleaseEngineeringTest extends TestCase
         self::assertStringContainsString('composer update --with', $testsWorkflow);
         self::assertStringContainsString('--with-all-dependencies', $testsWorkflow);
         self::assertStringNotContainsString('composer require --no-update', $testsWorkflow);
+        self::assertStringContainsString('RACEPROOF_WORKER_TRANSPORT: remote', $testsWorkflow);
+        self::assertStringContainsString('raceproof:worker-agent', $testsWorkflow);
+        self::assertStringContainsString('openssl rand -hex 32', $testsWorkflow);
+        self::assertStringContainsString('remote-worker-transport-evidence', $testsWorkflow);
         self::assertStringContainsString('SHA256SUMS.asc', $workflow);
         self::assertStringContainsString('provenance.json.asc', $workflow);
 

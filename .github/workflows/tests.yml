@@ -190,6 +190,49 @@ jobs:
       - run: composer audit --working-dir=tests/ConsumerApp --locked --no-interaction
       - name: Exercise a real multi-process consumer through Redis
         run: composer --working-dir=tests/ConsumerApp check
+
+      - name: Exercise the consumer through independent remote worker agents
+        env:
+          RACEPROOF_WORKER_TRANSPORT: remote
+          RACEPROOF_REMOTE_AGENTS: agent-a,agent-b
+          RACEPROOF_REMOTE_NAMESPACE: raceproof-remote-consumer-ci
+          RACEPROOF_REMOTE_MESSAGE_TTL_MS: 15000
+          RACEPROOF_REMOTE_STATE_TTL_SECONDS: 300
+          RACEPROOF_REMOTE_HEARTBEAT_TTL_MS: 5000
+          RACEPROOF_REMOTE_POLL_INTERVAL_MS: 10
+        run: |
+          mkdir -p build/remote-worker-evidence
+          export RACEPROOF_REMOTE_SECRET="$(openssl rand -hex 32)"
+          php tests/ConsumerApp/artisan raceproof:worker-agent \
+            --id=agent-a \
+            --idle-timeout-ms=120000 \
+            > build/remote-worker-evidence/agent-a.log 2>&1 &
+          agent_a_pid=$!
+          php tests/ConsumerApp/artisan raceproof:worker-agent \
+            --id=agent-b \
+            --idle-timeout-ms=120000 \
+            > build/remote-worker-evidence/agent-b.log 2>&1 &
+          agent_b_pid=$!
+          cleanup_agents() {
+            kill "$agent_a_pid" "$agent_b_pid" 2>/dev/null || true
+            wait "$agent_a_pid" "$agent_b_pid" 2>/dev/null || true
+          }
+          trap cleanup_agents EXIT
+          ready=0
+          for attempt in $(seq 1 100); do
+            if php tests/ConsumerApp/artisan raceproof:doctor --json \
+              > build/remote-worker-evidence/doctor.json; then
+              ready=1
+              break
+            fi
+            sleep 0.1
+          done
+          test "$ready" -eq 1
+          php tests/ConsumerApp/vendor/bin/phpunit \
+            --configuration=tests/ConsumerApp/phpunit.xml \
+            --filter=ConsumerAcceptanceTest \
+            --log-junit="$GITHUB_WORKSPACE/build/remote-worker-evidence/junit.xml"
+
       - name: Verify consumer cleanup preserves tracked fixtures
         run: git diff --exit-code -- tests/ConsumerApp
 
@@ -200,6 +243,15 @@ jobs:
           name: redis-coordination-evidence
           path: build/redis-evidence/evidence.json
           if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload remote worker transport evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: remote-worker-transport-evidence
+          path: build/remote-worker-evidence
+          if-no-files-found: warn
           retention-days: 30
 
   platform-smoke:

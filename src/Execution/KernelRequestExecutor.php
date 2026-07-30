@@ -10,13 +10,13 @@ use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use RaceProof\Laravel\Contracts\ParticipantClock;
 use RaceProof\Laravel\Contracts\RequestExecutor;
 use RaceProof\Laravel\Data\AuthSpec;
 use RaceProof\Laravel\Data\ParticipantContext;
 use RaceProof\Laravel\Data\ParticipantResult;
 use RaceProof\Laravel\Data\RacePlan;
 use RaceProof\Laravel\Exceptions\RaceProofException;
-use RaceProof\Laravel\Support\Clock;
 use RaceProof\Laravel\Support\ConfigValue;
 use RaceProof\Laravel\Support\SensitiveDataRedactor;
 use Symfony\Component\HttpFoundation\Response;
@@ -29,13 +29,14 @@ final readonly class KernelRequestExecutor implements RequestExecutor
         private AuthFactory $auth,
         private Config $config,
         private SensitiveDataRedactor $redactor,
+        private ParticipantClock $clock,
     ) {}
 
     public function execute(RacePlan $plan, ParticipantContext $context): ParticipantResult
     {
         $request = $this->makeRequest($plan, $context);
         $this->applyAuthentication($plan->authFor($context->participantId), $request);
-        $startedAt = Clock::nowNs();
+        $startedAt = $this->clock->nowNs();
         $response = null;
 
         try {
@@ -46,7 +47,7 @@ final readonly class KernelRequestExecutor implements RequestExecutor
                 participantId: $context->participantId,
                 status: $response->getStatusCode(),
                 startedAtNs: $startedAt,
-                finishedAtNs: Clock::nowNs(),
+                finishedAtNs: $this->clock->nowNs(),
                 body: $this->limitedBody($response),
                 headers: $this->capturedHeaders($response),
             );
@@ -56,7 +57,7 @@ final readonly class KernelRequestExecutor implements RequestExecutor
                 participantId: $context->participantId,
                 status: null,
                 startedAtNs: $startedAt,
-                finishedAtNs: Clock::nowNs(),
+                finishedAtNs: $this->clock->nowNs(),
                 exceptionClass: $exception::class,
                 exceptionMessage: $this->redactor->diagnostic($exception->getMessage()),
             );

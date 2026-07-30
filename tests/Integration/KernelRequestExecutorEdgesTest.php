@@ -7,6 +7,7 @@ namespace RaceProof\Laravel\Tests\Integration;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Support\Facades\Route;
 use Mockery;
+use RaceProof\Laravel\Contracts\ParticipantClock;
 use RaceProof\Laravel\Contracts\RequestExecutor;
 use RaceProof\Laravel\Data\ParticipantContext;
 use RaceProof\Laravel\Data\RacePlan;
@@ -27,6 +28,7 @@ final class KernelRequestExecutorEdgesTest extends TestCase
             $this->app['auth'],
             $this->app['config'],
             $this->app->make(SensitiveDataRedactor::class),
+            $this->app->make(ParticipantClock::class),
         );
 
         $result = $executor->execute(
