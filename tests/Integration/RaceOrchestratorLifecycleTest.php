@@ -12,6 +12,7 @@ use RaceProof\Laravel\Data\ParticipantResult;
 use RaceProof\Laravel\Data\RacePlan;
 use RaceProof\Laravel\Data\RequestSpec;
 use RaceProof\Laravel\Data\TimelineEvent;
+use RaceProof\Laravel\Exceptions\EnvironmentRejected;
 use RaceProof\Laravel\Exceptions\RaceExecutionFailed;
 use RaceProof\Laravel\Exceptions\RaceProofException;
 use RaceProof\Laravel\Execution\RaceOrchestrator;
@@ -31,8 +32,8 @@ final class RaceOrchestratorLifecycleTest extends TestCase
         $store->ready = 2;
         $store->checkpointReached = 2;
         $store->storedResults = [
-            $this->participant($plan, 'p1', 200),
             $this->participant($plan, 'p2', 200),
+            $this->participant($plan, 'p1', 200),
         ];
         $processes = [
             'p1' => new LifecycleWorkerProcess(running: false),
@@ -43,8 +44,16 @@ final class RaceOrchestratorLifecycleTest extends TestCase
             ->run($plan);
 
         self::assertNull($result->artifactPath);
+        self::assertSame($plan, $store->createdPlan);
         self::assertSame([$plan->runId], $store->cleanedRuns);
         self::assertSame(['after-read'], $store->releasedCheckpoints);
+        self::assertSame(1, $store->releaseStartCalls);
+        self::assertSame(['p1', 'p2'], array_map(
+            static fn (ParticipantResult $participant): string => $participant->participantId,
+            $result->participants,
+        ));
+        self::assertSame(1, $processes['p1']->startCalls);
+        self::assertSame(1, $processes['p2']->startCalls);
         self::assertSame(1, $processes['p1']->waitCalls);
         self::assertSame(1, $processes['p2']->waitCalls);
         self::assertSame(0, $processes['p1']->stopCalls);
@@ -56,6 +65,42 @@ final class RaceOrchestratorLifecycleTest extends TestCase
             'run.completed',
             'run.cleanup_started',
         ], $this->eventTypes($result->timeline));
+        self::assertSame([
+            [
+                'participant_id' => 'p1',
+                'data' => [
+                    'exit_code' => 0,
+                    'reason' => 'completed',
+                    'output' => '',
+                ],
+            ],
+            [
+                'participant_id' => 'p2',
+                'data' => [
+                    'exit_code' => 0,
+                    'reason' => 'completed',
+                    'output' => '',
+                ],
+            ],
+        ], array_map(
+            static fn (TimelineEvent $event): array => [
+                'participant_id' => $event->participantId,
+                'data' => $event->data,
+            ],
+            $result->timeline?->ofType('participant.exited') ?? [],
+        ));
+        self::assertSame([[
+            'timed_out' => false,
+            'result_count' => 2,
+            'failure_count' => 0,
+        ]], array_map(
+            static fn (TimelineEvent $event): array => $event->data,
+            $result->timeline?->ofType('run.completed') ?? [],
+        ));
+        self::assertSame([['reason' => 'successful_run']], array_map(
+            static fn (TimelineEvent $event): array => $event->data,
+            $result->timeline?->ofType('run.cleanup_started') ?? [],
+        ));
     }
 
     public function test_a_timeline_warning_retains_an_otherwise_clean_run(): void
@@ -186,6 +231,14 @@ final class RaceOrchestratorLifecycleTest extends TestCase
             self::assertArrayHasKey('output', $earlyExit[0]->data);
             self::assertStringContainsString('[truncated]', (string) $earlyExit[0]->data['output']);
             self::assertStringNotContainsString('secret-token', (string) $earlyExit[0]->data['output']);
+            $failure = $exception->result->timeline?->ofType('run.failed') ?? [];
+            self::assertCount(1, $failure);
+            self::assertSame(RaceProofException::class, $failure[0]->data['exception_class']);
+            self::assertSame(0, $failure[0]->data['secondary_failure_count']);
+            self::assertSame(
+                'Worker [p1] exited before the start barrier with exit code 7: Authorization: [REDACTED]',
+                $failure[0]->data['message'],
+            );
             self::assertSame([
                 'participant.spawned',
                 'participant.spawned',
@@ -260,6 +313,29 @@ final class RaceOrchestratorLifecycleTest extends TestCase
         self::assertCount(1, $timeouts);
         self::assertSame(['timeout_ms' => 1], $timeouts[0]->data);
         self::assertSame([
+            [
+                'exit_code' => 143,
+                'reason' => 'run_timeout',
+                'output' => '',
+            ],
+            [
+                'exit_code' => 143,
+                'reason' => 'run_timeout',
+                'output' => '',
+            ],
+        ], array_map(
+            static fn (TimelineEvent $event): array => $event->data,
+            $result->timeline?->ofType('participant.exited') ?? [],
+        ));
+        self::assertSame([[
+            'timed_out' => true,
+            'result_count' => 2,
+            'failure_count' => 2,
+        ]], array_map(
+            static fn (TimelineEvent $event): array => $event->data,
+            $result->timeline?->ofType('run.completed') ?? [],
+        ));
+        self::assertSame([
             'participant.spawned',
             'participant.spawned',
             'run.timed_out',
@@ -293,6 +369,95 @@ final class RaceOrchestratorLifecycleTest extends TestCase
         );
         self::assertSame('/raceproof-artifacts/'.$plan->runId, $result->artifactPath);
         self::assertSame([], $store->cleanedRuns);
+        self::assertSame([[
+            'timed_out' => false,
+            'result_count' => 2,
+            'failure_count' => 1,
+        ]], array_map(
+            static fn (TimelineEvent $event): array => $event->data,
+            $result->timeline?->ofType('run.completed') ?? [],
+        ));
+    }
+
+    public function test_missing_result_without_an_exit_code_has_no_invented_status_or_output(): void
+    {
+        $plan = $this->plan();
+        $store = new LifecycleCoordinatorStore;
+        $store->ready = 2;
+        $store->storedResults = [$this->participant($plan, 'p2', 200)];
+        $processes = [
+            'p1' => new LifecycleWorkerProcess(running: false, exitCode: null),
+            'p2' => new LifecycleWorkerProcess(running: false),
+        ];
+
+        $result = $this->orchestrator(
+            $store,
+            new LifecycleProcessFactory($processes),
+            new LifecycleClock([0]),
+        )->run($plan);
+
+        self::assertSame(
+            'Worker exited without a result.',
+            $result->participant('p1')?->workerError,
+        );
+        self::assertSame(['p1', 'p2'], array_map(
+            static fn (ParticipantResult $participant): string => $participant->participantId,
+            $result->participants,
+        ));
+    }
+
+    public function test_environment_refusal_prevents_run_creation_and_worker_start(): void
+    {
+        $plan = $this->plan();
+        $store = new LifecycleCoordinatorStore;
+        $processes = [
+            'p1' => new LifecycleWorkerProcess(running: false),
+            'p2' => new LifecycleWorkerProcess(running: false),
+        ];
+        $this->app['config']->set('raceproof.enabled', false);
+
+        try {
+            $this->orchestrator(
+                $store,
+                new LifecycleProcessFactory($processes),
+                new LifecycleClock([0]),
+            )->run($plan);
+            self::fail('Expected the disabled environment to be rejected.');
+        } catch (EnvironmentRejected $exception) {
+            self::assertStringContainsString('RaceProof is disabled', $exception->getMessage());
+        }
+
+        self::assertNull($store->createdPlan);
+        self::assertSame(0, $processes['p1']->startCalls);
+        self::assertSame(0, $processes['p2']->startCalls);
+    }
+
+    public function test_database_refusal_prevents_run_creation_and_worker_start(): void
+    {
+        $plan = $this->plan();
+        $store = new LifecycleCoordinatorStore;
+        $processes = [
+            'p1' => new LifecycleWorkerProcess(running: false),
+            'p2' => new LifecycleWorkerProcess(running: false),
+        ];
+        $this->app['config']->set('raceproof.database.reject_in_memory_sqlite', false);
+        $this->app['config']->set('raceproof.database.require_allowlist', true);
+        $this->app['config']->set('raceproof.database.allowed_names', ['dedicated-raceproof-test']);
+
+        try {
+            $this->orchestrator(
+                $store,
+                new LifecycleProcessFactory($processes),
+                new LifecycleClock([0]),
+            )->run($plan);
+            self::fail('Expected the database allowlist to reject the run.');
+        } catch (EnvironmentRejected $exception) {
+            self::assertStringContainsString('is not in RACEPROOF_ALLOWED_DATABASES', $exception->getMessage());
+        }
+
+        self::assertNull($store->createdPlan);
+        self::assertSame(0, $processes['p1']->startCalls);
+        self::assertSame(0, $processes['p2']->startCalls);
     }
 
     public function test_factory_failure_still_stops_and_waits_already_started_workers(): void
@@ -411,6 +576,8 @@ final class LifecycleCoordinatorStore implements CoordinatorStore
     /** @var list<string> */
     public array $timelineWarnings = [];
 
+    public int $releaseStartCalls = 0;
+
     public ?RacePlan $createdPlan = null;
 
     public function createRun(RacePlan $plan): void
@@ -430,7 +597,10 @@ final class LifecycleCoordinatorStore implements CoordinatorStore
         return $this->ready;
     }
 
-    public function releaseStart(string $runId): void {}
+    public function releaseStart(string $runId): void
+    {
+        $this->releaseStartCalls++;
+    }
 
     public function waitForStart(string $runId, int $timeoutMs): void {}
 
@@ -507,7 +677,7 @@ final class LifecycleWorkerProcess implements WorkerProcess
 
     public function __construct(
         private bool $running,
-        private int $exitCode = 0,
+        private ?int $exitCode = 0,
         private readonly string $output = '',
         private readonly string $errorOutput = '',
         private readonly ?int $exitAfterStop = null,
@@ -535,7 +705,7 @@ final class LifecycleWorkerProcess implements WorkerProcess
         $this->waitCalls++;
         $this->running = false;
 
-        return $this->exitCode;
+        return $this->exitCode ?? 0;
     }
 
     public function exitCode(): ?int

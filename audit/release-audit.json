@@ -88,6 +88,18 @@
                 },
                 {
                     "file": "tests/Integration/RaceOrchestratorLifecycleTest.php",
+                    "method": "test_missing_result_without_an_exit_code_has_no_invented_status_or_output"
+                },
+                {
+                    "file": "tests/Integration/RaceOrchestratorLifecycleTest.php",
+                    "method": "test_environment_refusal_prevents_run_creation_and_worker_start"
+                },
+                {
+                    "file": "tests/Integration/RaceOrchestratorLifecycleTest.php",
+                    "method": "test_database_refusal_prevents_run_creation_and_worker_start"
+                },
+                {
+                    "file": "tests/Integration/RaceOrchestratorLifecycleTest.php",
                     "method": "test_factory_failure_still_stops_and_waits_already_started_workers"
                 },
                 {
@@ -143,8 +155,20 @@
                     "method": "test_bounding_handles_every_marker_and_utf8_boundary"
                 },
                 {
+                    "file": "tests/Integration/SensitiveDataRedactorTest.php",
+                    "method": "test_negative_limits_and_header_credentials_have_exact_safe_output"
+                },
+                {
                     "file": "tests/Integration/ReportersTest.php",
                     "method": "test_the_stable_report_model_is_bounded_redacted_and_accounts_for_missing_participants"
+                },
+                {
+                    "file": "tests/Integration/ReportersTest.php",
+                    "method": "test_report_projection_preserves_outcomes_natural_order_and_coordination_state"
+                },
+                {
+                    "file": "tests/Integration/ReportersTest.php",
+                    "method": "test_negative_reporting_limits_are_clamped_without_hiding_source_totals"
                 },
                 {
                     "file": "tests/Integration/ReportersTest.php",
@@ -163,6 +187,18 @@
                 {
                     "file": "tests/Unit/FileCoordinatorStoreTest.php",
                     "method": "test_it_coordinates_a_complete_run_with_atomic_files"
+                },
+                {
+                    "file": "tests/Unit/FileCoordinatorStoreTest.php",
+                    "method": "test_result_evidence_distinguishes_all_outcomes_and_sorts_participants"
+                },
+                {
+                    "file": "tests/Unit/FileCoordinatorStoreTest.php",
+                    "method": "test_missing_malformed_and_cross_run_evidence_fails_closed"
+                },
+                {
+                    "file": "tests/Unit/FileCoordinatorStoreTest.php",
+                    "method": "test_barrier_timeouts_and_identifier_validation_are_actionable"
                 },
                 {
                     "file": "tests/Unit/FileCoordinatorTimelineTest.php",

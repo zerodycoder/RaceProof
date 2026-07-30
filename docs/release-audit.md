@@ -9,9 +9,9 @@ Audit definition prepared: 2026-07-26
 | Control | Mutation hotspot | Scope | Test methods |
 | --- | --- | --- | ---: |
 | `environment-database-safety` | yes | Production refusal, explicit local opt-in, open transactions, shared SQLite, and exact database allowlists. | 10 |
-| `worker-lifecycle` | yes | Spawn failures, early exits, timeouts, stop/wait ordering, orphan prevention, cleanup, and retained failure evidence. | 10 |
-| `redaction-reporting` | yes | Credential patterns, invalid UTF-8, byte bounds, response/report projection, and valid JSON/XML after redaction. | 9 |
-| `coordination-integrity` | yes | Atomic coordination files, concurrent timeline appends, malformed-line recovery, and cleanup boundaries. | 3 |
+| `worker-lifecycle` | yes | Spawn failures, early exits, timeouts, stop/wait ordering, orphan prevention, cleanup, and retained failure evidence. | 13 |
+| `redaction-reporting` | yes | Credential patterns, invalid UTF-8, byte bounds, response/report projection, and valid JSON/XML after redaction. | 12 |
+| `coordination-integrity` | yes | Atomic coordination files, concurrent timeline appends, malformed-line recovery, and cleanup boundaries. | 6 |
 | `production-runtime-boundary` | yes | Capability-scoped activation and a framework-free, process-free production no-op runtime. | 2 |
 | `release-supply-chain` | yes | Reproducible consumer archives, pinned workflow actions, runtime-first publication, signatures, provenance, and clean artifact installation. | 2 |
 | `published-contracts` | no | Frozen API signatures, documentation links, executable examples, public evidence status, and package-content boundaries. | 3 |
