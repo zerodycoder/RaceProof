@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added a safety-first private-beta onboarding packet with pinned prerelease
+  installation, fail-closed preflight, bounded evidence handoff, cleanup
+  guidance, and release-status wording aligned across security documentation.
 - Expanded the strict mutation gate from four fail-closed boundary classes to
   seven risk-selected safety, orchestration, coordination, and report-projection
   classes, with behavioral lifecycle assertions for exact timeout boundaries,

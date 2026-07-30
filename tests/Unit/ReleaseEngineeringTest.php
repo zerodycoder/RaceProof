@@ -142,6 +142,7 @@ final class ReleaseEngineeringTest extends TestCase
             self::assertNotFalse($laravelZip->locateName('docs/public-api.md'));
             self::assertNotFalse($laravelZip->locateName('docs/release-audit.md'));
             self::assertNotFalse($laravelZip->locateName('docs/templates/private-beta-invitation.md'));
+            self::assertNotFalse($laravelZip->locateName('docs/templates/private-beta-onboarding.md'));
             self::assertNotFalse($laravelZip->locateName('resources/views/studio.php'));
             self::assertNotFalse($laravelZip->locateName('stubs/race-test.phpunit.php.stub'));
             self::assertNotFalse($laravelZip->locateName('api/public-api.json'));

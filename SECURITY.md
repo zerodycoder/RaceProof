@@ -2,12 +2,16 @@
 
 ## Supported versions
 
-RaceProof is pre-release software. No tagged or Packagist release exists.
+RaceProof is pre-release software. Signed `v1.0.0-beta.1` source/runtime tags
+and Packagist packages are public, but the beta is not a separately maintained
+stable support line. Before v1, fixes target the latest commit on `main` on a
+best-effort basis with no response-time SLA.
 
 | Line | Security fixes |
 | --- | --- |
 | Latest commit on `main` | Supported |
-| Older commits or untagged snapshots | Unsupported |
+| `v1.0.0-beta.1` | Published prerelease; not maintained as a separate line |
+| Older commits and prereleases | Unsupported |
 | Stable v1 | Not published |
 
 After a stable release, this table and the release notes will name every

@@ -39,6 +39,7 @@ does not replace them.
 | Release sequence and fail-closed gates | [Release runbook](releasing.md) |
 | Current automated and external evidence | [Pre-release audit](release-audit.md) |
 | Beta recruitment and consent boundaries | [Private beta runbook](private-beta.md) |
+| Onboard a selected beta participant safely | [Private beta onboarding packet](templates/private-beta-onboarding.md) |
 | Current beta evidence | [Beta evidence](beta-evidence.md) |
 | Maintenance expectations | [Maintenance policy](maintenance.md) |
 | License and redistribution | [Licensing guide](licensing.md) |

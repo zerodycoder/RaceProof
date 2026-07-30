@@ -30,8 +30,10 @@ adoption. The current evidence and unmet gates are published in
    never in this repository.
 3. Assign an opaque local identifier. Record only the invitation count in the
    public registry after reviewing the private source records.
-4. Ask the participant to use a disposable database and a pinned RaceProof
-   commit or signed prerelease. Record the exact package version privately.
+4. Send the [private-beta onboarding packet](templates/private-beta-onboarding.md)
+   with the opaque participant ID, pinned signed prerelease, private feedback
+   channel, and security channel filled in. Ask the participant to use a
+   disposable database and record the exact package version privately.
 5. Collect feedback with [the feedback template](templates/private-beta-feedback.md).
    Route suspected vulnerabilities through `SECURITY.md`; never copy them into
    the beta registry or a public issue.
