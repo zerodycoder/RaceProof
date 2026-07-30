@@ -252,6 +252,20 @@ final class RedisCoordinatorStoreTest extends TestCase
         $store->results(str_repeat('a', 32));
     }
 
+    public function test_phpredis_boolean_command_results_are_normalized(): void
+    {
+        $client = new InMemoryRedisClient;
+        $store = $this->store($client);
+        $client->commandOverride = true;
+
+        $store->waitForStart(str_repeat('a', 32), 0);
+
+        $client->commandOverride = false;
+
+        $this->expectException(CoordinationTimeout::class);
+        $store->waitForStart(str_repeat('a', 32), 0);
+    }
+
     public function test_identifiers_are_validated_before_redis_commands(): void
     {
         $client = new InMemoryRedisClient;

@@ -643,6 +643,10 @@ LUA;
 
     private function integerResult(mixed $value): int
     {
+        if (is_bool($value)) {
+            return $value ? 1 : 0;
+        }
+
         if (is_int($value)) {
             return $value;
         }
