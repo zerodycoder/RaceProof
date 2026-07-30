@@ -129,17 +129,47 @@ final class BetaEvidenceTest extends TestCase
     {
         $root = dirname(__DIR__, 2);
         $invitation = file_get_contents($root.'/docs/templates/private-beta-invitation.md');
+        $onboarding = file_get_contents($root.'/docs/templates/private-beta-onboarding.md');
         $feedback = file_get_contents($root.'/docs/templates/private-beta-feedback.md');
         $consent = file_get_contents($root.'/docs/templates/anonymized-evidence-consent.md');
 
         self::assertIsString($invitation);
+        self::assertIsString($onboarding);
         self::assertIsString($feedback);
         self::assertIsString($consent);
         self::assertStringContainsString('disposable non-production database', $invitation);
+        self::assertStringContainsString('private-beta-onboarding.md', $invitation);
+        self::assertStringContainsString('Reply privately with "interested"', $invitation);
+        self::assertStringNotContainsString('â', $invitation);
+        self::assertStringContainsString(
+            'composer require raceproof/runtime:^1.0.0-beta.1@beta',
+            $onboarding,
+        );
+        self::assertStringContainsString(
+            'composer require raceproof/laravel:^1.0.0-beta.1@beta --dev',
+            $onboarding,
+        );
+        self::assertStringContainsString('RACEPROOF_ALLOWED_DATABASES=', $onboarding);
+        self::assertStringContainsString('raceproof:doctor --self-test', $onboarding);
+        self::assertStringContainsString('raceproof:clean', $onboarding);
+        self::assertStringContainsString('Silence is not consent', $onboarding);
+        self::assertStringContainsString('Do not send retained RaceProof directories', $onboarding);
         self::assertStringContainsString('Publication is a separate step', $feedback);
         self::assertStringContainsString('does not imply consent', $consent);
         self::assertStringContainsString('No response is treated as no consent', $consent);
         self::assertStringContainsString('security channel', $feedback);
+    }
+
+    public function test_security_policy_matches_the_published_prerelease_boundary(): void
+    {
+        $security = file_get_contents(dirname(__DIR__, 2).'/SECURITY.md');
+
+        self::assertIsString($security);
+        self::assertStringContainsString('Signed `v1.0.0-beta.1`', $security);
+        self::assertStringContainsString('not maintained as a separate line', $security);
+        self::assertStringContainsString('fixes target the latest commit on `main`', $security);
+        self::assertStringContainsString('no response-time SLA', $security);
+        self::assertStringNotContainsString('No tagged or Packagist release exists', $security);
     }
 
     /** @return array<string, mixed> */

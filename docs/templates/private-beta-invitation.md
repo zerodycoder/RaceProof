@@ -20,10 +20,11 @@ Before accepting, please confirm:
 - [ ] at least one race scenario can be described without proprietary data;
 - [ ] suspected security issues will use the private security-reporting channel.
 
-If you participate, we will privately provide the pinned version, onboarding
-steps, feedback template, and an opaque participant ID. Anonymous publication is
-optional and requires a separate preview and explicit consent.
+If you participate, we will privately provide the pinned version, the
+[safety-first onboarding packet](private-beta-onboarding.md), feedback template,
+and an opaque participant ID. Anonymous publication is optional and requires a
+separate preview and explicit consent.
 
-Reply privately with “interested” to begin. Please do not include `.env`
+Reply privately with "interested" to begin. Please do not include `.env`
 contents, connection strings, credentials, tokens, cookies, production data,
 repository URLs, or unreviewed logs.
