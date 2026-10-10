@@ -87,7 +87,7 @@ jobs:
 
       - name: Upload coverage evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: coverage-clover
           path: build/coverage/clover.xml
@@ -117,7 +117,7 @@ jobs:
 
       - name: Upload mutation evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: mutation-evidence
           path: build/mutation/report.txt
@@ -238,7 +238,7 @@ jobs:
 
       - name: Upload Redis coordination evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: redis-coordination-evidence
           path: build/redis-evidence/evidence.json
@@ -247,7 +247,7 @@ jobs:
 
       - name: Upload remote worker transport evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: remote-worker-transport-evidence
           path: build/remote-worker-evidence
@@ -366,7 +366,7 @@ jobs:
 
       - name: Upload database evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: database-evidence-${{ matrix.engine }}
           path: build/database-evidence/${{ matrix.engine }}.json
@@ -401,7 +401,7 @@ jobs:
 
       - name: Upload pre-release audit evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: release-audit-evidence
           path: build/release-audit/evidence.json
